@@ -1,0 +1,346 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// ---------- Academic structure ----------
+
+model University {
+  id          String       @id @default(uuid())
+  name        String
+  city        String?
+  departments Department[]
+  createdAt   DateTime     @default(now())
+}
+
+model Department {
+  id           String      @id @default(uuid())
+  name         String
+  university   University  @relation(fields: [universityId], references: [id])
+  universityId String
+  curricula    Curriculum[]
+
+  @@index([universityId])
+}
+
+model Curriculum {
+  id           String              @id @default(uuid())
+  label        String              // e.g. "Curriculum 2024"
+  department   Department          @relation(fields: [departmentId], references: [id])
+  departmentId String
+  courses      CurriculumCourse[]
+  profiles     StudentProfile[]
+
+  @@index([departmentId])
+}
+
+model Course {
+  id          String              @id @default(uuid())
+  title       String
+  description String?
+  curricula   CurriculumCourse[]
+  materials   CourseMaterial[]
+  pastExams   PastExam[]
+  notes       Note[]
+  quizzes     Quiz[]
+  chats       ChatSession[]
+  generatedExams GeneratedExam[]
+  topicStats  TopicStatistic[]
+  weakTopics  WeakTopic[]
+}
+
+model CurriculumCourse {
+  id           String     @id @default(uuid())
+  curriculum   Curriculum @relation(fields: [curriculumId], references: [id])
+  curriculumId String
+  course       Course     @relation(fields: [courseId], references: [id])
+  courseId     String
+  courseCode   String     // local code at this university, e.g. "CS301"
+  creditHours  Int?
+  year         Int        // 1-5
+  semester     Int        // 1 or 2
+
+  @@index([curriculumId])
+  @@index([courseId])
+}
+
+// ---------- Students ----------
+
+model Student {
+  id            String          @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String          @unique
+  passwordHash  String?
+  googleId      String?         @unique
+  createdAt     DateTime        @default(now())
+
+  profile       StudentProfile?
+  notes         Note[]
+  flashcardReviews FlashcardReview[]
+  quizAttempts  QuizAttempt[]
+  chatSessions  ChatSession[]
+  generatedExamAttempts ExamAttempt[]
+  weakTopics    WeakTopic[]
+}
+
+model StudentProfile {
+  id            String     @id @default(uuid())
+  student       Student    @relation(fields: [studentId], references: [id])
+  studentId     String     @unique
+  curriculum    Curriculum @relation(fields: [curriculumId], references: [id])
+  curriculumId  String
+  currentYear   Int
+  currentSemester Int
+  updatedAt     DateTime   @updatedAt
+}
+
+// ---------- Course materials (shared knowledge base) ----------
+
+enum MaterialStatus {
+  QUEUED
+  EXTRACTING
+  ANALYZING
+  READY
+  FAILED
+}
+
+model CourseMaterial {
+  id          String          @id @default(uuid())
+  course      Course          @relation(fields: [courseId], references: [id])
+  courseId    String
+  title       String
+  fileUrl     String
+  status      MaterialStatus  @default(QUEUED)
+  summary     String?         // AI-generated summary text
+  createdAt   DateTime        @default(now())
+
+  chunks      MaterialChunk[]
+  flashcards  Flashcard[]
+
+  @@index([courseId])
+}
+
+model MaterialChunk {
+  id          String          @id @default(uuid())
+  material    CourseMaterial  @relation(fields: [materialId], references: [id])
+  materialId  String
+  content     String
+  page        Int?
+  
+
+  @@index([materialId])
+}
+
+// ---------- Notes ----------
+
+model Note {
+  id         String   @id @default(uuid())
+  student    Student  @relation(fields: [studentId], references: [id])
+  studentId  String
+  course     Course   @relation(fields: [courseId], references: [id])
+  courseId   String
+  content    String
+  updatedAt  DateTime @updatedAt
+
+  @@index([studentId, courseId])
+}
+
+// ---------- Flashcards ----------
+
+model Flashcard {
+  id          String            @id @default(uuid())
+  material    CourseMaterial    @relation(fields: [materialId], references: [id])
+  materialId  String
+  question    String
+  answer      String
+  reviews     FlashcardReview[]
+
+  @@index([materialId])
+}
+
+enum ReviewResult {
+  CORRECT
+  WRONG
+  SKIP
+}
+
+model FlashcardReview {
+  id          String       @id @default(uuid())
+  flashcard   Flashcard    @relation(fields: [flashcardId], references: [id])
+  flashcardId String
+  student     Student      @relation(fields: [studentId], references: [id])
+  studentId   String
+  result      ReviewResult
+  reviewedAt  DateTime     @default(now())
+
+  @@index([studentId])
+}
+
+// ---------- Quizzes ----------
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Quiz {
+  id          String        @id @default(uuid())
+  course      Course        @relation(fields: [courseId], references: [id])
+  courseId    String
+  difficulty  Difficulty
+  questions   QuizQuestion[]
+  attempts    QuizAttempt[]
+  createdAt   DateTime      @default(now())
+}
+
+model QuizQuestion {
+  id            String   @id @default(uuid())
+  quiz          Quiz     @relation(fields: [quizId], references: [id])
+  quizId        String
+  question      String
+  correctAnswer String
+  choices       Json?    // array of options, for multiple choice
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id          String   @id @default(uuid())
+  quiz        Quiz     @relation(fields: [quizId], references: [id])
+  quizId      String
+  student     Student  @relation(fields: [studentId], references: [id])
+  studentId   String
+  score       Float
+  answers     Json     // { questionId: studentAnswer }
+  takenAt     DateTime @default(now())
+
+  @@index([studentId])
+}
+
+// ---------- Past exams & exam intelligence ----------
+
+enum ExamType {
+  MID
+  FINAL
+}
+
+model PastExam {
+  id        String          @id @default(uuid())
+  course    Course          @relation(fields: [courseId], references: [id])
+  courseId  String
+  year      Int
+  type      ExamType
+  fileUrl   String
+  chunks    PastExamChunk[]
+
+  @@index([courseId])
+}
+
+model PastExamChunk {
+  id          String    @id @default(uuid())
+  pastExam    PastExam  @relation(fields: [pastExamId], references: [id])
+  pastExamId  String
+  topic       String?
+  question    String
+  marks       Float?
+
+  @@index([pastExamId])
+}
+
+model TopicStatistic {
+  id          String   @id @default(uuid())
+  course      Course   @relation(fields: [courseId], references: [id])
+  courseId    String
+  topic       String
+  frequency   Int      // number of years/exams it appeared in
+  importance  Float    // 0-100 relevance score
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+}
+
+// ---------- AI Tutor chat ----------
+
+model ChatSession {
+  id         String        @id @default(uuid())
+  student    Student       @relation(fields: [studentId], references: [id])
+  studentId  String
+  course     Course        @relation(fields: [courseId], references: [id])
+  courseId   String
+  createdAt  DateTime      @default(now())
+  messages   ChatMessage[]
+
+  @@index([studentId, courseId])
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+model ChatMessage {
+  id         String      @id @default(uuid())
+  session    ChatSession @relation(fields: [sessionId], references: [id])
+  sessionId  String
+  role       ChatRole
+  content    String
+  createdAt  DateTime    @default(now())
+
+  @@index([sessionId])
+}
+
+// ---------- AI-generated practice exams ----------
+
+model GeneratedExam {
+  id          String                  @id @default(uuid())
+  course      Course                  @relation(fields: [courseId], references: [id])
+  courseId    String
+  strategy    String                  // e.g. "repeated_topics" for MVP
+  createdAt   DateTime                @default(now())
+  questions   GeneratedExamQuestion[]
+  attempts    ExamAttempt[]
+}
+
+model GeneratedExamQuestion {
+  id              String        @id @default(uuid())
+  exam            GeneratedExam @relation(fields: [examId], references: [id])
+  examId          String
+  question        String
+  expectedAnswer  String
+  topic           String?
+
+  @@index([examId])
+}
+
+model ExamAttempt {
+  id          String        @id @default(uuid())
+  exam        GeneratedExam @relation(fields: [examId], references: [id])
+  examId      String
+  student     Student       @relation(fields: [studentId], references: [id])
+  studentId   String
+  score       Float?
+  feedback    Json?         // per-question feedback
+  takenAt     DateTime      @default(now())
+
+  @@index([studentId])
+}
+
+// ---------- Weak topics ----------
+
+model WeakTopic {
+  id          String   @id @default(uuid())
+  student     Student  @relation(fields: [studentId], references: [id])
+  studentId   String
+  course      Course   @relation(fields: [courseId], references: [id])
+  courseId    String
+  topic       String
+  weakness    Float    // 0-100, higher = weaker
+  updatedAt   DateTime @updatedAt
+
+  @@index([studentId, courseId])
+}

@@ -18,7 +18,20 @@ export const verifyEmailHandler = asyncHandler(async (req, res) => {
 
 export const loginHandler = asyncHandler(async (req, res) => {
   const result = await authService.login(req.body);
-  res.json(result);
+
+  // Set refresh token as httpOnly cookie
+  res.cookie('refreshToken', result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // true in production, false in dev
+    sameSite: 'strict',
+    maxAge: 30 * 24 * 60 * 60 * 1000  // 30 days
+  });
+
+  // Send only accessToken in response body
+  res.status(200).json({
+    accessToken: result.accessToken,
+    student: result.student
+  });
 });
 
 export const forgotPasswordHandler = asyncHandler(async (req, res) => {
@@ -36,7 +49,20 @@ export const resetPasswordHandler = asyncHandler(async (req, res) => {
 
 export const googleSignInHandler = asyncHandler(async (req, res) => {
   const result = await authService.googleSignIn(req.body.idToken);
-  res.json(result);
+
+  // Set refresh token as httpOnly cookie
+  res.cookie('refreshToken', result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 30 * 24 * 60 * 60 * 1000
+  });
+
+  // Send only accessToken in response body
+  res.status(200).json({
+    accessToken: result.accessToken,
+    student: result.student
+  });
 });
 
 export const refreshTokenHandler = asyncHandler(async (req, res) => {

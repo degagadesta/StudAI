@@ -61,13 +61,9 @@ export function SafeHtml({ html, className }: SafeHtmlProps) {
  * actually uses): just render as a child. React escapes this
  * automatically — no HTML in the string can execute.
  *
- *   ❌ <div dangerouslySetInnerHTML={{ __html: user.name }} />
- *   ✅ <div>{user.name}</div>
+ *  <div dangerouslySetInnerHTML={{ __html: user.name }} />
+ *  <div>{user.name}</div>
  */
-
-/* ------------------------------------------------------------------ */
-/* 2. Dynamic Link & Protocol Validation                               */
-/* ------------------------------------------------------------------ */
 
 const ALLOWED_PROTOCOLS = ["http:", "https:", "mailto:", "tel:"];
 
@@ -140,10 +136,6 @@ export function validateRedirectPath(
   return fallback;
 }
 
-/* ------------------------------------------------------------------ */
-/* 3. Attribute & Form Input Security                                  */
-/* ------------------------------------------------------------------ */
-
 /**
  * Entity-encodes a value before it's inserted into an HTML attribute
  * (e.g. a dynamically built title="", data-*, or aria-label). Prevents
@@ -208,4 +200,21 @@ export function capLength(value: string, maxLength: number): string {
  */
 export function sanitizeTextInput(value: string, maxLength: number): string {
   return trimInput(capLength(stripControlChars(value), maxLength));
+}
+
+/**
+ * Trims and collapses multiple internal spaces into a single space.
+ * Useful for normalizing multi-word inputs like full names.
+ */
+export function normalizeWhitespace(value: string): string {
+  if (typeof value !== "string") return "";
+  return value.trim().replace(/\s+/g, " ");
+}
+
+/**
+ * Sanitizes generic single-line text inputs (e.g., full names, usernames).
+ * Strips control characters, caps length, and normalizes space.
+ */
+export function sanitizeNameInput(value: string, maxLength: number): string {
+  return normalizeWhitespace(capLength(stripControlChars(value), maxLength));
 }

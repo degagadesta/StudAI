@@ -1,5 +1,12 @@
 import { useState, FormEvent, ChangeEvent } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
+import {
+  stripControlChars,
+  capLength,
+  validateRedirectPath,
+} from "../utils/security/sanitize";
+import { login, getApiErrorMessage } from "../api/authApi";
 
 interface LoginFormValues {
   email: string;
@@ -29,21 +36,22 @@ export default function LoginPage() {
     remember: false,
   });
 
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, type, value, checked } = e.target;
 
-    // Hard-cap input length client-side so a pasted 50,000-char string
-    // never even reaches state or gets sent in a request body.
-    const capped =
+    const cleaned =
       name === "email"
-        ? value.slice(0, EMAIL_MAX_LEN)
+        ? capLength(stripControlChars(value), EMAIL_MAX_LEN)
         : name === "password"
-          ? value.slice(0, PASSWORD_MAX_LEN)
+          ? capLength(stripControlChars(value), PASSWORD_MAX_LEN)
           : value;
 
     setValues((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : capped,
+      [name]: type === "checkbox" ? checked : cleaned,
     }));
 
     // Clear the field's error as soon as the user edits it
@@ -68,6 +76,12 @@ export default function LoginPage() {
       next.password = `Password must be at least ${PASSWORD_MIN_LEN} characters.`;
     } else if (password.length > PASSWORD_MAX_LEN) {
       next.password = "Password is too long.";
+    } else if (!/[A-Z]/.test(password)) {
+      next.password = "Password must include at least one uppercase letter.";
+    } else if (!/[a-z]/.test(password)) {
+      next.password = "Password must include at least one lowercase letter.";
+    } else if (!/[0-9]/.test(password)) {
+      next.password = "Password must include at least one number.";
     }
 
     return next;
@@ -89,34 +103,23 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include", // sends/receives the httpOnly refresh-token cookie
-        body: JSON.stringify({ email, password, remember: values.remember }),
+      const data = await login({ email, password, remember: values.remember });
+      // access token is already stored in memory by login() via setAccessToken
+      console.log("Logged in:", data.user);
+
+      const target = validateRedirectPath(searchParams.get("redirect"));
+      navigate(target);
+    } catch (err) {
+      setErrors({
+        form: getApiErrorMessage(err, "Invalid email or password."),
       });
-
-      if (!res.ok) {
-        // Deliberately generic — never reveal whether the email exists,
-        // whether it was the email or password that was wrong, or any
-        // server-side detail. That distinction is a common enumeration leak.
-        setErrors({ form: "Invalid email or password." });
-        return;
-      }
-
-      const data = await res.json();
-      // store the short-lived access token in memory (e.g. context/store),
-      // NOT in localStorage — localStorage is readable by any injected script.
-      console.log("Logged in:", data);
-    } catch {
-      setErrors({ form: "Something went wrong. Please try again." });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleGoogleLogin = (): void => {
-    window.location.href = "/api/auth/google";
+    window.location.href = `${import.meta.env.VITE_API_URL || "/api"}/auth/google`;
   };
 
   return (
@@ -243,7 +246,7 @@ export default function LoginPage() {
                 maxLength={PASSWORD_MAX_LEN}
                 value={values.password}
                 onChange={handleChange}
-                placeholder="Enter your password"
+                placeholder="8+ chars, 1 uppercase, 1 lowercase, 1 number"
                 aria-invalid={!!errors.password}
                 aria-describedby={
                   errors.password ? "password-error" : undefined

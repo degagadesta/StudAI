@@ -1,11 +1,14 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+
 function App() {
   return (
-    <div className="flex h-screen items-center justify-center">
-      <h1 className="text-5xl font-bold text-blue-600">
-        StudAI
-      </h1>
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

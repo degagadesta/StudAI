@@ -1,19 +1,24 @@
 import express from "express";
 import cors from "cors";
-import cookieParser from "cookie-parser";  // Add this
+import cookieParser from "cookie-parser";
 import routes from "./src/routes/index.js";
 import { errorHandler } from "./src/middlewares/errorHandler.js";
+import { env } from "./src/config/env.js";
 
 const app = express();
 
-// CORS configuration - IMPORTANT for cookies to work
-app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    credentials: true  // Allow cookies to be sent
-}));
+// Secure CORS configuration
+app.use(
+  cors({
+    origin: env.frontendUrl,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 app.use(express.json());
-app.use(cookieParser());  // Add this middleware
+app.use(cookieParser());
 
 app.use("/api/v1", routes);
 app.use(errorHandler);

@@ -3,7 +3,11 @@ import { OAuth2Client } from "google-auth-library";
 import { prisma } from "../../lib/prisma.js";
 import { sendMail } from "../../lib/mailer.js";
 import { generateToken, hashToken } from "../../utils/tokens.js";
-import { signToken, signRefreshToken, verifyRefreshToken } from "../../utils/jwt.js";
+import {
+  signToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "../../utils/jwt.js";
 import { env } from "../../config/env.js";
 import { AppError } from "../../utils/AppError.js";
 import {
@@ -29,6 +33,13 @@ export async function register({ firstName, lastName, email, password }) {
   const passwordHash = await bcrypt.hash(password, 10);
   const { rawToken, tokenHash } = generateToken();
 
+  const verifyUrl = `${env.frontendUrl}/verify-email?token=${rawToken}`;
+  await sendMail({
+    to: email,
+    subject: "Verify your StudAI account",
+    html: `<p>Hi ${firstName},</p><p>Click below to verify your account:</p><a href="${verifyUrl}">${verifyUrl}</a><p>This link expires in 24 hours.</p>`,
+  });
+
   const student = await prisma.student.create({
     data: {
       firstName: firstName.trim(),
@@ -38,13 +49,6 @@ export async function register({ firstName, lastName, email, password }) {
       verificationToken: tokenHash,
       verificationTokenExpiresAt: new Date(Date.now() + VERIFICATION_EXPIRY_MS),
     },
-  });
-
-  const verifyUrl = `${env.frontendUrl}/verify-email?token=${rawToken}`;
-  await sendMail({
-    to: email,
-    subject: "Verify your StudAI account",
-    html: `<p>Hi ${firstName},</p><p>Click below to verify your account:</p><a href="${verifyUrl}">${verifyUrl}</a><p>This link expires in 24 hours.</p>`,
   });
 
   return { id: student.id, email: student.email };
@@ -74,7 +78,9 @@ export async function verifyEmail(rawToken) {
 export async function login({ email, password }) {
   validateLogin({ email, password });
 
-  const student = await prisma.student.findUnique({ where: { email: email.toLowerCase().trim() } });
+  const student = await prisma.student.findUnique({
+    where: { email: email.toLowerCase().trim() },
+  });
   if (!student || !student.passwordHash)
     throw new AppError("Invalid email or password", 401);
 
@@ -98,7 +104,6 @@ export async function login({ email, password }) {
 
   return {
     accessToken,
-    refreshToken,
     student: {
       id: student.id,
       firstName: student.firstName,
@@ -110,7 +115,9 @@ export async function login({ email, password }) {
 export async function forgotPassword(email) {
   validateEmail(email);
 
-  const student = await prisma.student.findUnique({ where: { email: email.toLowerCase().trim() } });
+  const student = await prisma.student.findUnique({
+    where: { email: email.toLowerCase().trim() },
+  });
   if (!student) return;
 
   const { rawToken, tokenHash } = generateToken();

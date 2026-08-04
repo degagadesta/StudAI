@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import {
@@ -11,8 +11,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { stripControlChars, capLength } from "../utils/security/sanitize";
-import { api } from "../api/client";
-import { googleSignIn, getApiErrorMessage } from "../api/authApi";
+import { register, googleSignIn, getApiErrorMessage } from "../api/authApi";
 import { useAuthContext } from "../contexts/AuthContext";
 
 interface RegisterFormValues {
@@ -122,7 +121,7 @@ export default function RegisterPage() {
     return next;
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     const fieldErrors = validate(values);
@@ -133,7 +132,7 @@ export default function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      await api.post("/auth/register", {
+      await register({
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
         email: values.email.trim().toLowerCase(),
@@ -162,13 +161,16 @@ export default function RegisterPage() {
       return;
     }
 
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     try {
       // Google sign-in DOES log the user in immediately — Google already
       // verified the email, so there's no separate verification step.
       const data = await googleSignIn(credentialResponse.credential);
       setUser(data.student);
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true }); // Use replace to avoid back button issues
     } catch (err) {
       setErrors({
         form: getApiErrorMessage(

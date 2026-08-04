@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
-import { api } from "../api/client";
+import { verifyEmail, getApiErrorMessage } from "../api/authApi";
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -17,21 +17,20 @@ export default function VerifyEmail() {
       return;
     }
 
-    const verifyEmail = async () => {
+    const verifyEmailToken = async () => {
       try {
-        const response = await api.get(`/auth/verify-email?token=${token}`);
+        const response = await verifyEmail(token);
         setStatus("success");
-        setMessage(response.data.message || "Email verified successfully!");
+        setMessage(response.message || "Email verified successfully!");
       } catch (error: any) {
         setStatus("error");
         setMessage(
-          error.response?.data?.error ||
-            "Verification failed. The link may be expired or invalid."
+          getApiErrorMessage(error, "Verification failed. The link may be expired or invalid.")
         );
       }
     };
 
-    verifyEmail();
+    verifyEmailToken();
   }, [searchParams]);
 
   return (

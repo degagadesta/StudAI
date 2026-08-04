@@ -1,6 +1,25 @@
 import { AxiosError } from "axios";
 import { api, setAccessToken, clearTokens } from "./client";
 
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+export interface RegisterPayload {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  student: {
+    id: string;
+    email: string;
+  };
+}
+
 export interface LoginPayload {
   email: string;
   password: string;
@@ -16,8 +35,52 @@ export interface LoginResponse {
   };
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
+export interface VerifyEmailResponse {
+  message: string;
+}
+
 export interface ApiErrorPayload {
   error: string;
+}
+
+// ============================================================================
+// AUTHENTICATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Register a new user account
+ * Sends verification email, user must verify before logging in
+ */
+export async function register(
+  payload: RegisterPayload
+): Promise<RegisterResponse> {
+  const res = await api.post<RegisterResponse>("/auth/register", payload);
+  return res.data;
+}
+
+/**
+ * Verify email address using token from email
+ */
+export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
+  const res = await api.get<VerifyEmailResponse>(`/auth/verify-email?token=${token}`);
+  return res.data;
 }
 
 /**
@@ -32,13 +95,33 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
 }
 
 /**
- * Google Sign-In
+ * Google Sign-In (works for both login and registration)
  * Refresh token is automatically set as httpOnly cookie by backend
  */
 export async function googleSignIn(idToken: string): Promise<LoginResponse> {
   const res = await api.post<LoginResponse>("/auth/google", { idToken });
   setAccessToken(res.data.accessToken);
   // Refresh token is now in httpOnly cookie - no need to store it
+  return res.data;
+}
+
+/**
+ * Request password reset email
+ */
+export async function forgotPassword(
+  payload: ForgotPasswordPayload
+): Promise<ForgotPasswordResponse> {
+  const res = await api.post<ForgotPasswordResponse>("/auth/forgot-password", payload);
+  return res.data;
+}
+
+/**
+ * Reset password using token from email
+ */
+export async function resetPassword(
+  payload: ResetPasswordPayload
+): Promise<ResetPasswordResponse> {
+  const res = await api.post<ResetPasswordResponse>("/auth/reset-password", payload);
   return res.data;
 }
 
@@ -54,6 +137,10 @@ export async function logout(): Promise<void> {
     clearTokens();
   }
 }
+
+// ============================================================================
+// ERROR HANDLING UTILITY
+// ============================================================================
 
 /**
  * Pulls a user-safe message out of an axios error, falling back to a

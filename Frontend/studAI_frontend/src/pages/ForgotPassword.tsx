@@ -1,9 +1,8 @@
-import { useState, type FormEvent, type ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, AlertCircle, CheckCircle } from "lucide-react";
 import { stripControlChars, capLength } from "../utils/security/sanitize";
-import { api } from "../api/client";
-import { getApiErrorMessage } from "../api/authApi";
+import { forgotPassword, getApiErrorMessage } from "../api/authApi";
 
 interface FormErrors {
   email?: string;
@@ -40,7 +39,7 @@ export default function ForgotPassword() {
     return next;
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     const fieldErrors = validate(email);
@@ -51,7 +50,7 @@ export default function ForgotPassword() {
 
     setIsSubmitting(true);
     try {
-      await api.post("/auth/forgot-password", {
+      await forgotPassword({
         email: email.trim().toLowerCase(),
       });
       setSuccess(true);

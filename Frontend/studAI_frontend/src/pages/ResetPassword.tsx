@@ -1,9 +1,8 @@
-import { useState, type FormEvent, type ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { stripControlChars, capLength } from "../utils/security/sanitize";
-import { api } from "../api/client";
-import { getApiErrorMessage } from "../api/authApi";
+import { resetPassword, getApiErrorMessage } from "../api/authApi";
 
 interface FormErrors {
   password?: string;
@@ -65,7 +64,7 @@ export default function ResetPassword() {
     return next;
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     if (!token) {
@@ -81,7 +80,7 @@ export default function ResetPassword() {
 
     setIsSubmitting(true);
     try {
-      await api.post("/auth/reset-password", {
+      await resetPassword({
         token,
         newPassword: password,
       });

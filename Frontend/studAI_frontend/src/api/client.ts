@@ -108,19 +108,14 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         clearTokens();
-        // Redirect to login if refresh fails
-        if (typeof window !== "undefined") {
+        // Only redirect if we're not already on login page
+        if (typeof window !== "undefined" && !window.location.pathname.includes('/login')) {
           window.location.href = "/login";
         }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
-    }
-
-    // For other errors or if refresh is not possible, just clear tokens and reject
-    if (error.response?.status === 401) {
-      clearTokens();
     }
 
     return Promise.reject(error);

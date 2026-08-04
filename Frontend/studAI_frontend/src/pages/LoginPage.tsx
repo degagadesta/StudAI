@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
@@ -26,7 +26,6 @@ interface FormErrors {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_MAX_LEN = 254; // RFC 5321 limit
 const PASSWORD_MAX_LEN = 128; // matches bcrypt's 72-byte input limit safely
-const PASSWORD_MIN_LEN = 8;
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -75,22 +74,12 @@ export default function LoginPage() {
 
     if (!password) {
       next.password = "Password is required.";
-    } else if (password.length < PASSWORD_MIN_LEN) {
-      next.password = `Password must be at least ${PASSWORD_MIN_LEN} characters.`;
-    } else if (password.length > PASSWORD_MAX_LEN) {
-      next.password = "Password is too long.";
-    } else if (!/[A-Z]/.test(password)) {
-      next.password = "Password must include at least one uppercase letter.";
-    } else if (!/[a-z]/.test(password)) {
-      next.password = "Password must include at least one lowercase letter.";
-    } else if (!/[0-9]/.test(password)) {
-      next.password = "Password must include at least one number.";
     }
 
     return next;
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     // Normalize before validating/sending: trim whitespace, lowercase email.
@@ -109,7 +98,6 @@ export default function LoginPage() {
       const data = await login({ email, password, remember: values.remember });
       // access token and refresh token are already stored in memory by login()
       setUser(data.student);
-      console.log("Logged in:", data.student);
 
       const target = validateRedirectPath(searchParams.get("redirect")) || "/dashboard";
       navigate(target);
@@ -128,14 +116,16 @@ export default function LoginPage() {
       return;
     }
 
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     try {
       const data = await googleSignIn(credentialResponse.credential);
       setUser(data.student);
-      console.log("Logged in with Google:", data.student);
 
       const target = validateRedirectPath(searchParams.get("redirect")) || "/dashboard";
-      navigate(target);
+      navigate(target, { replace: true }); // Use replace to avoid back button issues
     } catch (err) {
       setErrors({
         form: getApiErrorMessage(err, "Google sign-in failed. Please try again."),

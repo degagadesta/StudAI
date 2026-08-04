@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api, getAccessToken, setAccessToken, clearTokens } from "../api/client";
 
 interface User {
@@ -19,41 +19,52 @@ export function useAuth() {
     isAuthenticated: false,
     isLoading: true,
   });
+  
+  // Prevent multiple simultaneous auth checks
+  const isCheckingAuth = useRef(false);
 
   const checkAuth = useCallback(async () => {
-    // If we have an access token in memory, we're authenticated
-    const token = getAccessToken();
-    if (token) {
-      setAuthState({
-        user: null, // Will be set by login or fetched if needed
-        isAuthenticated: true,
-        isLoading: false,
-      });
-      return;
-    }
+    // Prevent concurrent auth checks
+    if (isCheckingAuth.current) return;
+    isCheckingAuth.current = true;
 
-    // Try to refresh using httpOnly cookie
-    // The refresh token is sent automatically via cookie
     try {
-      const response = await api.post("/auth/refresh", {}); // Empty body - token in cookie
-      setAccessToken(response.data.accessToken);
+      // If we have an access token in memory, we're authenticated
+      const token = getAccessToken();
+      if (token) {
+        setAuthState({
+          user: null, // Will be set by login or fetched if needed
+          isAuthenticated: true,
+          isLoading: false,
+        });
+        return;
+      }
+
+      // Try to refresh using httpOnly cookie
+      // The refresh token is sent automatically via cookie
+      try {
+        const response = await api.post("/auth/refresh", {}); // Empty body - token in cookie
+        setAccessToken(response.data.accessToken);
+        setAuthState({
+          user: null,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+        return;
+      } catch (error) {
+        // Refresh failed, clear tokens
+        clearTokens();
+      }
+
+      // No valid tokens, user needs to login
       setAuthState({
         user: null,
-        isAuthenticated: true,
+        isAuthenticated: false,
         isLoading: false,
       });
-      return;
-    } catch (error) {
-      // Refresh failed, clear tokens
-      clearTokens();
+    } finally {
+      isCheckingAuth.current = false;
     }
-
-    // No valid tokens, user needs to login
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
   }, []);
 
   const logout = useCallback(async () => {
@@ -77,9 +88,11 @@ export function useAuth() {
     }));
   }, []);
 
+  // Only run checkAuth once on mount
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array - only run once on mount
 
   return {
     user: authState.user,

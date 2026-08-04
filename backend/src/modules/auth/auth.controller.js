@@ -20,17 +20,17 @@ export const loginHandler = asyncHandler(async (req, res) => {
   const result = await authService.login(req.body);
 
   // Set refresh token as httpOnly cookie
-  res.cookie('refreshToken', result.refreshToken, {
+  res.cookie("refreshToken", result.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // true in production, false in dev
-    sameSite: 'strict',
-    maxAge: 30 * 24 * 60 * 60 * 1000  // 30 days
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
 
   // Send only accessToken in response body
   res.status(200).json({
     accessToken: result.accessToken,
-    student: result.student
+    student: result.student,
   });
 });
 
@@ -51,26 +51,53 @@ export const googleSignInHandler = asyncHandler(async (req, res) => {
   const result = await authService.googleSignIn(req.body.idToken);
 
   // Set refresh token as httpOnly cookie
-  res.cookie('refreshToken', result.refreshToken, {
+  res.cookie("refreshToken", result.refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 30 * 24 * 60 * 60 * 1000
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
 
   // Send only accessToken in response body
   res.status(200).json({
     accessToken: result.accessToken,
-    student: result.student
+    student: result.student,
   });
 });
 
 export const refreshTokenHandler = asyncHandler(async (req, res) => {
-  const result = await authService.refreshAccessToken(req.body.refreshToken);
-  res.json(result);
+  // Get refresh token from cookie instead of body
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(401).json({ error: "Refresh token not found" });
+  }
+
+  const result = await authService.refreshAccessToken(refreshToken);
+
+  // Set new refresh token as httpOnly cookie
+  res.cookie("refreshToken", result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
+
+  // Send only new accessToken in response body
+  res.status(200).json({
+    accessToken: result.accessToken,
+  });
 });
 
 export const logoutHandler = asyncHandler(async (req, res) => {
   await authService.logout(req.studentId);
+
+  // Clear the refresh token cookie
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+  });
+
   res.json({ message: "Logged out successfully" });
 });

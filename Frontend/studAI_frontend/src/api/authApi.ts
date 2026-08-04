@@ -1,5 +1,5 @@
 import { AxiosError } from "axios";
-import { api, setAccessToken } from "./client";
+import { api, setAccessToken, clearTokens } from "./client";
 
 export interface LoginPayload {
   email: string;
@@ -9,10 +9,10 @@ export interface LoginPayload {
 
 export interface LoginResponse {
   accessToken: string;
-  user: {
+  student: {
     id: string;
     email: string;
-    fullName: string;
+    firstName: string;
   };
 }
 
@@ -21,14 +21,38 @@ export interface ApiErrorPayload {
 }
 
 /**
- * Thin wrapper so LoginPage never talks to axios directly — it just
- * calls login(values) and handles success/failure. Keeps the HTTP
- * client swappable and the error-shape parsing in one place.
+ * Login with email/password
+ * Refresh token is automatically set as httpOnly cookie by backend
  */
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const res = await api.post<LoginResponse>("/auth/login", payload);
   setAccessToken(res.data.accessToken);
+  // Refresh token is now in httpOnly cookie - no need to store it
   return res.data;
+}
+
+/**
+ * Google Sign-In
+ * Refresh token is automatically set as httpOnly cookie by backend
+ */
+export async function googleSignIn(idToken: string): Promise<LoginResponse> {
+  const res = await api.post<LoginResponse>("/auth/google", { idToken });
+  setAccessToken(res.data.accessToken);
+  // Refresh token is now in httpOnly cookie - no need to store it
+  return res.data;
+}
+
+/**
+ * Logout - clears tokens from server and local memory
+ * Backend will clear the httpOnly cookie
+ */
+export async function logout(): Promise<void> {
+  try {
+    await api.post("/auth/logout");
+  } finally {
+    // Clear tokens even if request fails
+    clearTokens();
+  }
 }
 
 /**
@@ -39,7 +63,7 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
  */
 export function getApiErrorMessage(
   err: unknown,
-  fallback = "Something went wrong. Please try again.",
+  fallback = "Something went wrong. Please try again."
 ): string {
   if (err instanceof AxiosError) {
     const data = err.response?.data as ApiErrorPayload | undefined;

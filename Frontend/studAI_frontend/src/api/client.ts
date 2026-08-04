@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 /**
  * Single shared axios instance for the whole app — don't create a new
@@ -8,7 +8,7 @@ import axios, { AxiosError } from "axios";
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "/api",
   timeout: 10000, // fail fast rather than hang indefinitely on a dead backend
-  withCredentials: true, // sends/receives the httpOnly refresh-token cookie
+  withCredentials: true, // IMPORTANT: sends/receives httpOnly cookies (refresh token)
   headers: {
     "Content-Type": "application/json",
   },
@@ -17,11 +17,27 @@ export const api = axios.create({
 /**
  * In-memory access token store. Deliberately NOT localStorage/sessionStorage
  * — either is readable by any injected script, which turns a single XSS
- * bug into full account takeover. Living in memory means it's gone on
+ * bug into full account takeover. Living in memory means token is gone on
  * page refresh, which is expected: your app should silently call the
  * refresh endpoint (using the httpOnly cookie) on load to get a new one.
  */
 let accessToken: string | null = null;
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value: string) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (error: unknown, token: string | null = null): void => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token!);
+    }
+  });
+  failedQueue = [];
+};
 
 export function setAccessToken(token: string | null): void {
   accessToken = token;
@@ -29,6 +45,11 @@ export function setAccessToken(token: string | null): void {
 
 export function getAccessToken(): string | null {
   return accessToken;
+}
+
+export function clearTokens(): void {
+  accessToken = null;
+  // Note: Refresh token in httpOnly cookie is cleared by backend on logout
 }
 
 // Attach the access token to every outgoing request automatically —
@@ -40,16 +61,68 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Centralized response handling: on a 401, the access token has
-// expired or is invalid. Clear it here so stale state doesn't linger
-// in memory; the calling code (see authApi.ts) decides what to do next
-// (e.g. redirect to /login).
+// Centralized response handling with automatic token refresh on 401
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      setAccessToken(null);
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
+    // If 401 and we haven't retried yet, try to refresh using httpOnly cookie
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry
+    ) {
+      if (isRefreshing) {
+        // Queue this request until refresh completes
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Call refresh endpoint - refresh token is sent automatically via httpOnly cookie
+        const response = await axios.post(
+          `${api.defaults.baseURL}/auth/refresh`,
+          {}, // Empty body - token is in cookie
+          { withCredentials: true } // Send cookies
+        );
+
+        const { accessToken: newAccessToken } = response.data;
+
+        setAccessToken(newAccessToken);
+        processQueue(null, newAccessToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        clearTokens();
+        // Redirect to login if refresh fails
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
+    // For other errors or if refresh is not possible, just clear tokens and reject
+    if (error.response?.status === 401) {
+      clearTokens();
+    }
+
     return Promise.reject(error);
-  },
+  }
 );

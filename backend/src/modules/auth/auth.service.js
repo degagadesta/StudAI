@@ -104,6 +104,7 @@ export async function login({ email, password }) {
 
   return {
     accessToken,
+    refreshToken, // Return refreshToken to be set as cookie
     student: {
       id: student.id,
       firstName: student.firstName,

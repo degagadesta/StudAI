@@ -1,16 +1,23 @@
-import { useState, FormEvent, ChangeEvent } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, ArrowRight, AlertCircle, Check, X } from "lucide-react";
+import { useState, type FormEvent, type ChangeEvent } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import {
-  stripControlChars,
-  capLength,
-  sanitizeNameInput,
-  validateRedirectPath,
-} from "../utils/security/sanitize";
-import { register, getApiErrorMessage } from "../api/authApi";
+  Eye,
+  EyeOff,
+  ArrowRight,
+  AlertCircle,
+  Check,
+  X,
+  CheckCircle,
+} from "lucide-react";
+import { stripControlChars, capLength } from "../utils/security/sanitize";
+import { api } from "../api/client";
+import { googleSignIn, getApiErrorMessage } from "../api/authApi";
+import { useAuthContext } from "../contexts/AuthContext";
 
 interface RegisterFormValues {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -18,7 +25,8 @@ interface RegisterFormValues {
 }
 
 interface FormErrors {
-  fullName?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -28,32 +36,33 @@ interface FormErrors {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_MAX_LEN = 254;
-const NAME_MAX_LEN = 70;
+const NAME_MAX_LEN = 50;
 const PASSWORD_MAX_LEN = 128;
 const PASSWORD_MIN_LEN = 8;
 
 export default function RegisterPage() {
-  const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] =
-    useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [values, setValues] = useState<RegisterFormValues>({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
     acceptTerms: false,
   });
 
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { setUser } = useAuthContext();
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, type, value, checked } = e.target;
 
-    let cleaned = value;
-    if (name === "fullName") {
+    let cleaned: string | boolean = value;
+    if (name === "firstName" || name === "lastName") {
       cleaned = capLength(stripControlChars(value), NAME_MAX_LEN);
     } else if (name === "email") {
       cleaned = capLength(stripControlChars(value), EMAIL_MAX_LEN);
@@ -65,52 +74,50 @@ export default function RegisterPage() {
       ...prev,
       [name]: type === "checkbox" ? checked : cleaned,
     }));
-
     setErrors((prev) => ({ ...prev, [name]: undefined, form: undefined }));
   };
 
-  const validate = (val: RegisterFormValues): FormErrors => {
+  const validate = (vals: RegisterFormValues): FormErrors => {
     const next: FormErrors = {};
 
-    const cleanName = sanitizeNameInput(val.fullName, NAME_MAX_LEN);
-    if (!cleanName) {
-      next.fullName = "Full name is required.";
-    } else if (cleanName.length < 2) {
-      next.fullName = "Name must be at least 2 characters.";
-    }
+    const trimmedFirstName = vals.firstName.trim();
+    if (!trimmedFirstName) next.firstName = "First name is required.";
+    else if (trimmedFirstName.length > NAME_MAX_LEN)
+      next.firstName = "First name is too long.";
 
-    const trimmedEmail = val.email.trim();
-    if (!trimmedEmail) {
-      next.email = "Email is required.";
-    } else if (trimmedEmail.length > EMAIL_MAX_LEN) {
+    const trimmedLastName = vals.lastName.trim();
+    if (!trimmedLastName) next.lastName = "Last name is required.";
+    else if (trimmedLastName.length > NAME_MAX_LEN)
+      next.lastName = "Last name is too long.";
+
+    const trimmedEmail = vals.email.trim();
+    if (!trimmedEmail) next.email = "Email is required.";
+    else if (trimmedEmail.length > EMAIL_MAX_LEN)
       next.email = "Email is too long.";
-    } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+    else if (!EMAIL_REGEX.test(trimmedEmail))
       next.email = "Enter a valid email address.";
-    }
 
-    if (!val.password) {
+    if (!vals.password) {
       next.password = "Password is required.";
-    } else if (val.password.length < PASSWORD_MIN_LEN) {
+    } else if (vals.password.length < PASSWORD_MIN_LEN) {
       next.password = `Password must be at least ${PASSWORD_MIN_LEN} characters.`;
-    } else if (val.password.length > PASSWORD_MAX_LEN) {
+    } else if (vals.password.length > PASSWORD_MAX_LEN) {
       next.password = "Password is too long.";
-    } else if (!/[A-Z]/.test(val.password)) {
-      next.password = "Must include at least one uppercase letter.";
-    } else if (!/[a-z]/.test(val.password)) {
-      next.password = "Must include at least one lowercase letter.";
-    } else if (!/[0-9]/.test(val.password)) {
-      next.password = "Must include at least one numbe4.";
+    } else if (!/[A-Z]/.test(vals.password)) {
+      next.password = "Password must include at least one uppercase letter.";
+    } else if (!/[a-z]/.test(vals.password)) {
+      next.password = "Password must include at least one lowercase letter.";
+    } else if (!/[0-9]/.test(vals.password)) {
+      next.password = "Password must include at least one number.";
     }
 
-    if (!val.confirmPassword) {
+    if (!vals.confirmPassword)
       next.confirmPassword = "Please confirm your password.";
-    } else if (val.password !== val.confirmPassword) {
+    else if (vals.confirmPassword !== vals.password)
       next.confirmPassword = "Passwords do not match.";
-    }
 
-    if (!val.acceptTerms) {
+    if (!vals.acceptTerms)
       next.acceptTerms = "You must agree to the Terms of Service.";
-    }
 
     return next;
   };
@@ -124,24 +131,20 @@ export default function RegisterPage() {
       return;
     }
 
-    const normalizedFullName = sanitizeNameInput(values.fullName, NAME_MAX_LEN);
-    const normalizedEmail = values.email.trim().toLowerCase();
-
     setIsSubmitting(true);
     try {
-      const data = await register({
-        fullName: normalizedFullName,
-        email: normalizedEmail,
+      await api.post("/auth/register", {
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        email: values.email.trim().toLowerCase(),
         password: values.password,
       });
 
-      console.log("Account created:", data.user);
-
-      const target = validateRedirectPath(
-        searchParams.get("redirect"),
-        "/dashboard",
-      );
-      navigate(target);
+      // Register does NOT log the user in — email verification is required
+      // first (see auth.service.js `login()`), so we show a success state
+      // and hand off to /login rather than treating this like a session start.
+      setSuccess(true);
+      setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
       setErrors({
         form: getApiErrorMessage(err, "Registration failed. Please try again."),
@@ -151,11 +154,37 @@ export default function RegisterPage() {
     }
   };
 
-  const handleGoogleSignup = (): void => {
-    window.location.href = `${import.meta.env.VITE_API_URL || "/api"}/auth/google`;
+  const handleGoogleSuccess = async (
+    credentialResponse: CredentialResponse,
+  ): Promise<void> => {
+    if (!credentialResponse.credential) {
+      setErrors({ form: "Google sign-in failed. Please try again." });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Google sign-in DOES log the user in immediately — Google already
+      // verified the email, so there's no separate verification step.
+      const data = await googleSignIn(credentialResponse.credential);
+      setUser(data.student);
+      navigate("/dashboard");
+    } catch (err) {
+      setErrors({
+        form: getApiErrorMessage(
+          err,
+          "Google sign-in failed. Please try again.",
+        ),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Dynamic Password Strength Criteria
+  const handleGoogleError = (): void => {
+    setErrors({ form: "Google sign-in was cancelled or failed." });
+  };
+
   const passwordCriteria = [
     {
       label: "8+ characters",
@@ -163,12 +192,29 @@ export default function RegisterPage() {
     },
     { label: "1 uppercase letter", valid: /[A-Z]/.test(values.password) },
     { label: "1 lowercase letter", valid: /[a-z]/.test(values.password) },
-    { label: "1 numbe4", valid: /[0-9]/.test(values.password) },
+    { label: "1 number", valid: /[0-9]/.test(values.password) },
   ];
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3] px-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+          <CheckCircle className="w-16 h-16 text-[#2F4A3D] mx-auto mb-4" />
+          <h2 className="font-serif text-2xl text-[#253D31] mb-2">
+            Registration successful!
+          </h2>
+          <p className="text-sm text-[#5B6156]">
+            Please check your email to verify your account. You'll be redirected
+            to login shortly.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[#F6F1E3]">
-      {/* Left — Brand Panel */}
+      {/* Left — brand panel */}
       <div className="hidden lg:flex relative flex-col justify-between bg-[#253D31] text-[#F6F1E3] p-14 overflow-hidden">
         <div className="font-serif text-xl tracking-wide">
           Stud<span className="text-[#C7D3B9]">AI</span>
@@ -183,7 +229,6 @@ export default function RegisterPage() {
             <div className="h-px bg-[#F6F1E3]/20 my-2" />
             Configuring AI Engine
           </div>
-
           <div className="absolute top-16 left-16 rotate-3 w-56 h-36 rounded-xl bg-[#33513F] border border-[#F6F1E3]/20 p-5 font-mono text-xs text-[#F6F1E3]/75 z-10">
             <span className="inline-block text-[10px] uppercase tracking-wide bg-[#C7D3B9] text-[#253D31] px-2 py-1 rounded mb-4">
               Sync
@@ -192,7 +237,6 @@ export default function RegisterPage() {
             <div className="h-px bg-[#F6F1E3]/20 my-2" />
             Ready to import
           </div>
-
           <div className="absolute top-24 left-6 -rotate-2 w-56 h-36 rounded-xl bg-[#3B5C47] border border-[#F6F1E3]/20 p-5 font-mono text-xs text-[#F6F1E3]/75 z-20">
             <span className="inline-block text-[10px] uppercase tracking-wide bg-[#B08D4F] text-[#2A2013] px-2 py-1 rounded mb-4">
               Account
@@ -218,13 +262,10 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right — Form Panel */}
+      {/* Right — form panel */}
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm border-l-2 border-[#B08D4F]/50 pl-7">
-          <span
-            className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5B6156] bg-[#EFE8D4] border border-[#DCD2B4] px-2.5 py-1 rounded-full mb-4
-          "
-          >
+          <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5B6156] bg-[#EFE8D4] border border-[#DCD2B4] px-2.5 py-1 rounded-full mb-4">
             <b className="text-[#2F4A3D] font-semibold">AASTU</b> → Software
             Engineering
           </span>
@@ -248,44 +289,68 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Full Name */}
-            <div>
-              <label
-                htmlFor="fullName"
-                className="block text-xs font-medium text-[#5B6156] mb-1"
-              >
-                Full Name
-              </label>
-              <input
-                id="fullName"
-                name="fullName"
-                type="text"
-                autoComplete="name"
-                maxLength={NAME_MAX_LEN}
-                value={values.fullName}
-                onChange={handleChange}
-                placeholder="Abebe Bikila"
-                aria-invalid={!!errors.fullName}
-                aria-describedby={
-                  errors.fullName ? "fullName-error" : undefined
-                }
-                className={`w-full px-3.5 py-2.5 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
-                  errors.fullName
-                    ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
-                    : "border-[#DCD2B4] focus:border-[#8CA37E] focus:ring-[#8CA37E]/20"
-                }`}
-              />
-              {errors.fullName && (
-                <p
-                  id="fullName-error"
-                  className="mt-1.5 text-xs text-[#8B3A3A]"
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="firstName"
+                  className="block text-xs font-medium text-[#5B6156] mb-1"
                 >
-                  {errors.fullName}
-                </p>
-              )}
+                  First Name
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  autoComplete="given-name"
+                  maxLength={NAME_MAX_LEN}
+                  value={values.firstName}
+                  onChange={handleChange}
+                  placeholder="Abebe"
+                  aria-invalid={!!errors.firstName}
+                  className={`w-full px-3.5 py-2.5 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
+                    errors.firstName
+                      ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
+                      : "border-[#DCD2B4] focus:border-[#8CA37E] focus:ring-[#8CA37E]/20"
+                  }`}
+                />
+                {errors.firstName && (
+                  <p className="mt-1.5 text-xs text-[#8B3A3A]">
+                    {errors.firstName}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="lastName"
+                  className="block text-xs font-medium text-[#5B6156] mb-1"
+                >
+                  Last Name
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  autoComplete="family-name"
+                  maxLength={NAME_MAX_LEN}
+                  value={values.lastName}
+                  onChange={handleChange}
+                  placeholder="Bikila"
+                  aria-invalid={!!errors.lastName}
+                  className={`w-full px-3.5 py-2.5 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
+                    errors.lastName
+                      ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
+                      : "border-[#DCD2B4] focus:border-[#8CA37E] focus:ring-[#8CA37E]/20"
+                  }`}
+                />
+                {errors.lastName && (
+                  <p className="mt-1.5 text-xs text-[#8B3A3A]">
+                    {errors.lastName}
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Email */}
             <div>
               <label
                 htmlFor="email"
@@ -303,7 +368,6 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 placeholder="yourname@aastustudent.edu.et"
                 aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "email-error" : undefined}
                 className={`w-full px-3.5 py-2.5 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
                   errors.email
                     ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
@@ -311,13 +375,10 @@ export default function RegisterPage() {
                 }`}
               />
               {errors.email && (
-                <p id="email-error" className="mt-1.5 text-xs text-[#8B3A3A]">
-                  {errors.email}
-                </p>
+                <p className="mt-1.5 text-xs text-[#8B3A3A]">{errors.email}</p>
               )}
             </div>
 
-            {/* Password */}
             <div className="relative">
               <label
                 htmlFor="password"
@@ -335,9 +396,6 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 placeholder="Create a strong password"
                 aria-invalid={!!errors.password}
-                aria-describedby={
-                  errors.password ? "password-error" : undefined
-                }
                 className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
                   errors.password
                     ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
@@ -353,24 +411,18 @@ export default function RegisterPage() {
                 {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
               {errors.password && (
-                <p
-                  id="password-error"
-                  className="mt-1.5 text-xs text-[#8B3A3A]"
-                >
+                <p className="mt-1.5 text-xs text-[#8B3A3A]">
                   {errors.password}
                 </p>
               )}
             </div>
 
-            {/* Real-time Password Requirements Checklist */}
             {values.password.length > 0 && (
               <div className="grid grid-cols-2 gap-1.5 bg-[#EFE8D4]/50 border border-[#DCD2B4] p-2.5 rounded-lg text-[11px]">
                 {passwordCriteria.map((c, i) => (
                   <div
                     key={i}
-                    className={`flex items-center gap-1 ${
-                      c.valid ? "text-[#2F4A3D] font-medium" : "text-[#5B6156]"
-                    }`}
+                    className={`flex items-center gap-1 ${c.valid ? "text-[#2F4A3D] font-medium" : "text-[#5B6156]"}`}
                   >
                     {c.valid ? (
                       <Check size={12} className="text-[#2F4A3D]" />
@@ -383,11 +435,10 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Confirm Password */}
             <div className="relative">
               <label
                 htmlFor="confirmPassword"
-                className="block text-xs font-medium text-[#5B6156] mb-4"
+                className="block text-xs font-medium text-[#5B6156] mb-1"
               >
                 Confirm Password
               </label>
@@ -401,9 +452,6 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 placeholder="Re-enter your password"
                 aria-invalid={!!errors.confirmPassword}
-                aria-describedby={
-                  errors.confirmPassword ? "confirmPassword-error" : undefined
-                }
                 className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
                   errors.confirmPassword
                     ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
@@ -421,16 +469,12 @@ export default function RegisterPage() {
                 {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
               {errors.confirmPassword && (
-                <p
-                  id="confirmPassword-error"
-                  className="mt-1.5 text-xs text-[#8B3A3A]"
-                >
+                <p className="mt-1.5 text-xs text-[#8B3A3A]">
                   {errors.confirmPassword}
                 </p>
               )}
             </div>
 
-            {/* Terms Agreement */}
             <div>
               <label className="flex items-start gap-2 text-xs text-[#5B6156] cursor-pointer">
                 <input
@@ -465,7 +509,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isSubmitting}
@@ -476,46 +519,24 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          {/* Divider */}
           <div className="flex items-center gap-3 my-5 text-xs text-[#A9A18A]">
             <span className="flex-1 h-px bg-[#DCD2B4]" />
             or
             <span className="flex-1 h-px bg-[#DCD2B4]" />
           </div>
 
-          {/* Google OAuth */}
-          <button
-            type="button"
-            onClick={handleGoogleSignup}
-            className="w-full flex items-center justify-center gap-2.5 py-2.5 bg-[#FFFDF7] border border-[#DCD2B4] rounded-lg text-sm font-medium text-[#3A382F] hover:bg-[#EFE8D4] transition-colors active:scale-[0.99]"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fill="#4285F4"
-                d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.87 2.7-6.62z"
-              />
-              <path
-                fill="#34A853"
-                d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.95v2.33A9 9 0 0 0 9 18z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M3.95 10.7A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.17.29-1.7V4.97H.95A9 9 0 0 0 0 9c0 1.45.35 2.83.95 4.03l3-2.33z"
-              />
-              <path
-                fill="#EA4335"
-                d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .95 4.97l3 2.33C4.66 5.17 6.65 3.58 9 3.58z"
-              />
-            </svg>
-            Sign up with Google
-          </button>
+          <div className="flex justify-center mb-2">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              theme="outline"
+              size="large"
+              text="signup_with"
+              shape="rectangular"
+              width="352"
+            />
+          </div>
 
-          {/* Link to Login */}
           <p className="text-center text-sm text-[#5B6156] mt-4">
             Already have an account?{" "}
             <Link

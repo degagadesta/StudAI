@@ -70,15 +70,25 @@ model CurriculumCourse {
 // ---------- Students ----------
 
 model Student {
-  id            String          @id @default(uuid())
-  firstName     String
-  lastName      String
-  email         String          @unique
-  passwordHash  String?
-  googleId      String?         @unique
-  createdAt     DateTime        @default(now())
+  id                String    @id @default(uuid())
+  firstName         String
+  lastName          String
+  email             String    @unique
+  passwordHash      String?
+  googleId          String?   @unique
+  emailVerified     Boolean   @default(false)
 
-  profile       StudentProfile?
+  verificationToken           String?   @unique
+  verificationTokenExpiresAt  DateTime?
+
+  resetToken                  String?   @unique
+  resetTokenExpiresAt         DateTime?
+
+  refreshToken                String?   @unique
+  refreshTokenExpiresAt       DateTime?
+
+  createdAt         DateTime  @default(now())
+  profile            StudentProfile?
   notes         Note[]
   flashcardReviews FlashcardReview[]
   quizAttempts  QuizAttempt[]

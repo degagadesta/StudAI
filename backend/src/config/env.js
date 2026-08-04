@@ -13,7 +13,9 @@ for (const key of required) {
 
 export const env = {
   jwtSecret: process.env.JWT_SECRET,
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "15m",
+  jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "30d",
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   databaseUrl: process.env.DATABASE_URL,

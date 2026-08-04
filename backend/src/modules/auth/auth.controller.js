@@ -1,5 +1,5 @@
-import * as authService from "../services/auth.service.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import * as authService from "./auth.service.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const registerHandler = asyncHandler(async (req, res) => {
   const result = await authService.register(req.body);
@@ -37,4 +37,14 @@ export const resetPasswordHandler = asyncHandler(async (req, res) => {
 export const googleSignInHandler = asyncHandler(async (req, res) => {
   const result = await authService.googleSignIn(req.body.idToken);
   res.json(result);
+});
+
+export const refreshTokenHandler = asyncHandler(async (req, res) => {
+  const result = await authService.refreshAccessToken(req.body.refreshToken);
+  res.json(result);
+});
+
+export const logoutHandler = asyncHandler(async (req, res) => {
+  await authService.logout(req.studentId);
+  res.json({ message: "Logged out successfully" });
 });

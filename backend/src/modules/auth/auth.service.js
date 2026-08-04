@@ -1,18 +1,28 @@
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
-import { prisma } from "../lib/prisma.js";
-import { sendMail } from "../lib/mailer.js";
-import { generateToken, hashToken } from "../utils/tokens.js";
-import { signToken } from "../utils/jwt.js";
-import { env } from "../config/env.js";
-import { AppError } from "../utils/AppError.js";
+import { prisma } from "../../lib/prisma.js";
+import { sendMail } from "../../lib/mailer.js";
+import { generateToken, hashToken } from "../../utils/tokens.js";
+import { signToken, signRefreshToken, verifyRefreshToken } from "../../utils/jwt.js";
+import { env } from "../../config/env.js";
+import { AppError } from "../../utils/AppError.js";
+import {
+  validateRegister,
+  validateLogin,
+  validateEmail,
+  validateResetPassword,
+  validateRefreshToken,
+} from "./auth.validation.js";
 
 const googleClient = new OAuth2Client(env.googleClientId);
 
 const VERIFICATION_EXPIRY_MS = 1000 * 60 * 60 * 24;
 const RESET_EXPIRY_MS = 1000 * 60 * 30;
+const REFRESH_EXPIRY_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 export async function register({ firstName, lastName, email, password }) {
+  validateRegister({ firstName, lastName, email, password });
+
   const existing = await prisma.student.findUnique({ where: { email } });
   if (existing) throw new AppError("Email already registered", 409);
 
@@ -21,9 +31,9 @@ export async function register({ firstName, lastName, email, password }) {
 
   const student = await prisma.student.create({
     data: {
-      firstName,
-      lastName,
-      email,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.toLowerCase().trim(),
       passwordHash,
       verificationToken: tokenHash,
       verificationTokenExpiresAt: new Date(Date.now() + VERIFICATION_EXPIRY_MS),
@@ -62,7 +72,9 @@ export async function verifyEmail(rawToken) {
 }
 
 export async function login({ email, password }) {
-  const student = await prisma.student.findUnique({ where: { email } });
+  validateLogin({ email, password });
+
+  const student = await prisma.student.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (!student || !student.passwordHash)
     throw new AppError("Invalid email or password", 401);
 
@@ -72,9 +84,21 @@ export async function login({ email, password }) {
   if (!student.emailVerified)
     throw new AppError("Please verify your email before logging in", 403);
 
-  const token = signToken({ studentId: student.id });
+  const accessToken = signToken({ studentId: student.id });
+  const refreshToken = signRefreshToken({ studentId: student.id });
+  const refreshTokenHash = hashToken(refreshToken);
+
+  await prisma.student.update({
+    where: { id: student.id },
+    data: {
+      refreshToken: refreshTokenHash,
+      refreshTokenExpiresAt: new Date(Date.now() + REFRESH_EXPIRY_MS),
+    },
+  });
+
   return {
-    token,
+    accessToken,
+    refreshToken,
     student: {
       id: student.id,
       firstName: student.firstName,
@@ -84,7 +108,9 @@ export async function login({ email, password }) {
 }
 
 export async function forgotPassword(email) {
-  const student = await prisma.student.findUnique({ where: { email } });
+  validateEmail(email);
+
+  const student = await prisma.student.findUnique({ where: { email: email.toLowerCase().trim() } });
   if (!student) return;
 
   const { rawToken, tokenHash } = generateToken();
@@ -105,6 +131,8 @@ export async function forgotPassword(email) {
 }
 
 export async function resetPassword({ rawToken, newPassword }) {
+  validateResetPassword({ token: rawToken, newPassword });
+
   const tokenHash = hashToken(rawToken);
   const student = await prisma.student.findFirst({
     where: { resetToken: tokenHash, resetTokenExpiresAt: { gt: new Date() } },
@@ -151,13 +179,74 @@ export async function googleSignIn(idToken) {
     }
   }
 
-  const token = signToken({ studentId: student.id });
+  const accessToken = signToken({ studentId: student.id });
+  const refreshToken = signRefreshToken({ studentId: student.id });
+  const refreshTokenHash = hashToken(refreshToken);
+
+  await prisma.student.update({
+    where: { id: student.id },
+    data: {
+      refreshToken: refreshTokenHash,
+      refreshTokenExpiresAt: new Date(Date.now() + REFRESH_EXPIRY_MS),
+    },
+  });
+
   return {
-    token,
+    accessToken,
+    refreshToken,
     student: {
       id: student.id,
       firstName: student.firstName,
       email: student.email,
     },
   };
+}
+
+export async function refreshAccessToken(refreshToken) {
+  validateRefreshToken(refreshToken);
+
+  let payload;
+  try {
+    payload = verifyRefreshToken(refreshToken);
+  } catch {
+    throw new AppError("Invalid or expired refresh token", 401);
+  }
+
+  const refreshTokenHash = hashToken(refreshToken);
+  const student = await prisma.student.findFirst({
+    where: {
+      id: payload.studentId,
+      refreshToken: refreshTokenHash,
+      refreshTokenExpiresAt: { gt: new Date() },
+    },
+  });
+
+  if (!student) throw new AppError("Invalid or expired refresh token", 401);
+
+  const newAccessToken = signToken({ studentId: student.id });
+  const newRefreshToken = signRefreshToken({ studentId: student.id });
+  const newRefreshTokenHash = hashToken(newRefreshToken);
+
+  await prisma.student.update({
+    where: { id: student.id },
+    data: {
+      refreshToken: newRefreshTokenHash,
+      refreshTokenExpiresAt: new Date(Date.now() + REFRESH_EXPIRY_MS),
+    },
+  });
+
+  return {
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+  };
+}
+
+export async function logout(studentId) {
+  await prisma.student.update({
+    where: { id: studentId },
+    data: {
+      refreshToken: null,
+      refreshTokenExpiresAt: null,
+    },
+  });
 }

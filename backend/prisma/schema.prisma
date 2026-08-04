@@ -84,6 +84,9 @@ model Student {
   resetToken                  String?   @unique
   resetTokenExpiresAt         DateTime?
 
+  refreshToken                String?   @unique
+  refreshTokenExpiresAt       DateTime?
+
   createdAt         DateTime  @default(now())
   profile            StudentProfile?
   notes         Note[]

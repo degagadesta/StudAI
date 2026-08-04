@@ -7,7 +7,10 @@ import {
   forgotPasswordHandler,
   resetPasswordHandler,
   googleSignInHandler,
-} from "../controllers/auth.controller.js";
+  refreshTokenHandler,
+  logoutHandler,
+} from "./auth.controller.js";
+import { authenticate } from "../../middlewares/authenticate.js";
 
 const router = Router();
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 });
@@ -18,5 +21,7 @@ router.post("/login", authLimiter, loginHandler);
 router.post("/forgot-password", authLimiter, forgotPasswordHandler);
 router.post("/reset-password", authLimiter, resetPasswordHandler);
 router.post("/google", authLimiter, googleSignInHandler);
+router.post("/refresh", refreshTokenHandler);
+router.post("/logout", authenticate, logoutHandler);
 
 export default router;

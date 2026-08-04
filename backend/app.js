@@ -10,4 +10,4 @@ app.use(express.json());
 
 app.use("/api/v1", routes);
 
-app.use(errorHandler); // must be last
+app.use(errorHandler); 

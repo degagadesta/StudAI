@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect, ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   GraduationCap,
@@ -8,20 +8,55 @@ import {
   ArrowRight,
   ArrowLeft,
   Sparkles,
+  Search,
+  Pin,
+  X,
+  LayoutGrid,
+  MessageCircle,
   Layers,
+  BookMarked,
+  FileClock,
+  type LucideIcon,
 } from "lucide-react";
+import { stripControlChars, capLength } from "../utils/security/sanitize";
+import { submitOnboarding } from "../api/onboardingapi";
+import { getApiErrorMessage } from "../api/authApi";
 
-interface Course {
-  id: string;
-  code: string;
-  name: string;
-  credits: number;
-}
+/* ------------------------------------------------------------------ */
+/* Data                                                                */
+/* ------------------------------------------------------------------ */
 
-const UNIVERSITIES = [
+const SUGGESTED_UNIVERSITIES = [
+  { short: "AASTU", full: "Addis Ababa Science and Technology University" },
+  { short: "AAU", full: "Addis Ababa University" },
+  { short: "ASTU", full: "Adama Science and Technology University" },
+];
+
+const ALL_UNIVERSITIES = [
   "Addis Ababa Science and Technology University (AASTU)",
   "Addis Ababa University (AAU)",
   "Adama Science and Technology University (ASTU)",
+  "Bahir Dar University",
+  "Mekelle University",
+  "Jimma University",
+  "Hawassa University",
+  "Arba Minch University",
+  "Haramaya University",
+  "Dilla University",
+  "Wollo University",
+  "Debre Berhan University",
+  "Debre Markos University",
+  "Wolkite University",
+  "Wolaita Sodo University",
+  "University of Gondar",
+  "Jigjiga University",
+  "Semera University",
+  "Assosa University",
+  "Mizan-Tepi University",
+  "Wachemo University",
+  "Ambo University",
+  "Kotebe University of Education",
+  "Injibara University",
   "Other Institution",
 ];
 
@@ -34,370 +69,484 @@ const DEPARTMENTS = [
   "Other",
 ];
 
-const SEMESTERS = [
-  "Year 1 - Semester 1",
-  "Year 1 - Semester 2",
-  "Year 2 - Semester 1",
-  "Year 2 - Semester 2",
-  "Year 3 - Semester 1",
-  "Year 3 - Semester 2",
-  "Year 4 - Semester 1",
-  "Year 4 - Semester 2",
-  "Year 5 - Semester 1",
-  "Year 5 - Semester 2",
+const YEARS = [1, 2, 3, 4, 5];
+const SEMESTERS = [1, 2];
+const SEARCH_MAX_LEN = 80;
+
+interface Feature {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  tag: string;
+}
+
+const FEATURES: Feature[] = [
+  {
+    icon: LayoutGrid,
+    title: "Course Management",
+    description:
+      "Every course, lecture PDF, and note lives in one organized workspace — no more digging through folders before an exam.",
+    tag: "Stay organized",
+  },
+  {
+    icon: MessageCircle,
+    title: "AI Tutor Chat",
+    description:
+      "Ask questions about your lecture material and get answers grounded in exactly what your professor taught, not generic web results.",
+    tag: "Ask anything",
+  },
+  {
+    icon: Layers,
+    title: "Smart Flashcards",
+    description:
+      "Upload a PDF and StudAI generates flashcards from it automatically — review them in minutes instead of building a deck by hand.",
+    tag: "Auto-generated",
+  },
+  {
+    icon: BookMarked,
+    title: "Curriculum-Based Explanations",
+    description:
+      "Explanations are matched to your actual department curriculum, not a one-size-fits-all summary of the topic.",
+    tag: "Tailored to you",
+  },
+  {
+    icon: FileClock,
+    title: "Previous University Exams",
+    description:
+      "Browse past exams from your department and see which topics and chapters come up most often, year after year.",
+    tag: "Exam intelligence",
+  },
 ];
 
-// Mock course mapping based on selected semester/department
-const SAMPLE_COURSES: Record<string, Course[]> = {
-  "Year 3 - Semester 1": [
-    { id: "1", code: "SE3101", name: "Operating Systems", credits: 4 },
-    {
-      id: "2",
-      code: "SE3102",
-      name: "Formal Language & Automata Theory",
-      credits: 3,
-    },
-    {
-      id: "3",
-      code: "SE3103",
-      name: "Database Management Systems",
-      credits: 4,
-    },
-    {
-      id: "4",
-      code: "SE3104",
-      name: "Software Requirement Engineering",
-      credits: 3,
-    },
-    { id: "5", code: "SE3105", name: "Computer Networks", credits: 4 },
-  ],
-  default: [
-    {
-      id: "101",
-      code: "CS1001",
-      name: "Introduction to Computer Science",
-      credits: 3,
-    },
-    { id: "102", code: "MATH101", name: "Applied Mathematics I", credits: 4 },
-    { id: "103", code: "PHYS101", name: "General Physics", credits: 3 },
-    {
-      id: "104",
-      code: "ENG101",
-      name: "Communicative English Skills",
-      credits: 3,
-    },
-  ],
-};
+const SLIDE_INTERVAL_MS = 2000;
+
+/* ------------------------------------------------------------------ */
+/* Component                                                          */
+/* ------------------------------------------------------------------ */
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<number>(1);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Form Selections
-  const [university, setUniversity] = useState<string>(UNIVERSITIES[0]);
-  const [department, setDepartment] = useState<string>(DEPARTMENTS[0]);
-  const [semester, setSemester] = useState<string>("Year 3 - Semester 1");
-  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-  ]);
+  const [university, setUniversity] = useState<string | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [query, setQuery] = useState("");
 
-  const availableCourses =
-    SAMPLE_COURSES[semester] || SAMPLE_COURSES["default"];
+  const [department, setDepartment] = useState<string | null>(null);
+  const [year, setYear] = useState<number | null>(null);
+  const [semester, setSemester] = useState<number | null>(null);
 
-  const toggleCourse = (courseId: string) => {
-    setSelectedCourseIds((prev) =>
-      prev.includes(courseId)
-        ? prev.filter((id) => id !== courseId)
-        : [...prev, courseId],
-    );
+  // Feature slideshow
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveSlide((i) => (i + 1) % FEATURES.length);
+    }, SLIDE_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, []);
+
+  const goToSlide = (index: number): void => {
+    setActiveSlide(index);
   };
 
-  const selectAllCourses = () => {
-    setSelectedCourseIds(availableCourses.map((c) => c.id));
+  const filteredUniversities = useMemo(() => {
+    if (!query.trim()) return ALL_UNIVERSITIES;
+    const q = query.trim().toLowerCase();
+    return ALL_UNIVERSITIES.filter((u) => u.toLowerCase().includes(q));
+  }, [query]);
+
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    setQuery(capLength(stripControlChars(e.target.value), SEARCH_MAX_LEN));
   };
 
-  const handleFinish = async () => {
+  const pinUniversity = (name: string): void => {
+    setUniversity(name);
+    setShowSearch(false);
+    setQuery("");
+  };
+
+  const changeUniversity = (): void => {
+    setUniversity(null);
+    setShowSearch(false);
+    setQuery("");
+  };
+
+  const canContinueStep1 = university !== null;
+  const canContinueStep2 = department !== null;
+  const canFinish = year !== null && semester !== null;
+
+  const handleFinish = async (): Promise<void> => {
+    if (!university || !department || year === null || semester === null)
+      return;
     setIsSubmitting(true);
+    setError(null);
     try {
-      const payload = {
-        university,
-        department,
-        semester,
-        courseIds: selectedCourseIds,
-      };
-
-      // TODO: Call your backend API endpoint here to save onboarding preferences
-      console.log("Onboarding data submitted:", payload);
-
-      // Navigate to dashboard upon completion
+      await submitOnboarding({ university, department, year, semester });
       navigate("/dashboard");
     } catch (err) {
-      console.error("Failed to save onboarding data:", err);
+      setError(
+        getApiErrorMessage(err, "Could not save your setup. Please try again."),
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#0F1715] text-[#E3E8E5] flex flex-col justify-between p-6 sm:p-10 relative overflow-hidden">
-      {/* Background glow effects */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#2D5A46]/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-[#1C3A2F]/30 rounded-full blur-3xl pointer-events-none" />
+  const ActiveIcon = FEATURES[activeSlide].icon;
 
-      {/* Header */}
-      <header className="relative z-10 max-w-4xl mx-auto w-full flex items-center justify-between pb-6 border-b border-[#24352F]">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#2D5A46] flex items-center justify-center text-[#A3E6C5] font-bold text-lg">
-            S
+  return (
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[#F6F1E3]">
+      {/* Left — cream panel: the onboarding wizard */}
+      <div className="flex items-center justify-center p-6 sm:p-10">
+        <div className="w-full max-w-md border-l-2 border-[#B08D4F]/50 pl-7">
+          <div className="flex items-center justify-between mb-6">
+            <span className="font-mono text-xs text-[#5B6156]">
+              STEP {step} OF 3
+            </span>
+            <div className="flex gap-1.5">
+              {[1, 2, 3].map((i) => (
+                <span
+                  key={i}
+                  className={`w-6 h-1.5 rounded-full transition-all ${
+                    i <= step ? "bg-[#2F4A3D]" : "bg-[#DCD2B4]"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-          <span className="font-serif text-xl tracking-wide text-[#F0F4F2]">
-            Stud<span className="text-[#34D399]">AI</span>
-          </span>
+
+          {error && (
+            <div className="flex items-center gap-2 text-sm text-[#8B3A3A] bg-[#F7E8E8] border border-[#E3B8B8] rounded-lg px-3.5 py-2.5 mb-5">
+              {error}
+            </div>
+          )}
+
+          {/* STEP 1 — University */}
+          {step === 1 && (
+            <div>
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5B6156] bg-[#EFE8D4] border border-[#DCD2B4] px-2.5 py-1 rounded-full mb-4">
+                <GraduationCap size={13} className="text-[#2F4A3D]" />
+                Academic institution
+              </span>
+              <h2 className="font-serif text-2xl text-[#253D31] mb-1.5">
+                Where do you study?
+              </h2>
+              <p className="text-sm text-[#5B6156] mb-6">
+                We use this to match your department's curriculum and past
+                exams.
+              </p>
+
+              {university ? (
+                <div className="flex items-center justify-between bg-[#FFFDF7] border border-[#8CA37E] rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-[#8CA37E]/20 flex items-center justify-center shrink-0">
+                      <Pin size={16} className="text-[#2F4A3D]" />
+                    </div>
+                    <p className="text-sm font-medium text-[#253D31]">
+                      {university}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={changeUniversity}
+                    className="text-xs font-medium text-[#2F4A3D] hover:underline shrink-0"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : !showSearch ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {SUGGESTED_UNIVERSITIES.map((u) => (
+                    <button
+                      key={u.short}
+                      type="button"
+                      onClick={() => pinUniversity(u.full)}
+                      className="flex flex-col items-start gap-1 p-4 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl text-left hover:border-[#8CA37E] transition-colors"
+                    >
+                      <span className="font-serif text-base text-[#253D31]">
+                        {u.short}
+                      </span>
+                      <span className="text-[11px] text-[#5B6156] leading-tight">
+                        {u.full}
+                      </span>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setShowSearch(true)}
+                    className="flex flex-col items-center justify-center gap-1.5 p-4 bg-[#EFE8D4] border border-dashed border-[#B08D4F] rounded-xl hover:bg-[#E9E0C6] transition-colors"
+                  >
+                    <Search size={16} className="text-[#2F4A3D]" />
+                    <span className="text-xs font-medium text-[#2F4A3D]">
+                      More
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div className="relative mb-3">
+                    <Search
+                      size={15}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A9A18A]"
+                    />
+                    <input
+                      type="text"
+                      autoFocus
+                      value={query}
+                      onChange={handleSearchChange}
+                      maxLength={SEARCH_MAX_LEN}
+                      placeholder="Search your university..."
+                      className="w-full pl-10 pr-9 py-3 text-sm bg-[#FFFDF7] border border-[#DCD2B4] rounded-lg outline-none placeholder:text-[#A9A18A] focus:border-[#8CA37E] focus:ring-4 focus:ring-[#8CA37E]/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSearch(false);
+                        setQuery("");
+                      }}
+                      aria-label="Back to suggestions"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A9A18A] hover:text-[#5B6156]"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+
+                  <div className="max-h-56 overflow-y-auto flex flex-col gap-1.5 pr-1">
+                    {filteredUniversities.length > 0 ? (
+                      filteredUniversities.map((u) => (
+                        <button
+                          key={u}
+                          type="button"
+                          onClick={() => pinUniversity(u)}
+                          className="text-left px-3.5 py-2.5 text-sm text-[#3A382F] bg-[#FFFDF7] border border-[#DCD2B4] rounded-lg hover:border-[#8CA37E] hover:bg-[#F4EFDD] transition-colors"
+                        >
+                          {u}
+                        </button>
+                      ))
+                    ) : (
+                      <p className="text-xs text-[#A9A18A] px-1 py-2">
+                        No matches — try a different spelling.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 2 — Department */}
+          {step === 2 && (
+            <div>
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5B6156] bg-[#EFE8D4] border border-[#DCD2B4] px-2.5 py-1 rounded-full mb-4">
+                <BookOpen size={13} className="text-[#2F4A3D]" />
+                Department
+              </span>
+              <h2 className="font-serif text-2xl text-[#253D31] mb-1.5">
+                What's your department?
+              </h2>
+              <p className="text-sm text-[#5B6156] mb-6">{university}</p>
+
+              <div className="flex flex-col gap-2">
+                {DEPARTMENTS.map((dept) => {
+                  const isSelected = department === dept;
+                  return (
+                    <button
+                      key={dept}
+                      type="button"
+                      onClick={() => setDepartment(dept)}
+                      className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm text-left transition-colors ${
+                        isSelected
+                          ? "bg-[#FFFDF7] border-[#8CA37E] text-[#253D31] font-medium"
+                          : "bg-[#FFFDF7] border-[#DCD2B4] text-[#5B6156] hover:border-[#C7BE9E]"
+                      }`}
+                    >
+                      {dept}
+                      {isSelected && (
+                        <CheckCircle2 size={17} className="text-[#2F4A3D]" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3 — Year & Semester */}
+          {step === 3 && (
+            <div>
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5B6156] bg-[#EFE8D4] border border-[#DCD2B4] px-2.5 py-1 rounded-full mb-4">
+                <Calendar size={13} className="text-[#2F4A3D]" />
+                Academic timeline
+              </span>
+              <h2 className="font-serif text-2xl text-[#253D31] mb-1.5">
+                Year & semester
+              </h2>
+              <p className="text-sm text-[#5B6156] mb-6">
+                {department} · {university}
+              </p>
+
+              <p className="text-xs font-medium text-[#5B6156] mb-2">Year</p>
+              <div className="grid grid-cols-5 gap-2 mb-6">
+                {YEARS.map((y) => (
+                  <button
+                    key={y}
+                    type="button"
+                    onClick={() => setYear(y)}
+                    className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                      year === y
+                        ? "bg-[#2F4A3D] border-[#2F4A3D] text-[#F6F1E3]"
+                        : "bg-[#FFFDF7] border-[#DCD2B4] text-[#5B6156] hover:border-[#8CA37E]"
+                    }`}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-xs font-medium text-[#5B6156] mb-2">
+                Semester
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {SEMESTERS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSemester(s)}
+                    className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                      semester === s
+                        ? "bg-[#2F4A3D] border-[#2F4A3D] text-[#F6F1E3]"
+                        : "bg-[#FFFDF7] border-[#DCD2B4] text-[#5B6156] hover:border-[#8CA37E]"
+                    }`}
+                  >
+                    Semester {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between pt-8 mt-6 border-t border-[#DCD2B4]">
+            {step > 1 ? (
+              <button
+                type="button"
+                onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
+                className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium text-[#5B6156] hover:text-[#253D31] rounded-lg transition-colors"
+              >
+                <ArrowLeft size={15} />
+                Back
+              </button>
+            ) : (
+              <span />
+            )}
+
+            {step < 3 ? (
+              <button
+                type="button"
+                disabled={step === 1 ? !canContinueStep1 : !canContinueStep2}
+                onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3)}
+                className="flex items-center gap-1.5 px-6 py-2.5 bg-[#2F4A3D] hover:bg-[#253D31] disabled:opacity-50 disabled:cursor-not-allowed text-[#F6F1E3] text-sm font-semibold rounded-lg transition-colors"
+              >
+                Continue
+                <ArrowRight size={16} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!canFinish || isSubmitting}
+                onClick={handleFinish}
+                className="flex items-center gap-1.5 px-6 py-2.5 bg-[#2F4A3D] hover:bg-[#253D31] disabled:opacity-50 disabled:cursor-not-allowed text-[#F6F1E3] text-sm font-semibold rounded-lg transition-colors"
+              >
+                {isSubmitting ? "Saving setup..." : "Complete setup"}
+                {!isSubmitting && <Sparkles size={16} />}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Right — green panel: feature slideshow */}
+      <div className="hidden lg:flex relative flex-col justify-between bg-[#253D31] text-[#F6F1E3] p-14 overflow-hidden">
+        <div className="font-serif text-xl tracking-wide">
+          Stud<span className="text-[#C7D3B9]">AI</span>
         </div>
 
-        {/* Step Indicator */}
-        <div className="flex items-center gap-2 text-xs font-mono text-[#87968F]">
-          <span>STEP {step} OF 3</span>
-          <div className="flex gap-1.5 ml-2">
-            {[1, 2, 3].map((i) => (
+        {/* Slide content */}
+        <div className="relative max-w-sm mx-auto w-full">
+          {/* Floating decorative card borders — purely visual, sit behind the content */}
+          <div className="absolute -top-6 -left-10 w-40 h-24 rounded-2xl border border-[#F6F1E3]/15 -rotate-6 pointer-events-none" />
+          <div className="absolute top-10 -right-12 w-32 h-32 rounded-2xl border border-[#B08D4F]/25 rotate-12 pointer-events-none" />
+          <div className="absolute -bottom-8 left-4 w-44 h-20 rounded-2xl border border-[#8CA37E]/20 rotate-3 pointer-events-none" />
+
+          <div key={activeSlide} className="animate-slide-fade">
+            <span className="relative inline-flex items-center gap-1.5 font-mono text-xs text-[#C7D3B9] bg-[#2C4739] border border-[#F6F1E3]/15 px-2.5 py-1 rounded-full mb-6">
+              {FEATURES[activeSlide].tag}
+            </span>
+
+            <div className="relative w-16 h-16 rounded-2xl bg-[#2C4739] border border-[#F6F1E3]/15 flex items-center justify-center mb-6">
+              <ActiveIcon
+                size={28}
+                className="text-[#C7D3B9]"
+                strokeWidth={1.75}
+              />
+            </div>
+
+            <h2 className="relative font-serif text-2xl leading-snug mb-3">
+              {FEATURES[activeSlide].title}
+            </h2>
+            <p className="relative text-sm leading-relaxed text-[#F6F1E3]/70 min-h-[4.5rem]">
+              {FEATURES[activeSlide].description}
+            </p>
+          </div>
+        </div>
+
+        {/* Icon tabs — click any feature to jump directly to it */}
+        <div>
+          <div className="flex items-center gap-2 mb-5">
+            {FEATURES.map((feature, index) => {
+              const Icon = feature.icon;
+              const isActive = index === activeSlide;
+              return (
+                <button
+                  key={feature.title}
+                  type="button"
+                  onClick={() => goToSlide(index)}
+                  aria-label={feature.title}
+                  aria-current={isActive}
+                  className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-colors ${
+                    isActive
+                      ? "bg-[#8CA37E] border-[#8CA37E] text-[#1A2B22]"
+                      : "bg-[#2C4739] border-[#F6F1E3]/15 text-[#F6F1E3]/50 hover:text-[#F6F1E3]/80"
+                  }`}
+                >
+                  <Icon size={17} strokeWidth={1.75} />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Progress dots */}
+          <div className="flex items-center gap-1.5 mb-6">
+            {FEATURES.map((_, index) => (
               <span
-                key={i}
-                className={`w-6 h-1.5 rounded-full transition-all duration-300 ${
-                  i <= step ? "bg-[#34D399]" : "bg-[#24352F]"
+                key={index}
+                className={`h-1 rounded-full transition-all ${
+                  index === activeSlide
+                    ? "w-6 bg-[#C7D3B9]"
+                    : "w-1.5 bg-[#F6F1E3]/20"
                 }`}
               />
             ))}
           </div>
+
+          <p className="text-xs text-[#F6F1E3]/50 font-mono">
+            Trusted by 1,200+ students · 3 universities
+          </p>
         </div>
-      </header>
-
-      {/* Main Form Body */}
-      <main className="relative z-10 max-w-2xl mx-auto w-full my-auto py-8">
-        {/* STEP 1: Academic Profile */}
-        {step === 1 && (
-          <div className="space-y-6 animate-fadeIn">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1C2C27] border border-[#2D453E] text-xs text-[#34D399] mb-3">
-                <GraduationCap size={14} />
-                <span>Academic Institution</span>
-              </div>
-              <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#F0F4F2]">
-                Where do you study?
-              </h1>
-              <p className="text-xs sm:text-sm text-[#87968F] mt-1">
-                We use your university and department to curate aligned course
-                outlines.
-              </p>
-            </div>
-
-            <div className="bg-[#16221E]/60 border border-[#24352F] p-6 rounded-2xl space-y-5 backdrop-blur-sm">
-              {/* University Select */}
-              <div>
-                <label className="block text-xs font-medium text-[#A0ACA6] mb-2">
-                  Select University
-                </label>
-                <select
-                  value={university}
-                  onChange={(e) => setUniversity(e.target.value)}
-                  className="w-full px-4 py-3 text-sm bg-[#0C1210] border border-[#24352F] text-[#E3E8E5] rounded-xl outline-none focus:border-[#34D399] focus:ring-2 focus:ring-[#34D399]/20 transition-all"
-                >
-                  {UNIVERSITIES.map((uni) => (
-                    <option key={uni} value={uni}>
-                      {uni}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Department Select */}
-              <div>
-                <label className="block text-xs font-medium text-[#A0ACA6] mb-2">
-                  Select Department
-                </label>
-                <select
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full px-4 py-3 text-sm bg-[#0C1210] border border-[#24352F] text-[#E3E8E5] rounded-xl outline-none focus:border-[#34D399] focus:ring-2 focus:ring-[#34D399]/20 transition-all"
-                >
-                  {DEPARTMENTS.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 2: Current Semester */}
-        {step === 2 && (
-          <div className="space-y-6 animate-fadeIn">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1C2C27] border border-[#2D453E] text-xs text-[#34D399] mb-3">
-                <Calendar size={14} />
-                <span>Academic Timeline</span>
-              </div>
-              <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#F0F4F2]">
-                Which semester are you in?
-              </h1>
-              <p className="text-xs sm:text-sm text-[#87968F] mt-1">
-                Select your current active semester to view standard curriculum
-                modules.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1">
-              {SEMESTERS.map((sem) => {
-                const isSelected = semester === sem;
-                return (
-                  <button
-                    key={sem}
-                    type="button"
-                    onClick={() => setSemester(sem)}
-                    className={`flex items-center justify-between p-4 rounded-xl border text-left text-sm transition-all ${
-                      isSelected
-                        ? "bg-[#1C3A2F]/60 border-[#34D399] text-[#F0F4F2]"
-                        : "bg-[#16221E]/60 border-[#24352F] text-[#A0ACA6] hover:border-[#2D453E]"
-                    }`}
-                  >
-                    <span>{sem}</span>
-                    {isSelected && (
-                      <CheckCircle2
-                        size={18}
-                        className="text-[#34D399] shrink-0"
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* STEP 3: Course Selection */}
-        {step === 3 && (
-          <div className="space-y-6 animate-fadeIn">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1C2C27] border border-[#2D453E] text-xs text-[#34D399] mb-3">
-                  <BookOpen size={14} />
-                  <span>Course Enrollment</span>
-                </div>
-                <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#F0F4F2]">
-                  Select your courses
-                </h1>
-                <p className="text-xs sm:text-sm text-[#87968F] mt-1">
-                  Choose the courses you are currently taking this semester.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={selectAllCourses}
-                className="text-xs text-[#34D399] hover:underline shrink-0"
-              >
-                Select All
-              </button>
-            </div>
-
-            <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
-              {availableCourses.map((course) => {
-                const isChecked = selectedCourseIds.includes(course.id);
-                return (
-                  <div
-                    key={course.id}
-                    onClick={() => toggleCourse(course.id)}
-                    className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
-                      isChecked
-                        ? "bg-[#1C3A2F]/40 border-[#34D399]/60"
-                        : "bg-[#16221E]/60 border-[#24352F] opacity-70 hover:opacity-100"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                          isChecked
-                            ? "bg-[#34D399] border-[#34D399] text-[#0F1715]"
-                            : "border-[#4A5751] bg-[#0C1210]"
-                        }`}
-                      >
-                        {isChecked && (
-                          <CheckCircle2 size={14} className="stroke-[3]" />
-                        )}
-                      </div>
-
-                      <div>
-                        <p className="text-sm font-medium text-[#E3E8E5]">
-                          {course.name}
-                        </p>
-                        <p className="text-xs text-[#7A8882] font-mono mt-0.5">
-                          {course.code} • {course.credits} ECTS
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className="text-xs font-mono text-[#62726B] bg-[#0C1210] px-2.5 py-1 rounded-md border border-[#24352F]">
-                      Active
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Navigation Controls */}
-        <div className="flex items-center justify-between pt-8 mt-6 border-t border-[#24352F]">
-          {step > 1 ? (
-            <button
-              type="button"
-              onClick={() => setStep((s) => s - 1)}
-              className="flex items-center gap-2 px-4 py-2.5 border border-[#24352F] text-xs font-medium text-[#A0ACA6] hover:text-[#E3E8E5] hover:bg-[#16221E] rounded-xl transition-all"
-            >
-              <ArrowLeft size={16} />
-              Back
-            </button>
-          ) : (
-            <div />
-          )}
-
-          {step < 3 ? (
-            <button
-              type="button"
-              onClick={() => setStep((s) => s + 1)}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#1C3A2F] hover:bg-[#254B3D] text-[#34D399] border border-[#2D5A46] text-xs font-semibold rounded-xl transition-all"
-            >
-              Continue
-              <ArrowRight size={16} />
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={isSubmitting || selectedCourseIds.length === 0}
-              onClick={handleFinish}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#34D399] hover:bg-[#2EB885] disabled:opacity-50 disabled:cursor-not-allowed text-[#0F1715] font-semibold text-xs rounded-xl transition-all"
-            >
-              {isSubmitting ? "Saving setup..." : "Complete Setup"}
-              {!isSubmitting && <Sparkles size={16} />}
-            </button>
-          )}
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="relative z-10 max-w-4xl mx-auto w-full pt-6 border-t border-[#24352F] text-center sm:text-left text-xs text-[#62726B] flex flex-col sm:flex-row items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Layers size={14} className="text-[#34D399]" />
-          <span>Personalizing workspace based on curriculum standards</span>
-        </div>
-        <span>StudAI Academic Workspace</span>
-      </footer>
+      </div>
     </div>
   );
 }

@@ -69,6 +69,12 @@ model CurriculumCourse {
 
 // ---------- Students ----------
 
+enum SubscriptionPlan {
+  FREE
+  PRO
+  UNLIMITED
+}
+
 model Student {
   id                String    @id @default(uuid())
   firstName         String
@@ -77,6 +83,7 @@ model Student {
   passwordHash      String?
   googleId          String?   @unique
   emailVerified     Boolean   @default(false)
+  subscriptionPlan  SubscriptionPlan @default(FREE)
 
   verificationToken           String?   @unique
   verificationTokenExpiresAt  DateTime?
@@ -125,13 +132,16 @@ model CourseMaterial {
   title       String
   fileUrl     String
   status      MaterialStatus  @default(QUEUED)
-  summary     String?         // AI-generated summary text
+  summary     String?         // AI-generated summary text OR extracted PDF text
+  fileSize    Int?            // file size in bytes
+  uploadedBy  String?         // studentId who uploaded
   createdAt   DateTime        @default(now())
 
   chunks      MaterialChunk[]
   flashcards  Flashcard[]
 
   @@index([courseId])
+  @@index([uploadedBy])
 }
 
 model MaterialChunk {
@@ -237,6 +247,7 @@ model QuizAttempt {
 enum ExamType {
   MID
   FINAL
+  QUIZ
 }
 
 model PastExam {

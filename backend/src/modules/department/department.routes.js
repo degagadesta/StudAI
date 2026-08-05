@@ -6,7 +6,7 @@ import {
 
 const router = Router();
 
-router.get("/universities/:universityId/departments", getDepartments);
+router.get("/university/:universityId", getDepartments);
 router.get("/:id", getDepartment);
 
 export default router;

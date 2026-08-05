@@ -9,6 +9,14 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import Dashboard from "./pages/Dashboard";
 
+// Dashboard tab routes (sidebar + topbar shell)
+import DashboardLayout from "./layouts/DashboardLayout";
+import StartStudyingPage from "./pages/StartStudyingPage";
+import DashboardPage from "./pages/Dashboardpage";
+import CoursesPage from "./pages/Coursepage";
+import SchedulePage from "./pages/Schedulepage";
+import ProfilePage from "./pages/Profilepage";
+
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 function App() {
@@ -30,7 +38,25 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Dashboard tab routes — sidebar/topbar shell with nested tabs */}
+            <Route
+              path="/app"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="start-studying" element={<StartStudyingPage />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="courses" element={<CoursesPage />} />
+              <Route path="schedule" element={<SchedulePage />} />
+              <Route path="profile" element={<ProfilePage />} />
+            </Route>
+
             <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>

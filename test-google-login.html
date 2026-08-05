@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Google Sign-In Test</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <h2>StudAI — Google Sign-In Test</h2>
+    <div
+      id="g_id_onload"
+      data-client_id="89534060235-3fd61aencmmnqu49h7o2gurhj55r0ojr.apps.googleusercontent.com"
+      data-callback="handleCredentialResponse"
+    ></div>
+    <div class="g_id_signin" data-type="standard"></div>
+
+    <h3>ID Token:</h3>
+    <textarea id="tokenBox" rows="10" cols="80"></textarea>
+    <p><button onclick="copyToken()">Copy Token</button></p>
+    <p><button onclick="testBackend()">Send to Backend</button></p>
+    <pre id="result"></pre>
+
+    <script>
+      function handleCredentialResponse(response) {
+        document.getElementById("tokenBox").value = response.credential;
+      }
+      function copyToken() {
+        const box = document.getElementById("tokenBox");
+        box.select();
+        document.execCommand("copy");
+      }
+      async function testBackend() {
+        const idToken = document.getElementById("tokenBox").value;
+        const res = await fetch("http://localhost:4000/api/v1/auth/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        });
+        const data = await res.json();
+        document.getElementById("result").textContent = JSON.stringify(
+          data,
+          null,
+          2,
+        );
+      }
+    </script>
+  </body>
+</html>

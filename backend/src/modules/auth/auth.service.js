@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
-import { prisma } from "../../lib/prisma.js";
+import prisma from "../../lib/prisma.js";
 import { sendMail } from "../../lib/mailer.js";
 import { generateToken, hashToken } from "../../utils/tokens.js";
 import {

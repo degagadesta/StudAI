@@ -29,6 +29,7 @@ import {
   type Course,
 } from "../api/onboardingapi";
 import { getApiErrorMessage } from "../api/authApi";
+import { useAuthContext } from "../contexts/AuthContext";
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                */
@@ -97,6 +98,7 @@ const SLIDE_INTERVAL_MS = 2000;
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const { setUser, user } = useAuthContext();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -259,6 +261,7 @@ export default function OnboardingPage() {
     setIsSubmitting(true);
     setError(null);
     try {
+      console.log('[OnboardingPage] Submitting onboarding data...');
       await submitOnboarding({
         universityId: university.id,
         departmentId: department.id,
@@ -266,8 +269,18 @@ export default function OnboardingPage() {
         currentSemester: semester,
         selectedCourseIds: Array.from(selectedCourses),
       });
-      navigate("/dashboard");
+      
+      console.log('[OnboardingPage] Onboarding successful, updating hasProfile to true');
+      // CRITICAL: Update hasProfile state to true BEFORE navigating
+      // This prevents ProtectedRoute from redirecting back to onboarding
+      if (user) {
+        setUser(user, true);
+      }
+      
+      console.log('[OnboardingPage] Navigating to dashboard');
+      navigate("/dashboard", { replace: true });
     } catch (err) {
+      console.error('[OnboardingPage] Onboarding failed:', err);
       setError(
         getApiErrorMessage(err, "Could not save your setup. Please try again."),
       );

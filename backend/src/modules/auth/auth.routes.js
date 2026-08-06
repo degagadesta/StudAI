@@ -9,6 +9,7 @@ import {
   googleSignInHandler,
   refreshTokenHandler,
   logoutHandler,
+  checkProfileHandler,
 } from "./auth.controller.js";
 import { authenticate } from "../../middlewares/authenticate.js";
 
@@ -23,5 +24,6 @@ router.post("/reset-password", authLimiter, resetPasswordHandler);
 router.post("/google", authLimiter, googleSignInHandler);
 router.post("/refresh", refreshTokenHandler);
 router.post("/logout", authenticate, logoutHandler);
+router.get("/check-profile", authenticate, checkProfileHandler);
 
 export default router;

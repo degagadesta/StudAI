@@ -1,4 +1,5 @@
-import prisma from "../../lib/prisma.js";
+import { prisma } from "../../lib/prisma.js";
+import { AppError } from "../../utils/AppError.js";
 
 export const completeOnboarding = async (
     studentId,
@@ -15,7 +16,7 @@ export const completeOnboarding = async (
     });
 
     if (!university) {
-        throw new Error("University not found");
+        throw new AppError("University not found", 404);
     }
 
     // Validate department
@@ -26,21 +27,21 @@ export const completeOnboarding = async (
     });
 
     if (!department) {
-        throw new Error("Department not found");
+        throw new AppError("Department not found", 404);
     }
 
     if (department.universityId !== universityId) {
-        throw new Error("Department does not belong to the selected university");
+        throw new AppError("Department does not belong to the selected university", 400);
     }
 
     // Validate year
     if (currentYear < 2 || currentYear > 5) {
-        throw new Error("Academic year must be between 2 and 5");
+        throw new AppError("Academic year must be between 2 and 5", 400);
     }
 
     // Validate semester
     if (![1, 2].includes(currentSemester)) {
-        throw new Error("Semester must be 1 or 2");
+        throw new AppError("Semester must be 1 or 2", 400);
     }
 
     // Find curriculum automatically
@@ -51,44 +52,47 @@ export const completeOnboarding = async (
     });
 
     if (!curriculum) {
-        throw new Error("Curriculum not found");
+        throw new AppError("No curriculum found for this department", 404);
     }
 
-    // Create or update student profile
-    const profile = await prisma.studentProfile.upsert({
-        where: {
-            studentId,
-        },
-        create: {
-            studentId,
-            curriculumId: curriculum.id,
-            currentYear,
-            currentSemester,
-        },
-        update: {
-            curriculumId: curriculum.id,
-            currentYear,
-            currentSemester,
-        },
-    });
+    // Use transaction for data consistency
+    return await prisma.$transaction(async (tx) => {
+        // Create or update student profile
+        const profile = await tx.studentProfile.upsert({
+            where: {
+                studentId,
+            },
+            create: {
+                studentId,
+                curriculumId: curriculum.id,
+                currentYear,
+                currentSemester,
+            },
+            update: {
+                curriculumId: curriculum.id,
+                currentYear,
+                currentSemester,
+            },
+        });
 
-    // Load courses
-    const courses = await prisma.curriculumCourse.findMany({
-        where: {
-            curriculumId: curriculum.id,
-            year: currentYear,
-            semester: currentSemester,
-        },
-        include: {
-            course: true,
-        },
-        orderBy: {
-            courseCode: "asc",
-        },
-    });
+        // Load courses
+        const courses = await tx.curriculumCourse.findMany({
+            where: {
+                curriculumId: curriculum.id,
+                year: currentYear,
+                semester: currentSemester,
+            },
+            include: {
+                course: true,
+            },
+            orderBy: {
+                courseCode: "asc",
+            },
+        });
 
-    return {
-        profile,
-        courses,
-    };
+        return {
+            profile,
+            courses,
+        };
+    });
 };

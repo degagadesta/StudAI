@@ -1,6 +1,16 @@
-import prisma from "../../lib/prisma.js";
+import { prisma } from "../../lib/prisma.js";
+import { AppError } from "../../utils/AppError.js";
 
 export const getDepartmentsByUniversity = async (universityId) => {
+    // Validate that university exists
+    const university = await prisma.university.findUnique({
+        where: { id: universityId }
+    });
+
+    if (!university) {
+        throw new AppError("University not found", 404);
+    }
+
     return prisma.department.findMany({
         where: {
             universityId,

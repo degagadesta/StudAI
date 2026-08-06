@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, ChangeEvent, DragEvent } from "react";
+import { Link } from "react-router-dom";
 import { FileText, UploadCloud, Loader2 } from "lucide-react";
 import {
   getMaterials,
@@ -161,9 +162,10 @@ export default function StartStudyingPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {materials.map((m) => (
-            <div
+            <Link
               key={m.id}
-              className="p-5 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl hover:border-[#8CA37E] transition-colors cursor-pointer"
+              to={`/app/materials/${m.id}`}
+              className="p-5 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl hover:border-[#8CA37E] transition-colors cursor-pointer block"
             >
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-9 h-9 rounded-lg bg-[#EFE8D4] flex items-center justify-center shrink-0">
@@ -187,7 +189,7 @@ export default function StartStudyingPage() {
                   style={{ width: `${m.progress}%` }}
                 />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

@@ -38,8 +38,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
-            {/* Dashboard tab routes — sidebar/topbar shell with nested tabs */}
             <Route
               path="/app"
               element={
@@ -48,6 +46,7 @@ function App() {
                 </ProtectedRoute>
               }
             >
+              <Route index element={<Navigate to="start-studying" replace />} />
               <Route path="start-studying" element={<StartStudyingPage />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="courses" element={<CoursesPage />} />

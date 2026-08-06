@@ -46,11 +46,17 @@ function StatCard({
       }`}
     >
       <div>
-        <p
-          className={`text-xs mb-1.5 ${dark ? "text-[#F6F1E3]/70" : "text-[#5B6156]"}`}
-        >
-          {label}
-        </p>
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Icon
+            size={15}
+            className={dark ? "text-[#C7D3B9]" : "text-[#2F4A3D]"}
+          />
+          <p
+            className={`text-xs ${dark ? "text-[#F6F1E3]/70" : "text-[#5B6156]"}`}
+          >
+            {label}
+          </p>
+        </div>
         <p
           className={`font-serif text-xl ${dark ? "text-[#F6F1E3]" : "text-[#253D31]"}`}
         >

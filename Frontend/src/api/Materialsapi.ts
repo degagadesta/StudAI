@@ -4,6 +4,7 @@ export interface Material {
   id: string;
   fileName: string;
   courseName: string;
+  fileUrl: string; // where the actual PDF is served from, for the viewer to load
   uploadedAt: string; // ISO date string
   progress: number; // 0–100, how much of the material has been studied
 }
@@ -11,6 +12,23 @@ export interface Material {
 export async function getMaterials(): Promise<Material[]> {
   const res = await api.get<Material[]>("/materials");
   return res.data;
+}
+
+export async function getMaterial(id: string): Promise<Material> {
+  const res = await api.get<Material>(`/materials/${id}`);
+  return res.data;
+}
+
+/**
+ * The frontend computes progress itself (current page ÷ total pages,
+ * tracked in PdfViewerPage) and pushes it here — the backend just
+ * stores whatever percentage it's given rather than calculating it.
+ */
+export async function updateMaterialProgress(
+  id: string,
+  progress: number,
+): Promise<void> {
+  await api.patch(`/materials/${id}/progress`, { progress });
 }
 
 /**

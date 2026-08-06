@@ -1,57 +1,52 @@
 import { prisma } from "../../lib/prisma.js";
 
 export async function getUpcomingExams(studentId) {
-    // Get student's profile and courses
-    const profile = await prisma.studentProfile.findUnique({
-        where: { studentId },
-        select: { curriculumId: true }
-    });
+  // Fetch profile with year + semester so we can filter correctly
+  const profile = await prisma.studentProfile.findUnique({
+    where: { studentId },
+    select: {
+      curriculumId: true,
+      currentYear: true,
+      currentSemester: true,
+    },
+  });
 
-    if (!profile) {
-        return [];
-    }
+  if (!profile) return [];
 
-    // Get student's enrolled courses
-    const enrolledCourses = await prisma.curriculumCourse.findMany({
-        where: {
-            curriculumId: profile.curriculumId
-        },
-        select: {
-            courseId: true
-        }
-    });
+  // Only courses for the student's current year AND semester
+  const enrolledCourses = await prisma.curriculumCourse.findMany({
+    where: {
+      curriculumId: profile.curriculumId,
+      year: profile.currentYear,
+      semester: profile.currentSemester,
+    },
+    select: { courseId: true },
+  });
 
-    const courseIds = enrolledCourses.map(ec => ec.courseId);
+  const courseIds = enrolledCourses.map((ec) => ec.courseId);
+  if (courseIds.length === 0) return [];
 
-    if (courseIds.length === 0) {
-        return [];
-    }
+  // PastExam is an archive — there are no "future" records.
+  // Return the most recent exam per course+type as study references.
+  const exams = await prisma.pastExam.findMany({
+    where: { courseId: { in: courseIds } },
+    include: { course: { select: { title: true } } },
+    orderBy: { year: "desc" },
+  });
 
-    // Get upcoming past exams (using year > current year as "upcoming")
-    const currentYear = new Date().getFullYear();
-    const exams = await prisma.pastExam.findMany({
-        where: {
-            courseId: { in: courseIds },
-            year: { gte: currentYear }
-        },
-        include: {
-            course: {
-                select: {
-                    title: true
-                }
-            }
-        },
-        orderBy: {
-            year: 'asc'
-        },
-        take: 10 // Limit to 10 upcoming exams
-    });
+  // Keep only the latest entry per (courseId + type) to avoid duplicates
+  const seen = new Set();
+  const latest = exams.filter((exam) => {
+    const key = `${exam.courseId}-${exam.type}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
-    return exams.map(exam => ({
-        id: exam.id,
-        courseName: exam.course.title,
-        examType: exam.type,
-        examDate: `${exam.year}-${exam.type === 'MID' ? '03' : '06'}-01`, // Mock date
-        year: exam.year
-    }));
+  return latest.map((exam) => ({
+    id: exam.id,
+    courseName: exam.course.title,
+    examType: exam.type,
+    year: exam.year,
+  }));
 }

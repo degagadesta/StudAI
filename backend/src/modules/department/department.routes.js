@@ -1,12 +1,17 @@
 import { Router } from "express";
-import {
-    getDepartments,
-    getDepartment,
-} from "./department.controller.js";
+import rateLimit from "express-rate-limit";
+import { getDepartments, getDepartment } from "./department.controller.js";
 
 const router = Router();
 
-router.get("/university/:universityId", getDepartments);
-router.get("/:id", getDepartment);
+// Generous limit — these are public lookup endpoints used during onboarding
+const browseLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: { error: "Too many requests, please try again later" },
+});
+
+router.get("/university/:universityId", browseLimiter, getDepartments);
+router.get("/:id", browseLimiter, getDepartment);
 
 export default router;

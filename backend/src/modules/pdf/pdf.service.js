@@ -1,195 +1,131 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { SUBSCRIPTION_LIMITS, canUploadMore } from "../../lib/subscriptionLimits.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const UPLOAD_DIR = path.join(__dirname, '../../../uploads/pdfs');
+// ─── upload ──────────────────────────────────────────────────────────────────
 
-// Subscription limits
-const SUBSCRIPTION_LIMITS = {
-    FREE: 5,
-    PRO: 10,
-    UNLIMITED: Infinity
-};
-
-// Helper: Save file to disk
-async function saveFileToDisk(file, studentId, courseId) {
-    try {
-        await fs.access(UPLOAD_DIR);
-    } catch {
-        await fs.mkdir(UPLOAD_DIR, { recursive: true });
-    }
-
-    const timestamp = Date.now();
-    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const fileName = `${studentId}_${courseId}_${timestamp}_${sanitizedName}`;
-    const filePath = path.join(UPLOAD_DIR, fileName);
-
-    await fs.writeFile(filePath, file.buffer);
-
-    return {
-        fileName,
-        filePath: `/uploads/pdfs/${fileName}`,
-        fileSize: file.size
-    };
-}
-
-// Helper: Delete file from disk
-async function deleteFileFromDisk(fileUrl) {
-    try {
-        const fileName = fileUrl.split('/').pop();
-        const filePath = path.join(UPLOAD_DIR, fileName);
-        await fs.unlink(filePath);
-    } catch (error) {
-        console.error('Failed to delete file:', error);
-    }
-}
-
-// Upload PDF
 export async function uploadPDF(studentId, courseId, file) {
-    // 1. Get student subscription
-    const student = await prisma.student.findUnique({
-        where: { id: studentId },
-        select: { subscriptionPlan: true }
-    });
+  // 1. Get student subscription plan
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { subscriptionPlan: true },
+  });
+  if (!student) throw new AppError("Student not found", 404);
 
-    if (!student) {
-        throw new AppError("Student not found", 404);
-    }
+  // 2. 24-hour upload window limit
+  //    Count ALL uploads in the last 24 hours regardless of status (deleted or not).
+  //    Even if the user deletes a PDF, it still counts toward today's quota.
+  const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const uploadedInLast24h = await prisma.courseMaterial.count({
+    where: {
+      uploadedBy: studentId,
+      createdAt: { gte: last24Hours },
+    },
+  });
 
-    // 2. Count active PDFs
-    const activeCount = await prisma.courseMaterial.count({
-        where: {
-            uploadedBy: studentId,
-            status: 'READY' // READY means active, FAILED means deleted
-        }
-    });
-
+  if (!canUploadMore(student.subscriptionPlan, uploadedInLast24h)) {
     const limit = SUBSCRIPTION_LIMITS[student.subscriptionPlan];
-    if (activeCount >= limit) {
-        throw new AppError(
-            `Upload limit reached. Your ${student.subscriptionPlan} plan allows ${limit} active PDFs`,
-            403
-        );
-    }
+    throw new AppError(
+      `Daily upload limit reached. Your ${student.subscriptionPlan} plan allows ${limit} PDF uploads per 24 hours`,
+      403
+    );
+  }
 
-    // 3. Verify student has access to course
-    const profile = await prisma.studentProfile.findUnique({
-        where: { studentId }
-    });
+  // 3. Require completed onboarding
+  const profile = await prisma.studentProfile.findUnique({ where: { studentId } });
+  if (!profile) throw new AppError("Please complete onboarding first", 400);
 
-    if (!profile) {
-        throw new AppError("Please complete onboarding first", 400);
-    }
+  // 4. Verify the course belongs to the student's curriculum
+  const courseAccess = await prisma.curriculumCourse.findFirst({
+    where: { curriculumId: profile.curriculumId, courseId },
+  });
+  if (!courseAccess) throw new AppError("You don't have access to this course", 403);
 
-    const courseAccess = await prisma.curriculumCourse.findFirst({
-        where: {
-            curriculumId: profile.curriculumId,
-            courseId: courseId
-        }
-    });
+  // 5. Store file binary directly in the database (no disk I/O)
+  const pdf = await prisma.courseMaterial.create({
+    data: {
+      courseId,
+      title: file.originalname,
+      fileData: file.buffer,   // Buffer stored as Bytes in PostgreSQL
+      fileSize: file.size,
+      uploadedBy: studentId,
+      status: "READY",
+    },
+    include: { course: { select: { id: true, title: true } } },
+  });
 
-    if (!courseAccess) {
-        throw new AppError("You don't have access to this course", 403);
-    }
-
-    // 4. Save file
-    const { fileName, filePath, fileSize } = await saveFileToDisk(file, studentId, courseId);
-
-    // 5. Save to database
-    const pdf = await prisma.courseMaterial.create({
-        data: {
-            courseId,
-            title: file.originalname,
-            fileUrl: filePath,
-            fileSize,
-            uploadedBy: studentId,
-            status: 'READY',
-            summary: null // Can add PDF text extraction later
-        },
-        include: {
-            course: {
-                select: {
-                    id: true,
-                    title: true
-                }
-            }
-        }
-    });
-
-    return {
-        id: pdf.id,
-        fileName: pdf.title,
-        fileSize: pdf.fileSize,
-        uploadDate: pdf.createdAt,
-        courseName: pdf.course.title
-    };
+  return {
+    id: pdf.id,
+    fileName: pdf.title,
+    fileSize: pdf.fileSize,
+    uploadDate: pdf.createdAt,
+    courseId: pdf.course.id,
+    courseName: pdf.course.title,
+  };
 }
 
-// List PDFs grouped by course
+// ─── list ─────────────────────────────────────────────────────────────────────
+
 export async function getStudentPDFs(studentId) {
-    const pdfs = await prisma.courseMaterial.findMany({
-        where: {
-            uploadedBy: studentId,
-            status: 'READY'
-        },
-        include: {
-            course: {
-                select: {
-                    title: true
-                }
-            }
-        },
-        orderBy: {
-            createdAt: 'desc'
-        }
-    });
+  // Never return fileData in the list — only metadata
+  const pdfs = await prisma.courseMaterial.findMany({
+    where: { uploadedBy: studentId, status: "READY" },
+    select: {
+      id: true,
+      title: true,
+      fileSize: true,
+      createdAt: true,
+      course: { select: { id: true, title: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-    // Group by course
-    const grouped = {};
-    pdfs.forEach(pdf => {
-        const courseName = pdf.course.title;
-        if (!grouped[courseName]) {
-            grouped[courseName] = [];
-        }
-        grouped[courseName].push({
-            id: pdf.id,
-            fileName: pdf.title,
-            fileSize: pdf.fileSize,
-            uploadDate: pdf.createdAt,
-            courseName
-        });
+  // Group by course name
+  const grouped = {};
+  for (const pdf of pdfs) {
+    const key = pdf.course.title;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push({
+      id: pdf.id,
+      fileName: pdf.title,
+      fileSize: pdf.fileSize,
+      uploadDate: pdf.createdAt,
+      courseId: pdf.course.id,
+      courseName: key,
     });
+  }
 
-    return grouped;
+  return grouped;
 }
 
-// Delete PDF
+// ─── serve file ───────────────────────────────────────────────────────────────
+
+export async function getPDFFile(studentId, pdfId) {
+  const pdf = await prisma.courseMaterial.findFirst({
+    where: { id: pdfId, uploadedBy: studentId, status: "READY" },
+    select: { title: true, fileData: true },
+  });
+
+  if (!pdf) throw new AppError("PDF not found", 404);
+  if (!pdf.fileData) throw new AppError("File data not available", 404);
+
+  return { fileName: pdf.title, buffer: pdf.fileData };
+}
+
+// ─── delete ───────────────────────────────────────────────────────────────────
+
 export async function deletePDF(studentId, pdfId) {
-    // Verify ownership
-    const pdf = await prisma.courseMaterial.findFirst({
-        where: {
-            id: pdfId,
-            uploadedBy: studentId,
-            status: 'READY'
-        }
-    });
+  const pdf = await prisma.courseMaterial.findFirst({
+    where: { id: pdfId, uploadedBy: studentId, status: "READY" },
+    select: { id: true },
+  });
+  if (!pdf) throw new AppError("PDF not found or already deleted", 404);
 
-    if (!pdf) {
-        throw new AppError("PDF not found or already deleted", 404);
-    }
+  // Soft-delete: clear binary data to free DB space, mark as DELETED
+  await prisma.courseMaterial.update({
+    where: { id: pdfId },
+    data: { status: "DELETED", fileData: null },
+  });
 
-    // Delete file from storage
-    await deleteFileFromDisk(pdf.fileUrl);
-
-    // Soft delete: change status to FAILED
-    await prisma.courseMaterial.update({
-        where: { id: pdfId },
-        data: { status: 'FAILED' }
-    });
-
-    return { message: "PDF deleted successfully" };
+  return { message: "PDF deleted successfully" };
 }

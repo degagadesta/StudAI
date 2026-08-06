@@ -7,15 +7,19 @@ import courseRoutes from "../modules/course/course.routes.js";
 import dashboardRoutes from "../modules/dashboard/dashboard.routes.js";
 import pdfRoutes from "../modules/pdf/pdf.routes.js";
 import examRoutes from "../modules/exam/exam.routes.js";
+import analyticsRoutes from "../modules/analytics/analytics.routes.js";
+import eventRoutes from "../modules/event/event.routes.js";
 
 const router = Router();
-router.use("/api/student/onboarding", onboardingRoutes);
-router.use("/api/departments", departmentRoutes);
+router.use("/student/onboarding", onboardingRoutes);
+router.use("/departments", departmentRoutes);
 router.use("/universities", universityRoutes);
 router.use("/auth", authRoutes);
-router.use("/api/student/courses", courseRoutes);
-router.use("/api/student/dashboard", dashboardRoutes);
-router.use("/api/student/pdfs", pdfRoutes);
-router.use("/api/student/exams", examRoutes);
+router.use("/student/courses", courseRoutes);
+router.use("/student/dashboard", dashboardRoutes);
+router.use("/student/pdfs", pdfRoutes);
+router.use("/student/exams", examRoutes);
+router.use("/student/analytics", analyticsRoutes);
+router.use("/student/events", eventRoutes);
 
 export default router;

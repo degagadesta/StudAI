@@ -139,6 +139,7 @@ model CourseMaterial {
   summary     String?         // AI-generated summary text OR extracted PDF text
   fileSize    Int?            // file size in bytes
   uploadedBy  String?         // studentId who uploaded
+  progress    Float           @default(0) // percentage 0-100
   createdAt   DateTime        @default(now())
 
   chunks      MaterialChunk[]

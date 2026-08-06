@@ -26,15 +26,33 @@ export const getPDFs = asyncHandler(async (req, res) => {
 // Streams the raw PDF binary back to the client
 export const servePDF = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { fileName, buffer } = await pdfService.getPDFFile(req.studentId, id);
+  const { fileName, buffer, progress } = await pdfService.getPDFFile(req.studentId, id);
 
   res.set({
     "Content-Type": "application/pdf",
     "Content-Disposition": `inline; filename="${encodeURIComponent(fileName)}"`,
     "Content-Length": buffer.length,
+    "X-Progress": progress.toString(),
   });
 
   res.send(buffer);
+});
+
+export const updateProgress = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { progress } = req.body;
+
+  const result = await pdfService.updateReadProgress(
+    req.studentId,
+    id,
+    progress
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Reading progress updated",
+    data: result,
+  });
 });
 
 export const deletePDF = asyncHandler(async (req, res) => {

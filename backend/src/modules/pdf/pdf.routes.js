@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { uploadPDF, getPDFs, servePDF, deletePDF } from "./pdf.controller.js";
+import { uploadPDF, getPDFs, servePDF, updateProgress, deletePDF } from "./pdf.controller.js";
 import { authenticate } from "../../middlewares/authenticate.js";
 import { AppError } from "../../utils/AppError.js";
 
@@ -25,6 +25,7 @@ const upload = multer({
 router.post("/", authenticate, upload.single('pdf'), uploadPDF);
 router.get("/", authenticate, getPDFs);
 router.get("/:id/file", authenticate, servePDF);
+router.patch("/:id/progress", authenticate, updateProgress);
 router.delete("/:id", authenticate, deletePDF);
 
 export default router;

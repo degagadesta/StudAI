@@ -75,6 +75,7 @@ export async function getStudentPDFs(studentId) {
       title: true,
       fileSize: true,
       createdAt: true,
+      progress: true,
       course: { select: { id: true, title: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -85,6 +86,7 @@ export async function getStudentPDFs(studentId) {
   for (const pdf of pdfs) {
     const key = pdf.course.title;
     if (!grouped[key]) grouped[key] = [];
+
     grouped[key].push({
       id: pdf.id,
       fileName: pdf.title,
@@ -92,6 +94,7 @@ export async function getStudentPDFs(studentId) {
       uploadDate: pdf.createdAt,
       courseId: pdf.course.id,
       courseName: key,
+      progress: pdf.progress,
     });
   }
 
@@ -103,13 +106,42 @@ export async function getStudentPDFs(studentId) {
 export async function getPDFFile(studentId, pdfId) {
   const pdf = await prisma.courseMaterial.findFirst({
     where: { id: pdfId, uploadedBy: studentId, status: "READY" },
-    select: { title: true, fileData: true },
+    select: { title: true, fileData: true, progress: true },
   });
 
   if (!pdf) throw new AppError("PDF not found", 404);
   if (!pdf.fileData) throw new AppError("File data not available", 404);
 
-  return { fileName: pdf.title, buffer: pdf.fileData };
+  return {
+    fileName: pdf.title,
+    buffer: pdf.fileData,
+    progress: pdf.progress,
+  };
+}
+
+// ─── update read progress ─────────────────────────────────────────────────────
+
+export async function updateReadProgress(studentId, pdfId, progressPercentage) {
+  if (typeof progressPercentage !== 'number' || progressPercentage < 0 || progressPercentage > 100) {
+    throw new AppError("progress must be a number between 0 and 100", 400);
+  }
+
+  const pdf = await prisma.courseMaterial.findFirst({
+    where: { id: pdfId, uploadedBy: studentId, status: "READY" },
+    select: { id: true, progress: true },
+  });
+  if (!pdf) throw new AppError("PDF not found", 404);
+
+  // Only advance forward — never regress progress
+  const newProgress = Math.max(pdf.progress, progressPercentage);
+
+  const updated = await prisma.courseMaterial.update({
+    where: { id: pdfId },
+    data: { progress: newProgress },
+    select: { progress: true },
+  });
+
+  return { progress: updated.progress };
 }
 
 // ─── delete ───────────────────────────────────────────────────────────────────

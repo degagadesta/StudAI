@@ -69,6 +69,12 @@ model CurriculumCourse {
 
 // ---------- Students ----------
 
+enum SubscriptionPlan {
+  FREE
+  PRO
+  UNLIMITED
+}
+
 model Student {
   id                String    @id @default(uuid())
   firstName         String
@@ -77,6 +83,7 @@ model Student {
   passwordHash      String?
   googleId          String?   @unique
   emailVerified     Boolean   @default(false)
+  subscriptionPlan  SubscriptionPlan @default(FREE)
 
   verificationToken           String?   @unique
   verificationTokenExpiresAt  DateTime?
@@ -89,12 +96,14 @@ model Student {
 
   createdAt         DateTime  @default(now())
   profile            StudentProfile?
-  notes         Note[]
-  flashcardReviews FlashcardReview[]
-  quizAttempts  QuizAttempt[]
-  chatSessions  ChatSession[]
+  notes              Note[]
+  flashcardReviews   FlashcardReview[]
+  quizAttempts       QuizAttempt[]
+  chatSessions       ChatSession[]
   generatedExamAttempts ExamAttempt[]
-  weakTopics    WeakTopic[]
+  weakTopics         WeakTopic[]
+  upcomingEvents     UpcomingEvent[]
+  activityLogs       ActivityLog[]
 }
 
 model StudentProfile {
@@ -116,6 +125,7 @@ enum MaterialStatus {
   ANALYZING
   READY
   FAILED
+  DELETED
 }
 
 model CourseMaterial {
@@ -123,15 +133,20 @@ model CourseMaterial {
   course      Course          @relation(fields: [courseId], references: [id])
   courseId    String
   title       String
-  fileUrl     String
+  fileUrl     String?         // null for student uploads stored in DB
+  fileData    Bytes?          // binary content for student-uploaded PDFs
   status      MaterialStatus  @default(QUEUED)
-  summary     String?         // AI-generated summary text
+  summary     String?         // AI-generated summary text OR extracted PDF text
+  fileSize    Int?            // file size in bytes
+  uploadedBy  String?         // studentId who uploaded
+  progress    Float           @default(0) // percentage 0-100
   createdAt   DateTime        @default(now())
 
   chunks      MaterialChunk[]
   flashcards  Flashcard[]
 
   @@index([courseId])
+  @@index([uploadedBy])
 }
 
 model MaterialChunk {
@@ -237,6 +252,7 @@ model QuizAttempt {
 enum ExamType {
   MID
   FINAL
+  QUIZ
 }
 
 model PastExam {
@@ -353,4 +369,31 @@ model WeakTopic {
   updatedAt   DateTime @updatedAt
 
   @@index([studentId, courseId])
+}
+
+// ---------- Upcoming events (student-defined) ----------
+
+model UpcomingEvent {
+  id          String   @id @default(uuid())
+  student     Student  @relation(fields: [studentId], references: [id])
+  studentId   String
+  title       String
+  description String?
+  eventDate   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([eventDate])
+}
+
+// ---------- Activity tracking ----------
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  student   Student  @relation(fields: [studentId], references: [id])
+  studentId String
+  createdAt DateTime @default(now())
+
+  @@index([studentId, createdAt])
 }

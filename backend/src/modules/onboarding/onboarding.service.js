@@ -1,4 +1,5 @@
-import prisma from "../../lib/prisma.js";
+import { prisma } from "../../lib/prisma.js";
+import { AppError } from "../../utils/AppError.js";
 
 /**
  * Get available courses for a specific university, department, year, and semester
@@ -98,7 +99,7 @@ export const completeOnboarding = async (
     });
 
     if (!university) {
-        throw new Error("University not found");
+        throw new AppError("University not found", 404);
     }
 
     // Validate department
@@ -109,21 +110,21 @@ export const completeOnboarding = async (
     });
 
     if (!department) {
-        throw new Error("Department not found");
+        throw new AppError("Department not found", 404);
     }
 
     if (department.universityId !== universityId) {
-        throw new Error("Department does not belong to the selected university");
+        throw new AppError("Department does not belong to the selected university", 400);
     }
 
     // Validate year
     if (currentYear < 1 || currentYear > 5) {
-        throw new Error("Academic year must be between 1 and 5");
+        throw new AppError("Academic year must be between 1 and 5", 400);
     }
 
     // Validate semester
     if (![1, 2].includes(currentSemester)) {
-        throw new Error("Semester must be 1 or 2");
+        throw new AppError("Semester must be 1 or 2", 400);
     }
 
     // Find curriculum automatically
@@ -134,7 +135,7 @@ export const completeOnboarding = async (
     });
 
     if (!curriculum) {
-        throw new Error("Curriculum not found");
+        throw new AppError("No curriculum found for this department", 404);
     }
 
     // Validate selected courses if provided
@@ -151,66 +152,69 @@ export const completeOnboarding = async (
         });
 
         if (validCourses.length !== selectedCourseIds.length) {
-            throw new Error("Some selected courses are not valid for this year and semester");
+            throw new AppError("Some selected courses are not valid for this year and semester", 400);
         }
     }
 
-    // Create or update student profile
-    const profile = await prisma.studentProfile.upsert({
-        where: {
-            studentId,
-        },
-        create: {
-            studentId,
-            curriculumId: curriculum.id,
-            currentYear,
-            currentSemester,
-        },
-        update: {
-            curriculumId: curriculum.id,
-            currentYear,
-            currentSemester,
-        },
-    });
+    // Use transaction for data consistency
+    return await prisma.$transaction(async (tx) => {
+        // Create or update student profile
+        const profile = await tx.studentProfile.upsert({
+            where: {
+                studentId,
+            },
+            create: {
+                studentId,
+                curriculumId: curriculum.id,
+                currentYear,
+                currentSemester,
+            },
+            update: {
+                curriculumId: curriculum.id,
+                currentYear,
+                currentSemester,
+            },
+        });
 
-    // Load courses for the selected year and semester
-    const courses = await prisma.curriculumCourse.findMany({
-        where: {
-            curriculumId: curriculum.id,
-            year: currentYear,
-            semester: currentSemester,
-            // If specific courses were selected, only return those
-            ...(selectedCourseIds && selectedCourseIds.length > 0
-                ? { courseId: { in: selectedCourseIds } }
-                : {}),
-        },
-        include: {
-            course: {
-                select: {
-                    id: true,
-                    title: true,
-                    description: true,
+        // Load courses for the selected year and semester
+        const courses = await tx.curriculumCourse.findMany({
+            where: {
+                curriculumId: curriculum.id,
+                year: currentYear,
+                semester: currentSemester,
+                // If specific courses were selected, only return those
+                ...(selectedCourseIds && selectedCourseIds.length > 0
+                    ? { courseId: { in: selectedCourseIds } }
+                    : {}),
+            },
+            include: {
+                course: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                    },
                 },
             },
-        },
-        orderBy: {
-            courseCode: "asc",
-        },
+            orderBy: {
+                courseCode: "asc",
+            },
+        });
+
+        // Transform courses for response
+        const transformedCourses = courses.map((cc) => ({
+            id: cc.course.id,
+            courseCode: cc.courseCode,
+            title: cc.course.title,
+            description: cc.course.description,
+            creditHours: cc.creditHours,
+            year: cc.year,
+            semester: cc.semester,
+        }));
+
+        return {
+            profile,
+            courses: transformedCourses,
+        };
     });
-
-    // Transform courses for response
-    const transformedCourses = courses.map((cc) => ({
-        id: cc.course.id,
-        courseCode: cc.courseCode,
-        title: cc.course.title,
-        description: cc.course.description,
-        creditHours: cc.creditHours,
-        year: cc.year,
-        semester: cc.semester,
-    }));
-
-    return {
-        profile,
-        courses: transformedCourses,
-    };
 };

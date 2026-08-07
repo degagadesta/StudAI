@@ -8,16 +8,21 @@ export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { setUser } = useAuthContext();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    "loading",
+  );
   const [message, setMessage] = useState<string>("");
   const hasVerified = useRef(false);
 
   useEffect(() => {
     const token = searchParams.get("token");
-    console.log('[VerifyEmail] useEffect triggered, token:', token ? 'present' : 'missing');
+    console.log(
+      "[VerifyEmail] useEffect triggered, token:",
+      token ? "present" : "missing",
+    );
 
     if (!token) {
-      console.log('[VerifyEmail] No token found, setting error state');
+      console.log("[VerifyEmail] No token found, setting error state");
       setStatus("error");
       setMessage("Invalid verification link. No token provided.");
       return;
@@ -25,47 +30,60 @@ export default function VerifyEmail() {
 
     // Prevent double-execution in React Strict Mode
     if (hasVerified.current) {
-      console.log('[VerifyEmail] Already verified, skipping');
+      console.log("[VerifyEmail] Already verified, skipping");
       return;
     }
     hasVerified.current = true;
 
     const verifyEmailToken = async () => {
       try {
-        console.log('[VerifyEmail] Starting verification...');
+        console.log("[VerifyEmail] Starting verification...");
         setStatus("loading");
-        
+
         // Call verify endpoint - it returns tokens, user data, and profile status
         const response = await verifyEmail(token);
-        console.log('[VerifyEmail] Verification response:', response);
-        
+        console.log("[VerifyEmail] Verification response:", response);
+
         // Set user in auth context with hasProfile
-        console.log('[VerifyEmail] Calling setUser with hasProfile:', response.hasProfile);
+        console.log(
+          "[VerifyEmail] Calling setUser with hasProfile:",
+          response.hasProfile,
+        );
         setUser(response.student, response.hasProfile);
-        
-        console.log('[VerifyEmail] Setting status to success');
+
+        console.log("[VerifyEmail] Setting status to success");
         setStatus("success");
-        setMessage(response.message || "Email verified successfully! Redirecting...");
+        setMessage(
+          response.message || "Email verified successfully! Redirecting...",
+        );
 
         // Wait 1.5 seconds then redirect to onboarding (new users don't have profile yet)
         setTimeout(() => {
-          console.log('[VerifyEmail] Redirecting to onboarding...');
-          console.log('[VerifyEmail] hasProfile from response:', response.hasProfile);
-          
+          console.log("[VerifyEmail] Redirecting to onboarding...");
+          console.log(
+            "[VerifyEmail] hasProfile from response:",
+            response.hasProfile,
+          );
+
           // New users should go to onboarding, returning users to dashboard
           if (response.hasProfile) {
-            console.log('[VerifyEmail] User has profile, going to dashboard');
+            console.log("[VerifyEmail] User has profile, going to dashboard");
             navigate("/dashboard", { replace: true });
           } else {
-            console.log('[VerifyEmail] User needs onboarding, going to /onboarding');
+            console.log(
+              "[VerifyEmail] User needs onboarding, going to /onboarding",
+            );
             navigate("/onboarding", { replace: true });
           }
         }, 1500);
       } catch (error: any) {
-        console.error('[VerifyEmail] Verification failed:', error);
+        console.error("[VerifyEmail] Verification failed:", error);
         setStatus("error");
         setMessage(
-          getApiErrorMessage(error, "Verification failed. The link may be expired or invalid.")
+          getApiErrorMessage(
+            error,
+            "Verification failed. The link may be expired or invalid.",
+          ),
         );
       }
     };
@@ -144,7 +162,10 @@ export default function VerifyEmail() {
         {status === "error" && (
           <p className="text-center text-xs text-[#5B6156] mt-6">
             Need help?{" "}
-            <a href="mailto:support@studai.et" className="text-[#2F4A3D] hover:underline">
+            <a
+              href="mailto:support@studai.et"
+              className="text-[#2F4A3D] hover:underline"
+            >
               Contact Support
             </a>
           </p>

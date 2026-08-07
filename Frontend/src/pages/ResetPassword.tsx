@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { stripControlChars, capLength } from "../utils/security/sanitize";
@@ -16,9 +16,20 @@ const PASSWORD_MIN_LEN = 8;
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get("token");
+  
+  // Get token from URL and stabilize it
+  const [token] = useState(() => searchParams.get("token"));
+  const [isPageReady, setIsPageReady] = useState(false);
 
-  console.log('[ResetPassword] Component mounted, token:', token ? 'present' : 'missing');
+  console.log('[ResetPassword] Component mounted');
+  console.log('[ResetPassword] URL search params:', window.location.search);
+  console.log('[ResetPassword] Token from searchParams:', token);
+  
+  // Ensure page is stable before rendering (prevents flash/redirect issues)
+  useEffect(() => {
+    console.log('[ResetPassword] Setting page ready, token:', token ? 'present' : 'missing');
+    setIsPageReady(true);
+  }, [token]);
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
@@ -68,6 +79,7 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
+    e.stopPropagation();
 
     console.log('[ResetPassword] Form submitted');
 
@@ -96,7 +108,7 @@ export default function ResetPassword() {
       console.log('[ResetPassword] Scheduling redirect to login in 3 seconds...');
       setTimeout(() => {
         console.log('[ResetPassword] Navigating to login...');
-        navigate("/login");
+        navigate("/login", { replace: true });
       }, 3000);
     } catch (err) {
       console.error('[ResetPassword] Password reset failed:', err);
@@ -115,8 +127,23 @@ export default function ResetPassword() {
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-[#253D31] mb-2">Invalid Link</h2>
-          <p className="text-gray-600">This password reset link is invalid or has expired.</p>
+          <p className="text-gray-600 mb-4">This password reset link is invalid or has expired.</p>
+          <button
+            onClick={() => navigate("/forgot-password")}
+            className="px-6 py-2 bg-[#253D31] hover:bg-[#1a2b21] text-white font-semibold rounded-lg transition-colors"
+          >
+            Request New Link
+          </button>
         </div>
+      </div>
+    );
+  }
+
+  // Show loading state briefly to prevent flash
+  if (!isPageReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3]">
+        <div className="text-gray-600">Loading...</div>
       </div>
     );
   }

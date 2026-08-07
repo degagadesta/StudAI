@@ -11,7 +11,7 @@ import { logout } from "../../api/authApi";
 
 const NAV_ITEMS = [
   { to: "/app/start-studying", label: "Start Studying", icon: Rocket },
-  { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/app/analytics", label: "Analytics", icon: LayoutDashboard },
   { to: "/app/courses", label: "Courses", icon: BookOpen },
   { to: "/app/schedule", label: "Schedule", icon: Calendar },
 ];

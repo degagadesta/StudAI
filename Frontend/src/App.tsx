@@ -12,10 +12,10 @@ import OnboardingPage from "./pages/OnboardingPage";
 // Dashboard tab routes (sidebar + topbar shell)
 import DashboardLayout from "./layouts/DashboardLayout";
 import StartStudyingPage from "./pages/StartStudyingPage";
-import DashboardPage from "./pages/Dashboardpage";
 import CoursesPage from "./pages/Coursepage";
 import SchedulePage from "./pages/Schedulepage";
 import ProfilePage from "./pages/Profilepage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
@@ -31,14 +31,13 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
+            
+            {/* Redirect /dashboard to /app/analytics */}
             <Route
               path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              }
+              element={<Navigate to="/app/analytics" replace />}
             />
+            
             <Route
               path="/app"
               element={
@@ -47,9 +46,9 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="start-studying" replace />} />
+              <Route index element={<Navigate to="analytics" replace />} />
               <Route path="start-studying" element={<StartStudyingPage />} />
-              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="courses" element={<CoursesPage />} />
               <Route path="schedule" element={<SchedulePage />} />
               <Route path="profile" element={<ProfilePage />} />

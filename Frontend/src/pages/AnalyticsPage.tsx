@@ -7,11 +7,14 @@ import {
 } from "lucide-react";
 import {
   getAnalytics,
+  getMaterialsProgress,
   type AnalyticsSummary,
   type ActivityBreakdown,
+  type MaterialProgressRow,
 } from "../api/AnalyticsApi";
 import { getApiErrorMessage } from "../api/authApi";
 import ActivityBarChart from "../components/analytics/ActivityBarChart";
+import MaterialsProgressTable from "../components/analytics/MaterialsProgressTable";
 
 interface StatCardProps {
   icon: LucideIcon;
@@ -49,9 +52,14 @@ function StatCard({ icon: Icon, label, value, dark = false }: StatCardProps) {
   );
 }
 
+const MATERIALS_PAGE_SIZE = 8;
+
 export default function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [activity, setActivity] = useState<ActivityBreakdown | null>(null);
+  const [materials, setMaterials] = useState<MaterialProgressRow[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,6 +83,24 @@ export default function AnalyticsPage() {
       cancelled = true;
     };
   }, []);
+
+  // Fetch materials progress (disabled until backend endpoint is ready)
+  useEffect(() => {
+    let cancelled = false;
+    getMaterialsProgress(page, MATERIALS_PAGE_SIZE)
+      .then((res) => {
+        if (cancelled) return;
+        setMaterials(res.rows);
+        setTotalPages(Math.max(1, Math.ceil(res.total / res.limit)));
+      })
+      .catch((err: unknown) => {
+        // Silently fail - endpoint doesn't exist yet
+        console.log('Materials endpoint not available yet');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
 
   if (isLoading) {
     return (
@@ -126,7 +152,12 @@ export default function AnalyticsPage() {
 
       <ActivityBarChart data={activity} />
 
-      {/* Materials table will be added when backend endpoint is available */}
+      <MaterialsProgressTable
+        rows={materials}
+        page={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

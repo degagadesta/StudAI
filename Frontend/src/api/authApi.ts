@@ -33,6 +33,7 @@ export interface LoginResponse {
     email: string;
     firstName: string;
   };
+  hasProfile?: boolean; // Optional for backward compatibility
 }
 
 export interface ForgotPasswordPayload {
@@ -54,6 +55,14 @@ export interface ResetPasswordResponse {
 
 export interface VerifyEmailResponse {
   message: string;
+  accessToken: string;
+  student: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  hasProfile: boolean;
 }
 
 export interface ApiErrorPayload {
@@ -77,9 +86,14 @@ export async function register(
 
 /**
  * Verify email address using token from email
+ * Automatically logs the user in and returns tokens + profile status
+ * Refresh token is automatically set as httpOnly cookie by backend
  */
 export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
   const res = await api.get<VerifyEmailResponse>(`/auth/verify-email?token=${token}`);
+  // Store access token for authenticated requests
+  setAccessToken(res.data.accessToken);
+  // Refresh token is now in httpOnly cookie - no need to store it
   return res.data;
 }
 
@@ -136,6 +150,14 @@ export async function logout(): Promise<void> {
     // Clear tokens even if request fails
     clearTokens();
   }
+}
+
+/**
+ * Check if user has completed onboarding (has StudentProfile)
+ */
+export async function checkProfile(): Promise<{ hasProfile: boolean }> {
+  const res = await api.get<{ hasProfile: boolean }>("/auth/check-profile");
+  return res.data;
 }
 
 // ============================================================================

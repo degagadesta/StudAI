@@ -108,8 +108,13 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         clearTokens();
-        // Only redirect if we're not already on login page
-        if (typeof window !== "undefined" && !window.location.pathname.includes('/login')) {
+        
+        // Only redirect if we're not already on a public auth page
+        const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+        const currentPath = typeof window !== "undefined" ? window.location.pathname : '';
+        const isOnPublicPage = publicPaths.some(path => currentPath.includes(path));
+        
+        if (typeof window !== "undefined" && !isOnPublicPage) {
           window.location.href = "/login";
         }
         return Promise.reject(refreshError);

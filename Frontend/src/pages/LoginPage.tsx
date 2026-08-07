@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from "react";
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { Eye, EyeOff, ArrowRight, AlertCircle } from "lucide-react";
 import {
@@ -9,6 +9,7 @@ import {
 } from "../utils/security/sanitize";
 import { login, googleSignIn, getApiErrorMessage } from "../api/authApi";
 import { useAuthContext } from "../contexts/AuthContext";
+import { routeAfterAuth } from "../utils/authRouting";
 
 interface LoginFormValues {
   email: string;
@@ -39,6 +40,7 @@ export default function LoginPage() {
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUser } = useAuthContext();
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
@@ -96,11 +98,15 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       const data = await login({ email, password, remember: values.remember });
-      // access token and refresh token are already stored in memory by login()
-      setUser(data.student);
+      console.log('[LoginPage] Login response:', data);
+      console.log('[LoginPage] hasProfile value:', data.hasProfile);
+      
+      // Set user with hasProfile
+      setUser(data.student, data.hasProfile);
 
-      const target = validateRedirectPath(searchParams.get("redirect")) || "/dashboard";
-      navigate(target);
+      // Use centralized routing with onboarding check
+      const redirectParam = validateRedirectPath(searchParams.get("redirect"));
+      await routeAfterAuth(navigate, data.hasProfile, redirectParam);
     } catch (err) {
       setErrors({
         form: getApiErrorMessage(err, "Invalid email or password."),
@@ -122,10 +128,14 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       const data = await googleSignIn(credentialResponse.credential);
-      setUser(data.student);
+      console.log('[LoginPage Google] Sign-in response:', data);
+      console.log('[LoginPage Google] hasProfile value:', data.hasProfile);
+      
+      setUser(data.student, data.hasProfile);
 
-      const target = validateRedirectPath(searchParams.get("redirect")) || "/dashboard";
-      navigate(target, { replace: true }); // Use replace to avoid back button issues
+      // Use centralized routing with onboarding check
+      const redirectParam = validateRedirectPath(searchParams.get("redirect"));
+      await routeAfterAuth(navigate, data.hasProfile, redirectParam);
     } catch (err) {
       setErrors({
         form: getApiErrorMessage(err, "Google sign-in failed. Please try again."),

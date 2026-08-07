@@ -13,6 +13,7 @@ import {
 import { stripControlChars, capLength } from "../utils/security/sanitize";
 import { register, googleSignIn, getApiErrorMessage } from "../api/authApi";
 import { useAuthContext } from "../contexts/AuthContext";
+import { routeAfterAuth } from "../utils/authRouting";
 
 interface RegisterFormValues {
   firstName: string;
@@ -168,11 +169,15 @@ export default function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      // Google sign-in DOES log the user in immediately — Google already
-      // verified the email, so there's no separate verification step.
+      // Google sign-in returns user + hasProfile status
       const data = await googleSignIn(credentialResponse.credential);
-      setUser(data.student);
-      navigate("/dashboard", { replace: true }); // Use replace to avoid back button issues
+      console.log('[RegisterPage Google] Sign-in response:', data);
+      console.log('[RegisterPage Google] hasProfile value:', data.hasProfile);
+      
+      setUser(data.student, data.hasProfile);
+      
+      // Use centralized routing with onboarding check
+      await routeAfterAuth(navigate, data.hasProfile);
     } catch (err) {
       setErrors({
         form: getApiErrorMessage(

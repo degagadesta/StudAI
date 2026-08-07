@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { OAuth2Client } from "google-auth-library";
-import prisma from "../../lib/prisma.js";
+import { prisma } from "../../lib/prisma.js";
 import { sendMail } from "../../lib/mailer.js";
 import { generateToken, hashToken } from "../../utils/tokens.js";
 import {
@@ -24,34 +24,117 @@ const VERIFICATION_EXPIRY_MS = 1000 * 60 * 60 * 24;
 const RESET_EXPIRY_MS = 1000 * 60 * 30;
 const REFRESH_EXPIRY_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
+const isDevelopment = process.env.NODE_ENV !== "production";
+const skipEmail = process.env.SKIP_EMAIL === "true";
+
 export async function register({ firstName, lastName, email, password }) {
   validateRegister({ firstName, lastName, email, password });
 
   const existing = await prisma.student.findUnique({ where: { email } });
-  if (existing) throw new AppError("Email already registered", 409);
+  
+  if (existing) {
+    // If student exists but email NOT verified, allow resending verification
+    if (!existing.emailVerified) {
+      // Generate new verification token
+      const { rawToken, tokenHash } = generateToken();
+      const verifyUrl = `${env.frontendUrl}/verify-email?token=${rawToken}`;
+      
+      // Update verification token and expiry
+      await prisma.student.update({
+        where: { id: existing.id },
+        data: {
+          verificationToken: tokenHash,
+          verificationTokenExpiresAt: new Date(Date.now() + VERIFICATION_EXPIRY_MS),
+        },
+      });
 
+      // Try to send verification email
+      try {
+        await sendMail({
+          to: email,
+          subject: "Verify your StudAI account",
+          html: `<p>Hi ${existing.firstName},</p><p>Click below to verify your account:</p><a href="${verifyUrl}">${verifyUrl}</a><p>This link expires in 24 hours.</p>`,
+        });
+      } catch (emailError) {
+        console.error("Failed to send verification email:", emailError.message);
+        // In development or with SKIP_EMAIL, this is expected
+        if (!isDevelopment && !skipEmail) {
+          throw new AppError("Failed to send verification email. Please try again later.", 500);
+        }
+      }
+
+      return { 
+        id: existing.id, 
+        email: existing.email,
+      };
+    }
+    
+    // Email already verified - user should login instead
+    throw new AppError("Email already registered. Please login instead.", 409);
+  }
+
+  // New registration - use transaction for atomicity
   const passwordHash = await bcrypt.hash(password, 10);
   const { rawToken, tokenHash } = generateToken();
-
   const verifyUrl = `${env.frontendUrl}/verify-email?token=${rawToken}`;
-  await sendMail({
-    to: email,
-    subject: "Verify your StudAI account",
-    html: `<p>Hi ${firstName},</p><p>Click below to verify your account:</p><a href="${verifyUrl}">${verifyUrl}</a><p>This link expires in 24 hours.</p>`,
-  });
 
-  const student = await prisma.student.create({
-    data: {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.toLowerCase().trim(),
-      passwordHash,
-      verificationToken: tokenHash,
-      verificationTokenExpiresAt: new Date(Date.now() + VERIFICATION_EXPIRY_MS),
-    },
-  });
+  let student;
+  let emailSent = false;
 
-  return { id: student.id, email: student.email };
+  try {
+    // First, try to send email (to avoid creating account if email will fail in production)
+    if (!isDevelopment && !skipEmail) {
+      await sendMail({
+        to: email,
+        subject: "Verify your StudAI account",
+        html: `<p>Hi ${firstName},</p><p>Click below to verify your account:</p><a href="${verifyUrl}">${verifyUrl}</a><p>This link expires in 24 hours.</p>`,
+      });
+      emailSent = true;
+    }
+
+    // Create student account (only after email is sent in production)
+    student = await prisma.student.create({
+      data: {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.toLowerCase().trim(),
+        passwordHash,
+        verificationToken: tokenHash,
+        verificationTokenExpiresAt: new Date(Date.now() + VERIFICATION_EXPIRY_MS),
+      },
+    });
+
+    // In development or skip mode, try sending email after creating account
+    if ((isDevelopment || skipEmail) && !emailSent) {
+      try {
+        await sendMail({
+          to: email,
+          subject: "Verify your StudAI account",
+          html: `<p>Hi ${firstName},</p><p>Click below to verify your account:</p><a href="${verifyUrl}">${verifyUrl}</a><p>This link expires in 24 hours.</p>`,
+        });
+      } catch (emailError) {
+        console.error("Failed to send verification email:", emailError.message);
+        // In development, this is fine - link is logged to console
+      }
+    }
+
+    return { id: student.id, email: student.email };
+  } catch (error) {
+    // If student was created but email failed, clean up
+    if (student && !emailSent && !isDevelopment && !skipEmail) {
+      await prisma.student.delete({ where: { id: student.id } });
+      throw new AppError("Failed to send verification email. Please try again.", 500);
+    }
+
+    // If it's our custom error, rethrow it
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    // Log and throw generic error
+    console.error("Registration error:", error);
+    throw new AppError("Registration failed. Please try again.", 500);
+  }
 }
 
 export async function verifyEmail(rawToken) {
@@ -61,18 +144,42 @@ export async function verifyEmail(rawToken) {
       verificationToken: tokenHash,
       verificationTokenExpiresAt: { gt: new Date() },
     },
+    include: {
+      profile: true, // Include profile to check if onboarding is complete
+    },
   });
   if (!student)
     throw new AppError("Invalid or expired verification token", 400);
 
+  // Generate tokens for automatic login
+  const accessToken = signToken({ studentId: student.id });
+  const refreshToken = signRefreshToken({ studentId: student.id });
+  const refreshTokenHash = hashToken(refreshToken);
+
+  // Update student: verify email, clear verification token, set refresh token
   await prisma.student.update({
     where: { id: student.id },
     data: {
       emailVerified: true,
       verificationToken: null,
       verificationTokenExpiresAt: null,
+      refreshToken: refreshTokenHash,
+      refreshTokenExpiresAt: new Date(Date.now() + REFRESH_EXPIRY_MS),
     },
   });
+
+  // Return tokens and user info, plus onboarding status
+  return {
+    accessToken,
+    refreshToken,
+    student: {
+      id: student.id,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      email: student.email,
+    },
+    hasProfile: !!student.profile, // true if onboarding complete, false otherwise
+  };
 }
 
 export async function login({ email, password }) {
@@ -80,6 +187,9 @@ export async function login({ email, password }) {
 
   const student = await prisma.student.findUnique({
     where: { email: email.toLowerCase().trim() },
+    include: {
+      profile: true, // Include profile to check if onboarding is complete
+    },
   });
   if (!student || !student.passwordHash)
     throw new AppError("Invalid email or password", 401);
@@ -110,6 +220,7 @@ export async function login({ email, password }) {
       firstName: student.firstName,
       email: student.email,
     },
+    hasProfile: !!student.profile, // true if onboarding complete, false otherwise
   };
 }
 
@@ -131,11 +242,18 @@ export async function forgotPassword(email) {
   });
 
   const resetUrl = `${env.frontendUrl}/reset-password?token=${rawToken}`;
-  await sendMail({
-    to: email,
-    subject: "Reset your StudAI password",
-    html: `<p>Click below to reset your password. This link expires in 30 minutes.</p><a href="${resetUrl}">${resetUrl}</a>`,
-  });
+  try {
+    await sendMail({
+      to: email,
+      subject: "Reset your StudAI password",
+      html: `<p>Click below to reset your password. This link expires in 30 minutes.</p><a href="${resetUrl}">${resetUrl}</a>`,
+    });
+  } catch (emailError) {
+    console.error("Failed to send password reset email:", emailError.message);
+    if (!isDevelopment && !skipEmail) {
+      throw new AppError("Failed to send password reset email.", 500);
+    }
+  }
 }
 
 export async function resetPassword({ rawToken, newPassword }) {
@@ -163,16 +281,25 @@ export async function googleSignIn(idToken) {
 
   let student = await prisma.student.findUnique({
     where: { googleId: payload.sub },
+    include: {
+      profile: true, // Include profile to check if onboarding is complete
+    },
   });
 
   if (!student) {
     student = await prisma.student.findUnique({
       where: { email: payload.email },
+      include: {
+        profile: true,
+      },
     });
     if (student) {
       student = await prisma.student.update({
         where: { id: student.id },
         data: { googleId: payload.sub, emailVerified: true },
+        include: {
+          profile: true,
+        },
       });
     } else {
       student = await prisma.student.create({
@@ -182,6 +309,9 @@ export async function googleSignIn(idToken) {
           email: payload.email,
           googleId: payload.sub,
           emailVerified: true,
+        },
+        include: {
+          profile: true,
         },
       });
     }
@@ -207,6 +337,7 @@ export async function googleSignIn(idToken) {
       firstName: student.firstName,
       email: student.email,
     },
+    hasProfile: !!student.profile, // Return onboarding status
   };
 }
 
@@ -257,4 +388,26 @@ export async function logout(studentId) {
       refreshTokenExpiresAt: null,
     },
   });
+}
+
+export async function checkProfile(studentId) {
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    include: {
+      profile: true,
+    },
+  });
+
+  if (!student) {
+    throw new AppError("Student not found", 404);
+  }
+
+  return {
+    hasProfile: !!student.profile,
+    student: {
+      id: student.id,
+      firstName: student.firstName,
+      email: student.email,
+    },
+  };
 }

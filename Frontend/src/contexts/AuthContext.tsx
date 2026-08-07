@@ -11,7 +11,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  setUser: (user: User | null) => void;
+  hasProfile: boolean;
+  setUser: (user: User | null, hasProfile?: boolean) => void;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }

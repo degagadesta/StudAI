@@ -1,8 +1,13 @@
 import * as departmentService from "./department.service.js";
+import { AppError } from "../../utils/AppError.js";
 
 export const getDepartments = async (req, res, next) => {
     try {
         const { universityId } = req.params;
+
+        if (!universityId) {
+            throw new AppError("University ID is required", 400);
+        }
 
         const departments = await departmentService.getDepartmentsByUniversity(
             universityId
@@ -22,10 +27,7 @@ export const getDepartment = async (req, res, next) => {
         const department = await departmentService.getDepartmentById(req.params.id);
 
         if (!department) {
-            return res.status(404).json({
-                success: false,
-                message: "Department not found",
-            });
+            throw new AppError("Department not found", 404);
         }
 
         return res.status(200).json({

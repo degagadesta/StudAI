@@ -12,8 +12,23 @@ export const registerHandler = asyncHandler(async (req, res) => {
 });
 
 export const verifyEmailHandler = asyncHandler(async (req, res) => {
-  await authService.verifyEmail(req.query.token);
-  res.json({ message: "Email verified successfully." });
+  const result = await authService.verifyEmail(req.query.token);
+
+  // Set refresh token as httpOnly cookie
+  res.cookie("refreshToken", result.refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
+
+  // Return access token, student info, and onboarding status
+  res.json({
+    message: "Email verified successfully.",
+    accessToken: result.accessToken,
+    student: result.student,
+    hasProfile: result.hasProfile,
+  });
 });
 
 export const loginHandler = asyncHandler(async (req, res) => {
@@ -27,10 +42,11 @@ export const loginHandler = asyncHandler(async (req, res) => {
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
 
-  // Send only accessToken in response body
+  // Send accessToken, student info, AND hasProfile status
   res.status(200).json({
     accessToken: result.accessToken,
     student: result.student,
+    hasProfile: result.hasProfile, // Include onboarding status
   });
 });
 
@@ -58,10 +74,11 @@ export const googleSignInHandler = asyncHandler(async (req, res) => {
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
 
-  // Send only accessToken in response body
+  // Send accessToken, student info, AND hasProfile status
   res.status(200).json({
     accessToken: result.accessToken,
     student: result.student,
+    hasProfile: result.hasProfile, // Include onboarding status
   });
 });
 
@@ -100,4 +117,9 @@ export const logoutHandler = asyncHandler(async (req, res) => {
   });
 
   res.json({ message: "Logged out successfully" });
+});
+
+export const checkProfileHandler = asyncHandler(async (req, res) => {
+  const result = await authService.checkProfile(req.studentId);
+  res.json(result);
 });

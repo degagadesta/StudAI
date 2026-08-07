@@ -1,4 +1,5 @@
 import * as universityService from "./university.service.js";
+import { AppError } from "../../utils/AppError.js";
 
 export const getUniversities = async (req, res, next) => {
     try {
@@ -18,10 +19,7 @@ export const getUniversity = async (req, res, next) => {
         const university = await universityService.getUniversityById(req.params.id);
 
         if (!university) {
-            return res.status(404).json({
-                success: false,
-                message: "University not found",
-            });
+            throw new AppError("University not found", 404);
         }
 
         return res.status(200).json({

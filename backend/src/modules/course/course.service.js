@@ -8,7 +8,7 @@ export const getStudentCourses = async (studentId) => {
     });
 
     if (!student) {
-        throw new AppError("Student not found", 404);
+        throw new AppError("Account not found. Please log in again", 404);
     }
 
     // Find the student's academic profile
@@ -19,7 +19,7 @@ export const getStudentCourses = async (studentId) => {
     });
 
     if (!profile) {
-        throw new AppError("Please complete academic onboarding first", 400);
+        throw new AppError("Please complete your profile setup to view your courses", 400);
     }
 
     // Load courses for the student's current year and semester

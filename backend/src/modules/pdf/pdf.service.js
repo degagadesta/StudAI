@@ -10,7 +10,7 @@ export async function uploadPDF(studentId, courseId, file) {
     where: { id: studentId },
     select: { subscriptionPlan: true },
   });
-  if (!student) throw new AppError("Student not found", 404);
+  if (!student) throw new AppError("Account not found. Please log in again", 404);
 
   // 2. 24-hour upload window limit
   //    Count ALL uploads in the last 24 hours regardless of status (deleted or not).
@@ -26,20 +26,20 @@ export async function uploadPDF(studentId, courseId, file) {
   if (!canUploadMore(student.subscriptionPlan, uploadedInLast24h)) {
     const limit = SUBSCRIPTION_LIMITS[student.subscriptionPlan];
     throw new AppError(
-      `Daily upload limit reached. Your ${student.subscriptionPlan} plan allows ${limit} PDF uploads per 24 hours`,
+      `You've reached your daily upload limit. Your ${student.subscriptionPlan} plan allows ${limit} PDF uploads per day. Try again tomorrow or upgrade your plan`,
       403
     );
   }
 
   // 3. Require completed onboarding
   const profile = await prisma.studentProfile.findUnique({ where: { studentId } });
-  if (!profile) throw new AppError("Please complete onboarding first", 400);
+  if (!profile) throw new AppError("Please complete your profile setup before uploading PDFs", 400);
 
   // 4. Verify the course belongs to the student's curriculum
   const courseAccess = await prisma.curriculumCourse.findFirst({
     where: { curriculumId: profile.curriculumId, courseId },
   });
-  if (!courseAccess) throw new AppError("You don't have access to this course", 403);
+  if (!courseAccess) throw new AppError("This course is not part of your curriculum", 403);
 
   // 5. Store file binary directly in the database (no disk I/O)
   const pdf = await prisma.courseMaterial.create({
@@ -109,8 +109,8 @@ export async function getPDFFile(studentId, pdfId) {
     select: { title: true, fileData: true, progress: true },
   });
 
-  if (!pdf) throw new AppError("PDF not found", 404);
-  if (!pdf.fileData) throw new AppError("File data not available", 404);
+  if (!pdf) throw new AppError("PDF file not found", 404);
+  if (!pdf.fileData) throw new AppError("PDF content is not available", 404);
 
   return {
     fileName: pdf.title,
@@ -123,14 +123,14 @@ export async function getPDFFile(studentId, pdfId) {
 
 export async function updateReadProgress(studentId, pdfId, progressPercentage) {
   if (typeof progressPercentage !== 'number' || progressPercentage < 0 || progressPercentage > 100) {
-    throw new AppError("progress must be a number between 0 and 100", 400);
+    throw new AppError("Progress must be between 0 and 100", 400);
   }
 
   const pdf = await prisma.courseMaterial.findFirst({
     where: { id: pdfId, uploadedBy: studentId, status: "READY" },
     select: { id: true, progress: true },
   });
-  if (!pdf) throw new AppError("PDF not found", 404);
+  if (!pdf) throw new AppError("PDF file not found", 404);
 
   // Only advance forward — never regress progress
   const newProgress = Math.max(pdf.progress, progressPercentage);
@@ -151,7 +151,7 @@ export async function deletePDF(studentId, pdfId) {
     where: { id: pdfId, uploadedBy: studentId, status: "READY" },
     select: { id: true },
   });
-  if (!pdf) throw new AppError("PDF not found or already deleted", 404);
+  if (!pdf) throw new AppError("PDF file not found or already deleted", 404);
 
   // Soft-delete: clear binary data to free DB space, mark as DELETED
   await prisma.courseMaterial.update({

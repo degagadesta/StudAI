@@ -5,18 +5,18 @@ const ALLOWED_MIME_TYPES = ['application/pdf'];
 
 export function validatePDFUpload(file, courseId) {
     if (!file) {
-        throw new AppError("No file uploaded", 400);
+        throw new AppError("Please select a PDF file to upload", 400);
     }
 
     if (!courseId) {
-        throw new AppError("Course ID is required", 400);
+        throw new AppError("Please select a course for this PDF", 400);
     }
 
     if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-        throw new AppError("Only PDF files are allowed", 400);
+        throw new AppError("Only PDF files are supported. Please upload a PDF file", 400);
     }
 
     if (file.size > MAX_FILE_SIZE) {
-        throw new AppError("File size exceeds 20MB limit", 400);
+        throw new AppError("File is too large. Maximum size is 20MB", 400);
     }
 }

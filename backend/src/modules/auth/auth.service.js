@@ -31,14 +31,14 @@ export async function register({ firstName, lastName, email, password }) {
   validateRegister({ firstName, lastName, email, password });
 
   const existing = await prisma.student.findUnique({ where: { email } });
-  
+
   if (existing) {
     // If student exists but email NOT verified, allow resending verification
     if (!existing.emailVerified) {
       // Generate new verification token
       const { rawToken, tokenHash } = generateToken();
       const verifyUrl = `${env.frontendUrl}/verify-email?token=${rawToken}`;
-      
+
       // Update verification token and expiry
       await prisma.student.update({
         where: { id: existing.id },
@@ -59,18 +59,18 @@ export async function register({ firstName, lastName, email, password }) {
         console.error("Failed to send verification email:", emailError.message);
         // In development or with SKIP_EMAIL, this is expected
         if (!isDevelopment && !skipEmail) {
-          throw new AppError("Failed to send verification email. Please try again later.", 500);
+          throw new AppError("Unable to send verification email. Please try again or contact support", 500);
         }
       }
 
-      return { 
-        id: existing.id, 
+      return {
+        id: existing.id,
         email: existing.email,
       };
     }
-    
+
     // Email already verified - user should login instead
-    throw new AppError("Email already registered. Please login instead.", 409);
+    throw new AppError("This email is already registered. Please log in to continue", 409);
   }
 
   // New registration - use transaction for atomicity
@@ -123,7 +123,7 @@ export async function register({ firstName, lastName, email, password }) {
     // If student was created but email failed, clean up
     if (student && !emailSent && !isDevelopment && !skipEmail) {
       await prisma.student.delete({ where: { id: student.id } });
-      throw new AppError("Failed to send verification email. Please try again.", 500);
+      throw new AppError("Unable to send verification email. Please try again or contact support", 500);
     }
 
     // If it's our custom error, rethrow it
@@ -133,7 +133,7 @@ export async function register({ firstName, lastName, email, password }) {
 
     // Log and throw generic error
     console.error("Registration error:", error);
-    throw new AppError("Registration failed. Please try again.", 500);
+    throw new AppError("Unable to create account. Please try again", 500);
   }
 }
 
@@ -149,7 +149,7 @@ export async function verifyEmail(rawToken) {
     },
   });
   if (!student)
-    throw new AppError("Invalid or expired verification token", 400);
+    throw new AppError("Verification link is invalid or has expired. Please request a new one", 400);
 
   // Generate tokens for automatic login
   const accessToken = signToken({ studentId: student.id });
@@ -192,13 +192,13 @@ export async function login({ email, password }) {
     },
   });
   if (!student || !student.passwordHash)
-    throw new AppError("Invalid email or password", 401);
+    throw new AppError("Email or password is incorrect. Please try again", 401);
 
   const valid = await bcrypt.compare(password, student.passwordHash);
-  if (!valid) throw new AppError("Invalid email or password", 401);
+  if (!valid) throw new AppError("Email or password is incorrect. Please try again", 401);
 
   if (!student.emailVerified)
-    throw new AppError("Please verify your email before logging in", 403);
+    throw new AppError("Please verify your email before logging in. Check your inbox for the verification link", 403);
 
   const accessToken = signToken({ studentId: student.id });
   const refreshToken = signRefreshToken({ studentId: student.id });
@@ -251,7 +251,7 @@ export async function forgotPassword(email) {
   } catch (emailError) {
     console.error("Failed to send password reset email:", emailError.message);
     if (!isDevelopment && !skipEmail) {
-      throw new AppError("Failed to send password reset email.", 500);
+      throw new AppError("Unable to send password reset email. Please try again or contact support", 500);
     }
   }
 }
@@ -263,7 +263,7 @@ export async function resetPassword({ rawToken, newPassword }) {
   const student = await prisma.student.findFirst({
     where: { resetToken: tokenHash, resetTokenExpiresAt: { gt: new Date() } },
   });
-  if (!student) throw new AppError("Invalid or expired reset token", 400);
+  if (!student) throw new AppError("Password reset link is invalid or has expired. Please request a new one", 400);
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
   await prisma.student.update({
@@ -348,7 +348,7 @@ export async function refreshAccessToken(refreshToken) {
   try {
     payload = verifyRefreshToken(refreshToken);
   } catch {
-    throw new AppError("Invalid or expired refresh token", 401);
+    throw new AppError("Your session has expired. Please log in again", 401);
   }
 
   const refreshTokenHash = hashToken(refreshToken);
@@ -360,7 +360,7 @@ export async function refreshAccessToken(refreshToken) {
     },
   });
 
-  if (!student) throw new AppError("Invalid or expired refresh token", 401);
+  if (!student) throw new AppError("Your session has expired. Please log in again", 401);
 
   const newAccessToken = signToken({ studentId: student.id });
   const newRefreshToken = signRefreshToken({ studentId: student.id });
@@ -399,7 +399,7 @@ export async function checkProfile(studentId) {
   });
 
   if (!student) {
-    throw new AppError("Student not found", 404);
+    throw new AppError("Account not found. Please log in again", 404);
   }
 
   return {

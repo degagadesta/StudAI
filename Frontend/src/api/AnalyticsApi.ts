@@ -1,22 +1,55 @@
 import { api } from "./client";
 
-// ── Types ────────────────────────────────────────────────────────────────
+// ── Raw shapes returned by the backend ─────────────────────────────────────
+
+interface DailyActivityRaw {
+  date: string;
+  day: string; // "Mon", "Tue", ...
+  hours: number;
+}
+
+interface WeeklyActivityRaw {
+  weekStart: string;
+  weekEnd: string;
+  weekLabel: string; // "Week 1".."Week 4"
+  days: number;
+}
+
+interface MonthlyActivityRaw {
+  month: string; // "Jan 2026"
+  year: number;
+  monthNumber: number;
+  days: number;
+}
+
+interface AnalyticsResponseRaw {
+  enrolledCourses: number;
+  totalPdfsUploaded: number;
+  totalEvents: number;
+  activity: {
+    daily: DailyActivityRaw[];
+    weekly: WeeklyActivityRaw[];
+    monthly: MonthlyActivityRaw[];
+  };
+}
+
+// ── Normalized shapes the frontend actually uses ────────────────────────────
 
 export interface AnalyticsSummary {
   enrolledCourses: number;
   totalPdfsUploaded: number;
-  // savedEvents removed — sourced from /events instead, see Scheduleapi.ts
+  totalEvents: number;
 }
 
 export interface ActivityBucket {
   label: string;
-  value: number; // hours for "daily", days-active for "weekly"/"monthly"
+  value: number;
 }
 
 export interface ActivityBreakdown {
-  daily: ActivityBucket[]; // 6 buckets — hours spent, last 6 days
-  weekly: ActivityBucket[]; // 4 buckets — days active, past 4 weeks
-  monthly: ActivityBucket[]; // 12 buckets — days active, past 12 months
+  daily: ActivityBucket[]; // 7 buckets, hours per day
+  weekly: ActivityBucket[]; // 4 buckets, days active per week
+  monthly: ActivityBucket[]; // 12 buckets, days active per month
 }
 
 export interface MaterialProgressRow {
@@ -35,16 +68,34 @@ export interface MaterialsPage {
   limit: number;
 }
 
-// ── Requests ─────────────────────────────────────────────────────────────
+// ── Normalization ────────────────────────────────────────────────────────
 
-export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
-  const res = await api.get<AnalyticsSummary>("/analytics");
-  return res.data;
+function normalizeActivity(
+  raw: AnalyticsResponseRaw["activity"],
+): ActivityBreakdown {
+  return {
+    daily: raw.daily.map((d) => ({ label: d.day, value: d.hours })),
+    weekly: raw.weekly.map((w) => ({ label: w.weekLabel, value: w.days })),
+    monthly: raw.monthly.map((m) => ({ label: m.month, value: m.days })),
+  };
 }
 
-export async function getActivityBreakdown(): Promise<ActivityBreakdown> {
-  const res = await api.get<ActivityBreakdown>("/analytics/activity");
-  return res.data;
+// ── Requests ─────────────────────────────────────────────────────────────
+
+export async function getAnalytics(): Promise<{
+  summary: AnalyticsSummary;
+  activity: ActivityBreakdown;
+}> {
+  const res = await api.get<{ success: boolean; data: AnalyticsResponseRaw }>(
+    "/student/analytics"
+  );
+  const { enrolledCourses, totalPdfsUploaded, totalEvents, activity } =
+    res.data.data;
+
+  return {
+    summary: { enrolledCourses, totalPdfsUploaded, totalEvents },
+    activity: normalizeActivity(activity),
+  };
 }
 
 export async function getMaterialsProgress(

@@ -6,17 +6,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  getAnalyticsSummary,
-  getActivityBreakdown,
-  getMaterialsProgress,
+  getAnalytics,
   type AnalyticsSummary,
   type ActivityBreakdown,
-  type MaterialProgressRow,
-} from "../api/Analyticsapi";
-import { getEventsOverview } from "../api/Scheduleapi";
+} from "../api/AnalyticsApi";
 import { getApiErrorMessage } from "../api/authApi";
 import ActivityBarChart from "../components/analytics/ActivityBarChart";
-import MaterialsProgressTable from "../components/analytics/MaterialsProgressTable";
 
 interface StatCardProps {
   icon: LucideIcon;
@@ -54,36 +49,22 @@ function StatCard({ icon: Icon, label, value, dark = false }: StatCardProps) {
   );
 }
 
-const MATERIALS_PAGE_SIZE = 8;
-
 export default function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [activity, setActivity] = useState<ActivityBreakdown | null>(null);
-  const [savedEvents, setSavedEvents] = useState(0);
-  const [materials, setMaterials] = useState<MaterialProgressRow[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch analytics data on mount
   useEffect(() => {
     let cancelled = false;
-    Promise.all([
-      getAnalyticsSummary(),
-      getActivityBreakdown(),
-      getEventsOverview(),
-    ])
-      .then(([summaryData, activityData, eventsData]) => {
+    getAnalytics()
+      .then(({ summary, activity }) => {
         if (cancelled) return;
-        setSummary(summaryData);
-        setActivity(activityData);
-        setSavedEvents(
-          eventsData.dueToday.length +
-            eventsData.oneDayLeft.length +
-            eventsData.upcoming.length,
-        );
+        setSummary(summary);
+        setActivity(activity);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (!cancelled)
           setError(getApiErrorMessage(err, "Could not load your analytics."));
       })
@@ -94,23 +75,6 @@ export default function AnalyticsPage() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    getMaterialsProgress(page, MATERIALS_PAGE_SIZE)
-      .then((res) => {
-        if (cancelled) return;
-        setMaterials(res.rows);
-        setTotalPages(Math.max(1, Math.ceil(res.total / res.limit)));
-      })
-      .catch((err) => {
-        if (!cancelled)
-          setError(getApiErrorMessage(err, "Could not load your materials."));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [page]);
 
   if (isLoading) {
     return (
@@ -155,19 +119,14 @@ export default function AnalyticsPage() {
         <StatCard
           icon={CalendarCheck2}
           label="Events saved"
-          value={String(savedEvents)}
+          value={String(summary.totalEvents)}
           dark
         />
       </div>
 
       <ActivityBarChart data={activity} />
 
-      <MaterialsProgressTable
-        rows={materials}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+      {/* Materials table will be added when backend endpoint is available */}
     </div>
   );
 }

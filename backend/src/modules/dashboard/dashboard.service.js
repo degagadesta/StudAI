@@ -19,8 +19,8 @@ export async function getDashboardData(studentId) {
     },
   });
 
-  if (!student) throw new AppError("Student not found", 404);
-  if (!student.profile) throw new AppError("Please complete onboarding first", 400);
+  if (!student) throw new AppError("Account not found. Please log in again", 404);
+  if (!student.profile) throw new AppError("Please complete your profile setup to view your dashboard", 400);
 
   const { profile } = student;
 

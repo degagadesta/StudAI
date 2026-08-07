@@ -24,10 +24,10 @@ function buildDateBoundaries() {
 // ─── CRUD ────────────────────────────────────────────────────────────────────
 
 export async function createEvent(studentId, { title, description, eventDate }) {
-  if (!title?.trim()) throw new AppError("Event title is required", 400);
+  if (!title?.trim()) throw new AppError("Please enter an event title", 400);
 
   const date = new Date(eventDate);
-  if (isNaN(date.getTime())) throw new AppError("Invalid event date", 400);
+  if (isNaN(date.getTime())) throw new AppError("Please enter a valid date", 400);
   if (date < new Date()) throw new AppError("Event date must be in the future", 400);
 
   return prisma.upcomingEvent.create({
@@ -109,7 +109,7 @@ export async function updateEvent(studentId, eventId, { title, description, even
   if (description !== undefined) updates.description = description?.trim() ?? null;
   if (eventDate !== undefined) {
     const date = new Date(eventDate);
-    if (isNaN(date.getTime())) throw new AppError("Invalid event date", 400);
+    if (isNaN(date.getTime())) throw new AppError("Please enter a valid date", 400);
     updates.eventDate = date;
   }
 

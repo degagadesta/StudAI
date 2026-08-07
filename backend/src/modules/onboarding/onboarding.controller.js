@@ -8,7 +8,7 @@ export const getAvailableCourses = async (req, res, next) => {
         if (!universityId || !departmentId || !year || !semester) {
             return res.status(400).json({
                 success: false,
-                message: "Missing required query parameters: universityId, departmentId, year, semester",
+                message: "Please provide all required information: university, department, year, and semester",
             });
         }
 
@@ -40,19 +40,19 @@ export const onboarding = async (req, res, next) => {
 
         // Validate required fields
         if (!universityId || !departmentId || !currentYear || !currentSemester) {
-            throw new AppError("All fields are required: universityId, departmentId, currentYear, currentSemester", 400);
+            throw new AppError("Please fill in all required fields: university, department, year, and semester", 400);
         }
 
         // Validate data types
         if (typeof universityId !== 'string' || typeof departmentId !== 'string') {
-            throw new AppError("Invalid university or department ID", 400);
+            throw new AppError("Please select valid university and department", 400);
         }
 
         const year = parseInt(currentYear);
         const semester = parseInt(currentSemester);
 
         if (isNaN(year) || isNaN(semester)) {
-            throw new AppError("Year and semester must be numbers", 400);
+            throw new AppError("Please enter valid numbers for year and semester", 400);
         }
 
         const result = await onboardingService.completeOnboarding(

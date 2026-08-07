@@ -6,7 +6,7 @@ export const getDepartments = async (req, res, next) => {
         const { universityId } = req.params;
 
         if (!universityId) {
-            throw new AppError("University ID is required", 400);
+            throw new AppError("Please select a university", 400);
         }
 
         const departments = await departmentService.getDepartmentsByUniversity(

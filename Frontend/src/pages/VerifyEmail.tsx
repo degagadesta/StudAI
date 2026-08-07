@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { verifyEmail, getApiErrorMessage } from "../api/authApi";
 import { useAuthContext } from "../contexts/AuthContext";
-import { routeAfterAuth } from "../utils/authRouting";
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -11,6 +10,7 @@ export default function VerifyEmail() {
   const { setUser } = useAuthContext();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState<string>("");
+  const hasVerified = useRef(false);
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -23,28 +23,20 @@ export default function VerifyEmail() {
       return;
     }
 
-    // Use a flag to prevent double-execution in React Strict Mode
-    let isCancelled = false;
+    // Prevent double-execution in React Strict Mode
+    if (hasVerified.current) {
+      console.log('[VerifyEmail] Already verified, skipping');
+      return;
+    }
+    hasVerified.current = true;
 
     const verifyEmailToken = async () => {
-      if (isCancelled) {
-        console.log('[VerifyEmail] Effect cancelled, skipping');
-        return;
-      }
-      
       try {
         console.log('[VerifyEmail] Starting verification...');
         setStatus("loading");
         
         // Call verify endpoint - it returns tokens, user data, and profile status
         const response = await verifyEmail(token);
-        
-        // Check if effect was cancelled while waiting for API
-        if (isCancelled) {
-          console.log('[VerifyEmail] Effect cancelled after API call');
-          return;
-        }
-        
         console.log('[VerifyEmail] Verification response:', response);
         
         // Set user in auth context with hasProfile
@@ -55,34 +47,31 @@ export default function VerifyEmail() {
         setStatus("success");
         setMessage(response.message || "Email verified successfully! Redirecting...");
 
-        // Wait 2 seconds then redirect based on onboarding status
-        setTimeout(async () => {
-          if (!isCancelled) {
-            console.log('[VerifyEmail] Redirecting after verification...');
-            // Use centralized routing logic
-            await routeAfterAuth(navigate, response.hasProfile);
+        // Wait 1.5 seconds then redirect to onboarding (new users don't have profile yet)
+        setTimeout(() => {
+          console.log('[VerifyEmail] Redirecting to onboarding...');
+          console.log('[VerifyEmail] hasProfile from response:', response.hasProfile);
+          
+          // New users should go to onboarding, returning users to dashboard
+          if (response.hasProfile) {
+            console.log('[VerifyEmail] User has profile, going to dashboard');
+            navigate("/dashboard", { replace: true });
+          } else {
+            console.log('[VerifyEmail] User needs onboarding, going to /onboarding');
+            navigate("/onboarding", { replace: true });
           }
-        }, 2000);
+        }, 1500);
       } catch (error: any) {
-        if (!isCancelled) {
-          console.error('[VerifyEmail] Verification failed:', error);
-          setStatus("error");
-          setMessage(
-            getApiErrorMessage(error, "Verification failed. The link may be expired or invalid.")
-          );
-        }
+        console.error('[VerifyEmail] Verification failed:', error);
+        setStatus("error");
+        setMessage(
+          getApiErrorMessage(error, "Verification failed. The link may be expired or invalid.")
+        );
       }
     };
 
     verifyEmailToken();
-    
-    // Cleanup function to prevent state updates after unmount
-    return () => {
-      console.log('[VerifyEmail] Cleanup - cancelling effect');
-      isCancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]); // Only depend on searchParams, not setUser or navigate
+  }, [searchParams, setUser, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3] px-4">

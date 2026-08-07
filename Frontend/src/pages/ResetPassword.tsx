@@ -18,6 +18,8 @@ export default function ResetPassword() {
   const navigate = useNavigate();
   const token = searchParams.get("token");
 
+  console.log('[ResetPassword] Component mounted, token:', token ? 'present' : 'missing');
+
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -67,26 +69,37 @@ export default function ResetPassword() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
+    console.log('[ResetPassword] Form submitted');
+
     if (!token) {
+      console.log('[ResetPassword] No token available');
       setErrors({ form: "Invalid reset link. No token provided." });
       return;
     }
 
     const fieldErrors = validate();
     if (Object.keys(fieldErrors).length > 0) {
+      console.log('[ResetPassword] Validation errors:', fieldErrors);
       setErrors(fieldErrors);
       return;
     }
 
     setIsSubmitting(true);
     try {
+      console.log('[ResetPassword] Calling resetPassword API...');
       await resetPassword({
         token,
         newPassword: password,
       });
+      console.log('[ResetPassword] Password reset successful');
       setSuccess(true);
-      setTimeout(() => navigate("/login"), 3000);
+      console.log('[ResetPassword] Scheduling redirect to login in 3 seconds...');
+      setTimeout(() => {
+        console.log('[ResetPassword] Navigating to login...');
+        navigate("/login");
+      }, 3000);
     } catch (err) {
+      console.error('[ResetPassword] Password reset failed:', err);
       setErrors({
         form: getApiErrorMessage(err, "Password reset failed. The link may be expired."),
       });
@@ -96,6 +109,7 @@ export default function ResetPassword() {
   };
 
   if (!token) {
+    console.log('[ResetPassword] Rendering invalid link screen (no token)');
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3] px-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -108,6 +122,7 @@ export default function ResetPassword() {
   }
 
   if (success) {
+    console.log('[ResetPassword] Rendering success screen');
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3] px-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -123,6 +138,7 @@ export default function ResetPassword() {
     );
   }
 
+  console.log('[ResetPassword] Rendering reset password form');
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3] px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">

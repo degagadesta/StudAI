@@ -1,13 +1,21 @@
 import { api } from "./client";
 
-export interface ScheduleEvent {
+// ── add these types + function to your existing Scheduleapi.ts ───────────
+
+export interface ScheduleEventFull {
   id: string;
   title: string;
-  courseName: string;
-  date: string; // ISO date string
+  description: string | null;
+  eventDate: string; // ISO date string
 }
 
-export async function getUpcomingEvents(): Promise<ScheduleEvent[]> {
-  const res = await api.get<ScheduleEvent[]>("/schedule");
+export interface EventsOverview {
+  dueToday: ScheduleEventFull[];
+  oneDayLeft: ScheduleEventFull[];
+  upcoming: ScheduleEventFull[];
+}
+
+export async function getEventsOverview(): Promise<EventsOverview> {
+  const res = await api.get<EventsOverview>("/events");
   return res.data;
 }

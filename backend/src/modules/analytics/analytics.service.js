@@ -39,6 +39,7 @@ export async function getAnalytics(studentId) {
   // Monthly: days for past 12 months
   const monthlyActivity = await getMonthlyActivity(studentId, now);
 
+
   return {
     enrolledCourses,
     totalPdfsUploaded,
@@ -47,6 +48,7 @@ export async function getAnalytics(studentId) {
       daily: dailyActivity,   // Array of 7 days with hours
       weekly: weeklyActivity, // Array of 4 weeks with days
       monthly: monthlyActivity, // Array of 12 months with days
+
     },
   };
 }

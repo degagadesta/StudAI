@@ -7,7 +7,6 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
-import Dashboard from "./pages/Dashboard";
 import OnboardingPage from "./pages/OnboardingPage";
 
 // Dashboard tab routes (sidebar + topbar shell)
@@ -31,12 +30,12 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/onboarding" element={<OnboardingPage />} /> 
+            <Route path="/onboarding" element={<OnboardingPage />} />
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <DashboardPage />
                 </ProtectedRoute>
               }
             />

@@ -39,12 +39,12 @@ export async function updateMaterialProgress(
  */
 export async function uploadMaterial(
   file: File,
-  courseName: string,
+  courseId: string,
   onProgress?: (percent: number) => void,
 ): Promise<Material> {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("courseName", courseName);
+  formData.append("courseId", courseId);
 
   const res = await api.post<Material>("/materials", formData, {
     headers: { "Content-Type": "multipart/form-data" },
@@ -55,4 +55,8 @@ export async function uploadMaterial(
   });
 
   return res.data;
+}
+
+export async function deleteMaterial(id: string): Promise<void> {
+  await api.delete(`/materials/${id}`);
 }

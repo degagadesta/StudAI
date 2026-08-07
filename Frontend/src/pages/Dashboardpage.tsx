@@ -15,7 +15,7 @@ import {
   type DashboardSummary,
   type ActivityRow,
 } from "../api/Dashboardapi";
-import { getAcademicProfile, type AcademicProfile } from "../api/Coursesapi";
+import { getAcademicProfile, type AcademicProfile } from "../api/Coursesapi"; //not important
 import { getMaterials, type Material } from "../api/Materialsapi";
 import { getUpcomingEvents, type ScheduleEvent } from "../api/Scheduleapi";
 import { getApiErrorMessage } from "../api/authApi";

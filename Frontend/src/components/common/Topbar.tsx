@@ -1,5 +1,5 @@
 import { useState, useEffect, ChangeEvent } from "react";
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, Settings } from "lucide-react";
 import { stripControlChars, capLength } from "../../utils/security/sanitize";
 import { getAcademicProfile } from "../../api/Coursesapi";
 
@@ -23,9 +23,7 @@ export default function Topbar({
       .then((profile) => {
         if (!cancelled) setFirstName(profile.fullName.split(" ")[0]);
       })
-      .catch(() => {
-        // Non-fatal for the greeting — falls back to "Student" below.
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -79,9 +77,13 @@ export default function Topbar({
           )}
         </button>
 
-        <div className="w-11 h-11 rounded-full bg-[#2F4A3D] text-[#F6F1E3] flex items-center justify-center font-serif text-sm">
-          {initial}
-        </div>
+        <button
+          type="button"
+          aria-label="Settings"
+          className="w-11 h-11 rounded-full bg-[#FFFDF7] border border-[#DCD2B4] flex items-center justify-center text-[#5B6156] hover:bg-[#EFE8D4] transition-colors"
+        >
+          <Settings size={17} strokeWidth={1.9} />
+        </button>
       </div>
     </header>
   );

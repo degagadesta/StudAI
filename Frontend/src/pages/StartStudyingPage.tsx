@@ -76,6 +76,18 @@ export default function StartStudyingPage() {
     setSelectedFile(file);
   };
 
+  const handleDeleteMaterial = async (e: MouseEvent, id: string) => {
+    e.preventDefault(); // Prevents the Link from triggering navigation
+    e.stopPropagation(); // Stops the click event from bubbling up
+
+    try {
+      await deleteMaterial(id);
+      // Remove material locally from state
+      setMaterials((prev) => prev.filter((m) => m.id !== id));
+    } catch (err) {
+      setUploadError(getApiErrorMessage(err, "Failed to delete material."));
+    }
+  };
   // Perform upload on button click
   const handleUpload = async (): Promise<void> => {
     if (!selectedFile) return;
@@ -88,18 +100,7 @@ export default function StartStudyingPage() {
     setUploadProgress(0);
 
     //delete material function
-    const handleDeleteMaterial = async (e: MouseEvent, id: string) => {
-      e.preventDefault(); // Prevents the Link from triggering navigation
-      e.stopPropagation(); // Stops the click event from bubbling up
 
-      try {
-        await deleteMaterial(id);
-        // Remove material locally from state
-        setMaterials((prev) => prev.filter((m) => m.id !== id));
-      } catch (err) {
-        setUploadError(getApiErrorMessage(err, "Failed to delete material."));
-      }
-    };
     try {
       // 3. Pass courseId to uploadMaterial
       const newMaterial = await uploadMaterial(
@@ -288,7 +289,7 @@ export default function StartStudyingPage() {
           {materials.map((m) => (
             <Link
               key={m.id}
-              to={`/app/materials/${m.id}`}
+              to={`/app/workspace/${m.id}`}
               className="group relative p-5 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl hover:border-[#8CA37E] transition-colors cursor-pointer block"
             >
               {/* Delete ("X") Button */}

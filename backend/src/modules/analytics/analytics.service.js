@@ -49,9 +49,8 @@ export async function getAnalytics(studentId) {
     where: { studentId, createdAt: { gte: startOf7Days } },
     select: { createdAt: true },
   });
-  const daysThisWeek = new Set(
-    weekLogs.map((l) => l.createdAt.toDateString())
-  ).size;
+  const daysThisWeek = new Set(weekLogs.map((l) => l.createdAt.toDateString()))
+    .size;
 
   // ── days this month ───────────────────────────────────────────────────────
   const monthLogs = await prisma.activityLog.findMany({
@@ -59,16 +58,16 @@ export async function getAnalytics(studentId) {
     select: { createdAt: true },
   });
   const daysThisMonth = new Set(
-    monthLogs.map((l) => l.createdAt.toDateString())
+    monthLogs.map((l) => l.createdAt.toDateString()),
   ).size;
 
   return {
     enrolledCourses,
     totalPdfsUploaded,
     activity: {
-      hoursToday,      // number of hours used today
-      daysThisWeek,    // number of days used in last 7 days
-      daysThisMonth,   // number of days used in last 30 days
+      hoursToday, // number of hours used today
+      daysThisWeek, // number of days used in last 7 days
+      daysThisMonth, // number of days used in last 30 days
     },
   };
 }

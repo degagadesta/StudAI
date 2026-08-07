@@ -1,10 +1,6 @@
 import { AxiosError } from "axios";
 import { api, setAccessToken, clearTokens } from "./client";
 
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
-
 export interface RegisterPayload {
   firstName: string;
   lastName: string;
@@ -33,7 +29,7 @@ export interface LoginResponse {
     email: string;
     firstName: string;
   };
-  hasProfile?: boolean; // Optional for backward compatibility
+  hasProfile?: boolean;
 }
 
 export interface ForgotPasswordPayload {
@@ -69,16 +65,12 @@ export interface ApiErrorPayload {
   error: string;
 }
 
-// ============================================================================
-// AUTHENTICATION FUNCTIONS
-// ============================================================================
-
 /**
  * Register a new user account
  * Sends verification email, user must verify before logging in
  */
 export async function register(
-  payload: RegisterPayload
+  payload: RegisterPayload,
 ): Promise<RegisterResponse> {
   const res = await api.post<RegisterResponse>("/auth/register", payload);
   return res.data;
@@ -90,10 +82,12 @@ export async function register(
  * Refresh token is automatically set as httpOnly cookie by backend
  */
 export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
-  const res = await api.get<VerifyEmailResponse>(`/auth/verify-email?token=${token}`);
-  // Store access token for authenticated requests
+  const res = await api.get<VerifyEmailResponse>(
+    `/auth/verify-email?token=${token}`,
+  );
+
   setAccessToken(res.data.accessToken);
-  // Refresh token is now in httpOnly cookie - no need to store it
+
   return res.data;
 }
 
@@ -104,7 +98,7 @@ export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const res = await api.post<LoginResponse>("/auth/login", payload);
   setAccessToken(res.data.accessToken);
-  // Refresh token is now in httpOnly cookie - no need to store it
+
   return res.data;
 }
 
@@ -115,7 +109,7 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
 export async function googleSignIn(idToken: string): Promise<LoginResponse> {
   const res = await api.post<LoginResponse>("/auth/google", { idToken });
   setAccessToken(res.data.accessToken);
-  // Refresh token is now in httpOnly cookie - no need to store it
+
   return res.data;
 }
 
@@ -123,9 +117,12 @@ export async function googleSignIn(idToken: string): Promise<LoginResponse> {
  * Request password reset email
  */
 export async function forgotPassword(
-  payload: ForgotPasswordPayload
+  payload: ForgotPasswordPayload,
 ): Promise<ForgotPasswordResponse> {
-  const res = await api.post<ForgotPasswordResponse>("/auth/forgot-password", payload);
+  const res = await api.post<ForgotPasswordResponse>(
+    "/auth/forgot-password",
+    payload,
+  );
   return res.data;
 }
 
@@ -133,9 +130,12 @@ export async function forgotPassword(
  * Reset password using token from email
  */
 export async function resetPassword(
-  payload: ResetPasswordPayload
+  payload: ResetPasswordPayload,
 ): Promise<ResetPasswordResponse> {
-  const res = await api.post<ResetPasswordResponse>("/auth/reset-password", payload);
+  const res = await api.post<ResetPasswordResponse>(
+    "/auth/reset-password",
+    payload,
+  );
   return res.data;
 }
 
@@ -147,7 +147,6 @@ export async function logout(): Promise<void> {
   try {
     await api.post("/auth/logout");
   } finally {
-    // Clear tokens even if request fails
     clearTokens();
   }
 }
@@ -160,10 +159,6 @@ export async function checkProfile(): Promise<{ hasProfile: boolean }> {
   return res.data;
 }
 
-// ============================================================================
-// ERROR HANDLING UTILITY
-// ============================================================================
-
 /**
  * Pulls a user-safe message out of an axios error, falling back to a
  * generic message for network failures, timeouts, or unexpected shapes
@@ -172,14 +167,13 @@ export async function checkProfile(): Promise<{ hasProfile: boolean }> {
  */
 export function getApiErrorMessage(
   err: unknown,
-  fallback = "Something went wrong. Please try again."
+  fallback = "Something went wrong. Please try again.",
 ): string {
   if (err instanceof AxiosError) {
     const data = err.response?.data as ApiErrorPayload | undefined;
     if (data?.error) return data.error;
 
-    if (err.code === "ECONNABORTED")
-      return "The request timed out. Please try again.";
+    if (err.code === "ECONNABORTED") return "Network error. Please try again.";
     if (!err.response)
       return "Unable to reach the server. Check your connection.";
   }

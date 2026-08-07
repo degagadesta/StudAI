@@ -1,5 +1,11 @@
 import { useAuthContext } from "../contexts/AuthContext";
-import { LogOut, BookOpen, FileText, MessageSquare, GraduationCap } from "lucide-react";
+import {
+  LogOut,
+  BookOpen,
+  FileText,
+  MessageSquare,
+  GraduationCap,
+} from "lucide-react";
 
 export default function Dashboard() {
   const { user, logout } = useAuthContext();
@@ -84,7 +90,8 @@ export default function Dashboard() {
                 Welcome to StudAI! 🎓
               </h3>
               <p className="text-gray-600 mb-4">
-                Your intelligent study companion is ready to help you succeed. Here's what you can do:
+                Your intelligent study companion is ready to help you succeed.
+                Here's what you can do:
               </p>
               <ul className="space-y-2 text-gray-700">
                 <li className="flex items-center space-x-2">

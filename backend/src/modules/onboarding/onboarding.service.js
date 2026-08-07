@@ -99,7 +99,7 @@ export const completeOnboarding = async (
     });
 
     if (!university) {
-        throw new AppError("University not found", 404);
+        throw new AppError("University not found. Please select a valid university", 404);
     }
 
     // Validate department
@@ -110,21 +110,21 @@ export const completeOnboarding = async (
     });
 
     if (!department) {
-        throw new AppError("Department not found", 404);
+        throw new AppError("Department not found. Please select a valid department", 404);
     }
 
     if (department.universityId !== universityId) {
-        throw new AppError("Department does not belong to the selected university", 400);
+        throw new AppError("This department doesn't belong to the selected university. Please choose a different department", 400);
     }
 
     // Validate year
     if (currentYear < 1 || currentYear > 5) {
-        throw new AppError("Academic year must be between 1 and 5", 400);
+        throw new AppError("Please select a valid academic year (1-5)", 400);
     }
 
     // Validate semester
     if (![1, 2].includes(currentSemester)) {
-        throw new AppError("Semester must be 1 or 2", 400);
+        throw new AppError("Please select a valid semester (1 or 2)", 400);
     }
 
     // Find curriculum automatically
@@ -135,7 +135,7 @@ export const completeOnboarding = async (
     });
 
     if (!curriculum) {
-        throw new AppError("No curriculum found for this department", 404);
+        throw new AppError("No courses available for this department yet. Please contact support", 404);
     }
 
     // Validate selected courses if provided
@@ -152,7 +152,7 @@ export const completeOnboarding = async (
         });
 
         if (validCourses.length !== selectedCourseIds.length) {
-            throw new AppError("Some selected courses are not valid for this year and semester", 400);
+            throw new AppError("Some courses you selected are not available for this year and semester. Please review your selections", 400);
         }
     }
 

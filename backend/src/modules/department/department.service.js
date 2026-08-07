@@ -8,7 +8,7 @@ export const getDepartmentsByUniversity = async (universityId) => {
     });
 
     if (!university) {
-        throw new AppError("University not found", 404);
+        throw new AppError("University not found. Please select a valid university", 404);
     }
 
     return prisma.department.findMany({

@@ -5,7 +5,7 @@ import { prisma } from "../lib/prisma.js";
 export async function authenticate(req, res, next) {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
-    return next(new AppError("Missing or invalid Authorization header", 401));
+    return next(new AppError("Please log in to continue", 401));
   }
 
   // Step 1: verify JWT signature + expiry
@@ -13,12 +13,12 @@ export async function authenticate(req, res, next) {
   try {
     payload = verifyToken(header.split(" ")[1]);
   } catch {
-    return next(new AppError("Invalid or expired token", 401));
+    return next(new AppError("Your session has expired. Please log in again", 401));
   }
 
   // Step 2: guard against crafted tokens that omit studentId
   if (!payload.studentId) {
-    return next(new AppError("Invalid token payload", 401));
+    return next(new AppError("Invalid session. Please log in again", 401));
   }
 
   // Step 3: confirm the account still exists in the database
@@ -30,10 +30,10 @@ export async function authenticate(req, res, next) {
     });
 
     if (!student) {
-      return next(new AppError("Account no longer exists", 401));
+      return next(new AppError("Account not found. Please log in again", 401));
     }
   } catch {
-    return next(new AppError("Authentication check failed", 500));
+    return next(new AppError("Unable to verify your session. Please try again", 500));
   }
 
   req.studentId = payload.studentId;

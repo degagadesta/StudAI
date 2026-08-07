@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { AppError } from "../utils/AppError.js";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 const skipEmail = process.env.SKIP_EMAIL === "true";
@@ -26,13 +27,13 @@ export async function sendMail({ to, subject, html }) {
     console.log(`Subject: ${subject}`);
     console.log(`HTML: ${html.substring(0, 200)}...`);
     console.log("=====================================\n");
-    
+
     // Extract verification/reset link from HTML for easy testing
     const linkMatch = html.match(/href="([^"]+)"/);
     if (linkMatch) {
       console.log(`🔗 LINK TO COPY: ${linkMatch[1]}\n`);
     }
-    
+
     return Promise.resolve(); // Simulate successful send
   }
 
@@ -44,19 +45,19 @@ export async function sendMail({ to, subject, html }) {
       subject,
       html,
     });
-    
+
     console.log(`✅ Email sent successfully to ${to}`);
     return result;
   } catch (error) {
     console.error(`❌ Failed to send email to ${to}:`, error.message);
-    
+
     // In development, log the email content so user can still access the link
     if (isDevelopment) {
       console.log("\n📧 EMAIL CONTENT (Failed to send):");
       console.log("===================================");
       console.log(`To: ${to}`);
       console.log(`Subject: ${subject}`);
-      
+
       // Extract and display the verification/reset link
       const linkMatch = html.match(/href="([^"]+)"/);
       if (linkMatch) {
@@ -64,11 +65,26 @@ export async function sendMail({ to, subject, html }) {
         console.log("👆 Copy this link and paste it in your browser to verify/reset\n");
       }
       console.log("===================================\n");
-      
+
       // Don't throw error in development - allow registration to continue
       return Promise.resolve();
     }
-    
+
+    // Check for network-related errors
+    if (
+      error.code === 'ETIMEDOUT' ||
+      error.code === 'ECONNREFUSED' ||
+      error.code === 'ENOTFOUND' ||
+      error.code === 'ECONNRESET' ||
+      error.code === 'ESOCKET'
+    ) {
+      const networkError = new AppError(
+        "Unable to send email due to network issues. Please check your internet connection and try again",
+        503
+      );
+      throw networkError;
+    }
+
     // In production, throw the error
     throw error;
   }

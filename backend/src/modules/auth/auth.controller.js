@@ -123,3 +123,26 @@ export const checkProfileHandler = asyncHandler(async (req, res) => {
   const result = await authService.checkProfile(req.studentId);
   res.json(result);
 });
+
+export const deleteAccountHandler = asyncHandler(async (req, res) => {
+  const { password, confirmDelete } = req.body;
+
+  // Validate deletion request
+  const { validateAccountDeletion } = await import("./auth.validation.js");
+  validateAccountDeletion({ password, confirmDelete });
+
+  // Delete account
+  await authService.deleteAccount(req.studentId, password);
+
+  // Clear refresh token cookie
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Your account has been permanently deleted. We're sorry to see you go.",
+  });
+});

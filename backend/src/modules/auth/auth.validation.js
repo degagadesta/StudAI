@@ -96,3 +96,23 @@ function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
+
+export function validateAccountDeletion({ password, confirmDelete }) {
+    const errors = [];
+
+    // Confirmation check
+    if (confirmDelete !== true && confirmDelete !== "true") {
+        errors.push("Please confirm account deletion by setting confirmDelete to true");
+    }
+
+    // Password validation (will be checked in service based on account type)
+    if (password !== undefined && password !== null && password !== "") {
+        if (typeof password !== "string" || password.length < 8) {
+            errors.push("Password must be at least 8 characters");
+        }
+    }
+
+    if (errors.length > 0) {
+        throw new AppError(errors.join(". "), 400);
+    }
+}

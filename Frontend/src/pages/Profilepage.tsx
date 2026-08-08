@@ -78,6 +78,9 @@ export default function ProfilePage() {
                 <p className="font-mono text-xs mt-1">
                   Year {profile.year} · Semester {profile.semester}
                 </p>
+                <p className="font-mono text-xs mt-1">
+                  Subscription plan: {profile.subscriptionPlan}
+                </p>
               </div>
             </div>
           </div>

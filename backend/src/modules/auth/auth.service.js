@@ -411,3 +411,138 @@ export async function checkProfile(studentId) {
     },
   };
 }
+
+/**
+ * Delete user account permanently with cascade deletion
+ */
+export async function deleteAccount(studentId, password) {
+  // Fetch student to verify existence and check if password is required
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      passwordHash: true,
+      googleId: true,
+    },
+  });
+
+  if (!student) {
+    throw new AppError("Account not found", 404);
+  }
+
+  // If user has a password (not Google-only), require password verification
+  if (student.passwordHash && !password) {
+    throw new AppError("Password is required to delete your account", 400);
+  }
+
+  // Verify password if provided and user has password
+  if (student.passwordHash && password) {
+    const isPasswordValid = await bcrypt.compare(password, student.passwordHash);
+    if (!isPasswordValid) {
+      throw new AppError("Incorrect password. Please try again", 401);
+    }
+  }
+
+  // Perform cascade deletion in transaction
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete activity logs
+      await tx.activityLog.deleteMany({
+        where: { studentId },
+      });
+
+      // 2. Delete upcoming events
+      await tx.upcomingEvent.deleteMany({
+        where: { studentId },
+      });
+
+      // 3. Delete weak topics
+      await tx.weakTopic.deleteMany({
+        where: { studentId },
+      });
+
+      // 4. Delete flashcard reviews
+      await tx.flashcardReview.deleteMany({
+        where: { studentId },
+      });
+
+      // 5. Delete quiz attempts
+      await tx.quizAttempt.deleteMany({
+        where: { studentId },
+      });
+
+      // 6. Delete exam attempts
+      await tx.examAttempt.deleteMany({
+        where: { studentId },
+      });
+
+      // 7. Delete chat sessions (messages will cascade automatically)
+      await tx.chatSession.deleteMany({
+        where: { studentId },
+      });
+
+      // 8. Delete notes
+      await tx.note.deleteMany({
+        where: { studentId },
+      });
+
+      // 9. Set uploadedBy to NULL for course materials (preserve materials for other students)
+      await tx.courseMaterial.updateMany({
+        where: { uploadedBy: studentId },
+        data: { uploadedBy: null },
+      });
+
+      // 10. Delete student course selections (if profile exists)
+      const profile = await tx.studentProfile.findUnique({
+        where: { studentId },
+        select: { id: true },
+      });
+
+      if (profile) {
+        await tx.studentCourseSelection.deleteMany({
+          where: { studentProfileId: profile.id },
+        });
+
+        // 11. Delete student profile
+        await tx.studentProfile.delete({
+          where: { id: profile.id },
+        });
+      }
+
+      // 12. Finally, delete the student record
+      await tx.student.delete({
+        where: { id: studentId },
+      });
+    });
+
+    // Optional: Send goodbye email (outside transaction to avoid rollback if email fails)
+    try {
+      if (!isDevelopment || !skipEmail) {
+        await sendMail({
+          to: student.email,
+          subject: "Your StudAI account has been deleted",
+          html: `<p>Hi ${student.firstName},</p><p>Your StudAI account has been permanently deleted as requested.</p><p>We're sorry to see you go. If you have any feedback or change your mind, feel free to create a new account anytime.</p><p>Best regards,<br>The StudAI Team</p>`,
+        });
+      }
+    } catch (emailError) {
+      // Don't throw error if email fails - account is already deleted
+      console.error("Failed to send account deletion confirmation email:", emailError.message);
+    }
+
+    return {
+      success: true,
+      email: student.email,
+    };
+  } catch (error) {
+    // If it's our custom error, rethrow it
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    // Log the error for debugging
+    console.error("Account deletion error:", error);
+    throw new AppError("Unable to delete account. Please try again or contact support", 500);
+  }
+}

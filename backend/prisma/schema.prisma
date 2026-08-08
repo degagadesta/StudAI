@@ -80,6 +80,7 @@ model CurriculumCourse {
 
 enum subscriptionPlan {
   FREE
+  STANDARD
   PRO
 }
 

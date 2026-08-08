@@ -6,10 +6,13 @@ import {
   ArrowLeft,
   FileText,
   Loader2,
+  Plus,
+  X,
 } from "lucide-react";
 import {
   getAcademicProfile,
   getCourses,
+  createCourse,
   type AcademicProfile,
   type Course,
 } from "../api/Coursesapi";
@@ -22,10 +25,17 @@ export default function CoursesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // State for selected course and its materials
+  // Selected course state
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
+
+  // Add Course Modal State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newCourseCode, setNewCourseCode] = useState("");
+  const [newCourseName, setNewCourseName] = useState("");
+  const [newCourseCredits, setNewCourseCredits] = useState("5");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,13 +57,12 @@ export default function CoursesPage() {
     };
   }, []);
 
-  // Handle clicking on a course card
+  // Handle selecting a course card
   const handleSelectCourse = async (course: Course) => {
     setSelectedCourse(course);
     setIsLoadingMaterials(true);
     try {
       const allMaterials = await getMaterials();
-      // Filter materials matching the selected course code or name
       const filtered = allMaterials.filter(
         (m) =>
           m.courseName.toLowerCase().includes(course.name.toLowerCase()) ||
@@ -69,27 +78,68 @@ export default function CoursesPage() {
     }
   };
 
+  // Handle form submission to add new course
+  const handleCreateCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCourseCode.trim() || !newCourseName.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const createdCourse = await createCourse({
+        code: newCourseCode.trim().toUpperCase(),
+        name: newCourseName.trim(),
+        credits: parseInt(newCourseCredits, 10) || 5,
+      });
+
+      setCourses((prev) => [...prev, createdCourse]);
+      setNewCourseCode("");
+      setNewCourseName("");
+      setNewCourseCredits("5");
+      setIsAddModalOpen(false);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to create course."));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Top Header & Breadcrumb */}
-      {selectedCourse ? (
-        <button
-          type="button"
-          onClick={() => setSelectedCourse(null)}
-          className="inline-flex items-center gap-2 text-sm text-[#5B6156] hover:text-[#253D31] mb-4 transition-colors"
-        >
-          <ArrowLeft size={16} /> Back to all courses
-        </button>
-      ) : null}
+      {/* Top Header Row with Title and Add Course Button */}
+      <div className="flex items-start justify-between gap-4 mb-8">
+        <div>
+          {selectedCourse ? (
+            <button
+              type="button"
+              onClick={() => setSelectedCourse(null)}
+              className="inline-flex items-center gap-2 text-sm text-[#5B6156] hover:text-[#253D31] mb-2 transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={16} /> Back to all courses
+            </button>
+          ) : null}
 
-      <h1 className="font-serif text-2xl text-[#253D31] mb-1.5">
-        {selectedCourse ? selectedCourse.name : "Courses"}
-      </h1>
-      <p className="text-sm text-[#5B6156] mb-8">
-        {selectedCourse
-          ? `${selectedCourse.code} · ${selectedCourse.credits} ECTS — Uploaded Course Materials`
-          : "Your academic profile and this semester's course list."}
-      </p>
+          <h1 className="font-serif text-2xl text-[#253D31] mb-1.5">
+            {selectedCourse ? selectedCourse.name : "Courses"}
+          </h1>
+          <p className="text-sm text-[#5B6156]">
+            {selectedCourse
+              ? `${selectedCourse.code} · ${selectedCourse.credits} ECTS — Uploaded Course Materials`
+              : "Your academic profile and this semester's course list."}
+          </p>
+        </div>
+
+        {/* Top-Right "Add Course" Button */}
+        {!selectedCourse && (
+          <button
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#253D31] hover:bg-[#1E3228] text-[#F6F1E3] text-sm font-medium rounded-xl transition-colors cursor-pointer shrink-0 shadow-sm"
+          >
+            <Plus size={18} />
+            <span>Add Course</span>
+          </button>
+        )}
+      </div>
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-[#8B3A3A] bg-[#F7E8E8] border border-[#E3B8B8] rounded-lg px-3.5 py-2.5 mb-6">
@@ -223,6 +273,106 @@ export default function CoursesPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* --- ADD COURSE MODAL --- */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-[#253D31]/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-[#FFFDF7] border border-[#DCD2B4] rounded-2xl p-6 w-full max-w-md shadow-xl relative">
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="absolute top-4 right-4 text-[#A9A18A] hover:text-[#253D31] transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <h2 className="font-serif text-xl text-[#253D31] mb-1">
+              Add New Course
+            </h2>
+            <p className="text-xs text-[#5B6156] mb-5">
+              Enter the course details to include it in your semester plan.
+            </p>
+
+            <form onSubmit={handleCreateCourse} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="course-code"
+                  className="block text-xs font-medium text-[#5B6156] mb-1"
+                >
+                  Course Code
+                </label>
+                <input
+                  type="text"
+                  id="course-code"
+                  required
+                  placeholder="e.g. ECE-4101"
+                  value={newCourseCode}
+                  onChange={(e) => setNewCourseCode(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl text-sm text-[#253D31] focus:outline-none focus:border-[#8CA37E] transition-colors"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="course-name"
+                  className="block text-xs font-medium text-[#5B6156] mb-1"
+                >
+                  Course Name
+                </label>
+                <input
+                  type="text"
+                  id="course-name"
+                  required
+                  placeholder="e.g. Advanced Software Engineering"
+                  value={newCourseName}
+                  onChange={(e) => setNewCourseName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl text-sm text-[#253D31] focus:outline-none focus:border-[#8CA37E] transition-colors"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="course-credits"
+                  className="block text-xs font-medium text-[#5B6156] mb-1"
+                >
+                  ECTS Credits
+                </label>
+                <input
+                  type="number"
+                  id="course-credits"
+                  required
+                  min={1}
+                  max={30}
+                  value={newCourseCredits}
+                  onChange={(e) => setNewCourseCredits(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl text-sm text-[#253D31] focus:outline-none focus:border-[#8CA37E] transition-colors"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2 text-sm text-[#5B6156] hover:text-[#253D31] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#253D31] hover:bg-[#1E3228] text-[#F6F1E3] text-sm font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    "Save Course"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

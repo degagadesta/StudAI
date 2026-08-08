@@ -19,7 +19,7 @@ export const getStudentCourses = async (studentId) => {
     });
 
     if (!profile) {
-        throw new AppError("Please complete your profile setup to view your courses", 400);
+        throw new AppError("Please complete your academic profile setup first. Go to the onboarding page to select your university, department, and courses", 400);
     }
 
     // Load courses for the student's current year and semester
@@ -46,10 +46,10 @@ export const getStudentCourses = async (studentId) => {
     // Get PDFs for each course
     const coursesWithPdfs = await Promise.all(
         courses.map(async (cc) => {
-            // Get PDFs uploaded by this student for this course
+            // Get PDFs uploaded by this student for this specific curriculum course
             const pdfs = await prisma.courseMaterial.findMany({
                 where: {
-                    courseId: cc.course.id,
+                    curriculumCourseId: cc.id,
                     uploadedBy: studentId,
                     status: "READY",
                 },
@@ -65,7 +65,8 @@ export const getStudentCourses = async (studentId) => {
             });
 
             return {
-                id: cc.course.id,
+                id: cc.id, // Return CurriculumCourse ID, not Course ID
+                courseId: cc.course.id, // Include generic Course ID for reference
                 code: cc.courseCode,
                 name: cc.course.title,
                 description: cc.course.description,

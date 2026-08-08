@@ -8,28 +8,36 @@ export interface AcademicProfile {
   semester: number;
 }
 
-export interface Course {
+export interface CoursePdf {
   id: string;
+  title: string;
+  progress: number;
+  uploadedAt: string;
+}
+
+export interface Course {
+  id: string; // curriculumCourseId — this is what must be sent as curriculumCourseId on upload
+  courseId: string; // generic Course id, for reference only
   code: string;
   name: string;
-  credits: number;
+  description: string;
+  pdfs: CoursePdf[];
+  pdfCount: number;
 }
-export type CreateCoursePayload = Omit<Course, "id">;
 
 export async function getAcademicProfile(): Promise<AcademicProfile> {
-  const res = await api.get<AcademicProfile>("/academic-profile");
-  return res.data;
+  const res = await api.get<{ success: boolean; data: AcademicProfile }>(
+    "/academic-profile"
+  );
+
+  return res.data.data;
 }
 
 export async function getCourses(): Promise<Course[]> {
-  // Backend infers year/semester from the authenticated user — no
-  // query params needed here, it reads the same record the profile
-  // endpoint above returns.
-  const res = await api.get<Course[]>("/courses");
-  return res.data;
-}
-
-export async function createCourse(data: CreateCoursePayload): Promise<Course> {
-  const res = await api.post<Course>("/courses", data);
-  return res.data;
+  // Backend infers year/semester from the authenticated user's profile —
+  // no query params needed here.
+  const res = await api.get<{ success: boolean; data: Course[] }>(
+    "/student/courses"
+  );
+  return res.data.data;
 }

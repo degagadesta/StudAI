@@ -13,8 +13,8 @@ import {
   type MaterialProgressRow,
 } from "../api/AnalyticsApi";
 import { getApiErrorMessage } from "../api/authApi";
-import ActivityBarChart from "../components/analytics/ActivityBarChart";
-import MaterialsProgressTable from "../components/analytics/MaterialsProgressTable";
+import ActivityBarChart from "../components/Analytics/ActivityBarChart";
+import MaterialsProgressTable from "../components/Analytics/MaterialsProgressTable";
 
 interface StatCardProps {
   icon: LucideIcon;
@@ -95,7 +95,7 @@ export default function AnalyticsPage() {
       })
       .catch((err: unknown) => {
         // Silently fail - endpoint doesn't exist yet
-        console.log('Materials endpoint not available yet');
+        console.log("Materials endpoint not available yet");
       });
     return () => {
       cancelled = true;

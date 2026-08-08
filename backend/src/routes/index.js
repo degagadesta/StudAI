@@ -9,12 +9,14 @@ import pdfRoutes from "../modules/pdf/pdf.routes.js";
 import examRoutes from "../modules/exam/exam.routes.js";
 import analyticsRoutes from "../modules/analytics/analytics.routes.js";
 import eventRoutes from "../modules/event/event.routes.js";
+import profileRoutes from "../modules/profile/profile.routes.js";
 
 const router = Router();
 router.use("/student/onboarding", onboardingRoutes);
 router.use("/departments", departmentRoutes);
 router.use("/universities", universityRoutes);
 router.use("/auth", authRoutes);
+router.use("/academic-profile", profileRoutes);
 router.use("/student/courses", courseRoutes);
 router.use("/student/dashboard", dashboardRoutes);
 router.use("/student/pdfs", pdfRoutes);

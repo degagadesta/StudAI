@@ -73,7 +73,8 @@ export const getAvailableCourses = async (
 
     // Transform data for frontend
     return curriculumCourses.map((cc) => ({
-        id: cc.course.id,
+        id: cc.id, // Return CurriculumCourse ID (not Course ID)
+        courseId: cc.course.id, // Include generic Course ID for reference
         courseCode: cc.courseCode,
         title: cc.course.title,
         description: cc.course.description,
@@ -145,7 +146,7 @@ export const completeOnboarding = async (
                 curriculumId: curriculum.id,
                 year: currentYear,
                 semester: currentSemester,
-                courseId: {
+                id: {
                     in: selectedCourseIds,
                 },
             },
@@ -184,7 +185,7 @@ export const completeOnboarding = async (
                 semester: currentSemester,
                 // If specific courses were selected, only return those
                 ...(selectedCourseIds && selectedCourseIds.length > 0
-                    ? { courseId: { in: selectedCourseIds } }
+                    ? { id: { in: selectedCourseIds } }
                     : {}),
             },
             include: {
@@ -203,7 +204,8 @@ export const completeOnboarding = async (
 
         // Transform courses for response
         const transformedCourses = courses.map((cc) => ({
-            id: cc.course.id,
+            id: cc.id, // Return CurriculumCourse ID (not Course ID)
+            courseId: cc.course.id, // Include generic Course ID for reference
             courseCode: cc.courseCode,
             title: cc.course.title,
             description: cc.course.description,

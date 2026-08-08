@@ -16,8 +16,8 @@ export interface CoursePdf {
 }
 
 export interface Course {
-  id: string; // curriculumCourseId — this is what must be sent as curriculumCourseId on upload
-  courseId: string; // generic Course id, for reference only
+  id: string; // curriculumCourseId — sent on upload & enrollment
+  courseId: string; // generic Course id
   code: string;
   name: string;
   description: string;
@@ -27,17 +27,30 @@ export interface Course {
 
 export async function getAcademicProfile(): Promise<AcademicProfile> {
   const res = await api.get<{ success: boolean; data: AcademicProfile }>(
-    "/academic-profile"
+    "/academic-profile",
   );
 
   return res.data.data;
 }
 
 export async function getCourses(): Promise<Course[]> {
-  // Backend infers year/semester from the authenticated user's profile —
-  // no query params needed here.
+  // Backend infers year/semester from the authenticated user's profile
   const res = await api.get<{ success: boolean; data: Course[] }>(
-    "/student/courses"
+    "/student/courses",
   );
   return res.data.data;
+}
+
+export async function getAvailableCourses(): Promise<Course[]> {
+  // Fetches available department courses from the database
+  const res = await api.get<{ success: boolean; data: Course[] }>("/courses");
+  return res.data.data;
+}
+
+export async function deleteCourse(courseId: string): Promise<void> {
+  await api.delete(`/courses/${courseId}`);
+}
+
+export async function createCourse(courseId: string): Promise<void> {
+  await api.post(`/courses`, { courseId });
 }

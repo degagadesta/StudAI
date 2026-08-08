@@ -21,11 +21,11 @@ import {
 import {
   getAcademicProfile,
   getCourses,
-  createCourse,
+  // createCourse,
   type AcademicProfile,
   type Course,
-  type CreateCoursePayload,
-} from "../api/coursesApi";
+  // type CreateCoursePayload,
+} from "../api/Coursesapi";
 import { stripControlChars, capLength } from "../utils/security/sanitize";
 
 interface SettingsModalProps {
@@ -871,7 +871,7 @@ export default function SettingsModal({
                             </p>
                           </div>
                           <span className="text-xs text-[#5B6156] bg-[#EFE8D4] px-2.5 py-1 rounded-full shrink-0">
-                            {course.credits} ECTS
+                            {course.credits} Credit Hours
                           </span>
                         </div>
                       ))}

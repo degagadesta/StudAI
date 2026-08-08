@@ -44,6 +44,7 @@ model Course {
   title       String
   description String?
   curricula   CurriculumCourse[]
+  materials   CourseMaterial[]
 }
 
 // The actual thing a student experiences: Course × Curriculum × Year × Semester.
@@ -154,22 +155,24 @@ enum MaterialStatus {
 }
 
 model CourseMaterial {
-  id                 String              @id @default(uuid())
-  curriculumCourse   CurriculumCourse    @relation(fields: [curriculumCourseId], references: [id])
-  curriculumCourseId String
-  title              String
-  fileData           Bytes?              // raw PDF bytes — set on upload, cleared on soft-delete
-  fileSize           Int?
-  status             MaterialStatus      @default(QUEUED)
-  summary            String?
-  uploadedBy         String?             // studentId who uploaded
-  progress           Float               @default(0) // 0-100, reading progress
-  createdAt          DateTime            @default(now())
+  id         String         @id @default(uuid())
+  course     Course         @relation(fields: [courseId], references: [id])
+  courseId   String
+  title      String
+  fileData   Bytes? // raw PDF bytes — set on upload, cleared on soft-delete
+  fileSize   Int?
+  status     MaterialStatus @default(QUEUED)
+  summary    String?
+  uploadedBy String? // studentId who uploaded
+  progress   Float          @default(0) // 0-100, reading progress
+  createdAt  DateTime       @default(now())
 
-  chunks     MaterialChunk[]
-  flashcards Flashcard[]
+  chunks             MaterialChunk[]
+  flashcards         Flashcard[]
+  curriculumCourse   CurriculumCourse? @relation(fields: [curriculumCourseId], references: [id])
+  curriculumCourseId String?
 
-  @@index([curriculumCourseId])
+  @@index([courseId])
   @@index([uploadedBy])
 }
 
@@ -273,7 +276,6 @@ model QuizAttempt {
 }
 
 // ---------- Past exams & exam intelligence ----------
-
 
 
 enum ExamType {

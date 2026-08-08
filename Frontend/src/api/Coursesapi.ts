@@ -54,3 +54,12 @@ export async function deleteCourse(courseId: string): Promise<void> {
 export async function createCourse(courseId: string): Promise<void> {
   await api.post(`/courses`, { courseId });
 }
+
+export async function uploadCoursePdf(
+  courseId: string,
+  file: File,
+): Promise<void> {
+  const formData = new FormData();
+  formData.append("file", file);
+  await api.post(`/courses/${courseId}/pdfs`, formData);
+}

@@ -3,15 +3,29 @@ import type { ActivityBreakdown, ActivityBucket } from "../../api/AnalyticsApi";
 
 type Range = "daily" | "weekly" | "monthly";
 
-const RANGE_CONFIG: Record
+const RANGE_CONFIG: Record<
   Range,
   { label: string; unit: string; max: number; helper: string }
 > = {
-  daily: { label: "Daily", unit: "h", max: 24, helper: "Hours spent, last 6 days" },
-  weekly: { label: "Weekly", unit: "d", max: 7, helper: "Days active, past 4 weeks" },
-  monthly: { label: "Monthly", unit: "d", max: 31, helper: "Days active, past 12 months" },
+  daily: {
+    label: "Daily",
+    unit: "h",
+    max: 24,
+    helper: "Hours spent, last 6 days",
+  },
+  weekly: {
+    label: "Weekly",
+    unit: "d",
+    max: 7,
+    helper: "Days active, past 4 weeks",
+  },
+  monthly: {
+    label: "Monthly",
+    unit: "d",
+    max: 31,
+    helper: "Days active, past 12 months",
+  },
 };
-
 function Bars({
   buckets,
   unit,
@@ -56,7 +70,11 @@ function Bars({
   );
 }
 
-export default function ActivityBarChart({ data }: { data: ActivityBreakdown }) {
+export default function ActivityBarChart({
+  data,
+}: {
+  data: ActivityBreakdown;
+}) {
   const [range, setRange] = useState<Range>("daily");
   const config = RANGE_CONFIG[range];
   const buckets = data[range];

@@ -1,65 +1,84 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
-import { SUBSCRIPTION_LIMITS } from "../../lib/subscriptionLimits.js";
-import { getUpcomingEventsPreview } from "../event/event.service.js";
 
+// Get student name for welcome greeting
 export async function getDashboardData(studentId) {
   const student = await prisma.student.findUnique({
     where: { id: studentId },
-    include: {
-      profile: {
-        include: {
-          curriculum: {
-            include: {
-              department: { include: { university: true } },
-            },
-          },
-        },
-      },
-    },
+    select: { firstName: true },
   });
 
   if (!student) throw new AppError("Account not found. Please log in again", 404);
-  if (!student.profile) throw new AppError("Please complete your profile setup to view your dashboard", 400);
-
-  const { profile } = student;
-
-  const courses = await prisma.curriculumCourse.findMany({
-    where: {
-      curriculumId: profile.curriculumId,
-      year: profile.currentYear,
-      semester: profile.currentSemester,
-    },
-    include: { course: { select: { id: true, title: true } } },
-  });
-
-  const activePDFs = await prisma.courseMaterial.count({
-    where: { uploadedBy: studentId, status: "READY" },
-  });
-
-  const { total: upcomingEventsCount, events: upcomingEvents } =
-    await getUpcomingEventsPreview(studentId);
 
   return {
-    profile: {
-      name: `${student.firstName} ${student.lastName}`,
-      university: profile.curriculum.department.university.name,
-      department: profile.curriculum.department.name,
-      year: profile.currentYear,
-      semester: profile.currentSemester,
+    student: {
+      name: student.firstName,
     },
-    analytics: {
-      registeredCourses: courses.length,
-      activePDFs,
-      maxPDFs: SUBSCRIPTION_LIMITS[student.subscriptionPlan], // null = unlimited
-      subscriptionPlan: student.subscriptionPlan,
-      upcomingEvents: upcomingEventsCount,
+  };
+}
+
+// Get paginated PDFs with optional search
+export async function getDashboardPDFs(studentId, { limit = 3, offset = 0, search = null }) {
+  // Build query conditions
+  const where = {
+    uploadedBy: studentId,
+    status: "READY",
+  };
+
+  // Add search filter if provided - search in both title and course name
+  if (search) {
+    where.OR = [
+      {
+        title: {
+          contains: search,
+          mode: 'insensitive',
+        },
+      },
+      {
+        course: {
+          title: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      },
+    ];
+  }
+
+  // Get paginated PDFs with course info
+  const pdfs = await prisma.courseMaterial.findMany({
+    where,
+    select: {
+      id: true,
+      title: true,
+      progress: true,
+      course: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
     },
-    courses: courses.map((cc) => ({
-      id: cc.course.id,
-      code: cc.courseCode,
-      name: cc.course.title,
-    })),
-    upcomingEvents,
+    orderBy: { createdAt: 'desc' },
+    skip: offset,
+    take: limit,
+  });
+
+  // Get total count for metadata
+  const total = await prisma.courseMaterial.count({ where });
+
+  // Transform response to include course info
+  const transformedPdfs = pdfs.map(pdf => ({
+    id: pdf.id,
+    title: pdf.title,
+    progress: pdf.progress,
+    courseId: pdf.course.id,
+    courseName: pdf.course.title,
+  }));
+
+  return {
+    pdfs: transformedPdfs,
+    total,
+    hasMore: offset + pdfs.length < total,
   };
 }

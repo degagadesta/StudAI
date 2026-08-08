@@ -43,9 +43,42 @@ export const getStudentCourses = async (studentId) => {
         },
     });
 
-    return courses.map(cc => ({
-        id: cc.course.id,
-        code: cc.courseCode,
-        name: cc.course.title
-    }));
+    // Get PDFs for each course
+    const coursesWithPdfs = await Promise.all(
+        courses.map(async (cc) => {
+            // Get PDFs uploaded by this student for this course
+            const pdfs = await prisma.courseMaterial.findMany({
+                where: {
+                    courseId: cc.course.id,
+                    uploadedBy: studentId,
+                    status: "READY",
+                },
+                select: {
+                    id: true,
+                    title: true,
+                    progress: true,
+                    createdAt: true,
+                },
+                orderBy: {
+                    createdAt: "desc",
+                },
+            });
+
+            return {
+                id: cc.course.id,
+                code: cc.courseCode,
+                name: cc.course.title,
+                description: cc.course.description,
+                pdfs: pdfs.map(pdf => ({
+                    id: pdf.id,
+                    title: pdf.title,
+                    progress: pdf.progress,
+                    uploadedAt: pdf.createdAt,
+                })),
+                pdfCount: pdfs.length,
+            };
+        })
+    );
+
+    return coursesWithPdfs;
 };

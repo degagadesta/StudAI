@@ -35,10 +35,12 @@ export async function getDashboardPDFs(studentId, { limit = 3, offset = 0, searc
         },
       },
       {
-        course: {
-          title: {
-            contains: search,
-            mode: 'insensitive',
+        curriculumCourse: {
+          course: {
+            title: {
+              contains: search,
+              mode: 'insensitive',
+            },
           },
         },
       },
@@ -52,10 +54,15 @@ export async function getDashboardPDFs(studentId, { limit = 3, offset = 0, searc
       id: true,
       title: true,
       progress: true,
-      course: {
+      curriculumCourse: {
         select: {
           id: true,
-          title: true,
+          course: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
         },
       },
     },
@@ -72,8 +79,9 @@ export async function getDashboardPDFs(studentId, { limit = 3, offset = 0, searc
     id: pdf.id,
     title: pdf.title,
     progress: pdf.progress,
-    courseId: pdf.course.id,
-    courseName: pdf.course.title,
+    curriculumCourseId: pdf.curriculumCourse.id,
+    courseId: pdf.curriculumCourse.course.id,
+    courseName: pdf.curriculumCourse.course.title,
   }));
 
   return {

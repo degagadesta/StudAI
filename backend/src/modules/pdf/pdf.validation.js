@@ -3,12 +3,12 @@ import { AppError } from "../../utils/AppError.js";
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const ALLOWED_MIME_TYPES = ['application/pdf'];
 
-export function validatePDFUpload(file, courseId) {
+export function validatePDFUpload(file, curriculumCourseId) {
     if (!file) {
         throw new AppError("Please select a PDF file to upload", 400);
     }
 
-    if (!courseId) {
+    if (!curriculumCourseId) {
         throw new AppError("Please select a course for this PDF", 400);
     }
 

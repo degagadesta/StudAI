@@ -20,24 +20,32 @@ export async function getUpcomingExams(studentId) {
       year: profile.currentYear,
       semester: profile.currentSemester,
     },
-    select: { courseId: true },
+    select: { id: true },
   });
 
-  const courseIds = enrolledCourses.map((ec) => ec.courseId);
-  if (courseIds.length === 0) return [];
+  const curriculumCourseIds = enrolledCourses.map((ec) => ec.id);
+  if (curriculumCourseIds.length === 0) return [];
 
   // PastExam is an archive — there are no "future" records.
   // Return the most recent exam per course+type as study references.
   const exams = await prisma.pastExam.findMany({
-    where: { courseId: { in: courseIds } },
-    include: { course: { select: { title: true } } },
+    where: { curriculumCourseId: { in: curriculumCourseIds } },
+    include: {
+      curriculumCourse: {
+        select: {
+          course: {
+            select: { title: true }
+          }
+        }
+      }
+    },
     orderBy: { year: "desc" },
   });
 
-  // Keep only the latest entry per (courseId + type) to avoid duplicates
+  // Keep only the latest entry per (curriculumCourseId + type) to avoid duplicates
   const seen = new Set();
   const latest = exams.filter((exam) => {
-    const key = `${exam.courseId}-${exam.type}`;
+    const key = `${exam.curriculumCourseId}-${exam.type}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -45,7 +53,7 @@ export async function getUpcomingExams(studentId) {
 
   return latest.map((exam) => ({
     id: exam.id,
-    courseName: exam.course.title,
+    courseName: exam.curriculumCourse.course.title,
     examType: exam.type,
     year: exam.year,
   }));

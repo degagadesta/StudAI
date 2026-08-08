@@ -3,12 +3,12 @@ import { validatePDFUpload } from "./pdf.validation.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const uploadPDF = asyncHandler(async (req, res) => {
-  const { courseId } = req.body;
+  const { curriculumCourseId } = req.body;
   const file = req.file;
 
-  validatePDFUpload(file, courseId);
+  validatePDFUpload(file, curriculumCourseId);
 
-  const result = await pdfService.uploadPDF(req.studentId, courseId, file);
+  const result = await pdfService.uploadPDF(req.studentId, curriculumCourseId, file);
 
   res.status(201).json({
     success: true,

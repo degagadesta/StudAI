@@ -3,13 +3,15 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
+
 // ---------- Academic structure ----------
 
 model University {
   id          String       @id @default(uuid())
   name        String
+  shortName   String?
   city        String?
   departments Department[]
   createdAt   DateTime     @default(now())
@@ -26,9 +28,9 @@ model Department {
 }
 
 model Curriculum {
-  id           String              @id @default(uuid())
-  label        String              // e.g. "Curriculum 2024"
-  department   Department          @relation(fields: [departmentId], references: [id])
+  id           String             @id @default(uuid())
+  label        String // e.g. "Curriculum 2024"
+  department   Department         @relation(fields: [departmentId], references: [id])
   departmentId String
   courses      CurriculumCourse[]
   profiles     StudentProfile[]
@@ -38,77 +40,78 @@ model Curriculum {
 
 // Pure catalog identity — shared across universities, holds NO content.
 model Course {
-  id           String              @id @default(uuid())
-  title        String
-  description  String?
-  curricula    CurriculumCourse[]
+  id          String             @id @default(uuid())
+  title       String
+  description String?
+  curricula   CurriculumCourse[]
 }
 
 // The actual thing a student experiences: Course × Curriculum × Year × Semester.
-// Every content model attaches HERE, not to Course.
+// Every content model attaches HERE, not to Course — this is what prevents
+// content from one university leaking into another's students.
 model CurriculumCourse {
   id           String     @id @default(uuid())
   curriculum   Curriculum @relation(fields: [curriculumId], references: [id])
   curriculumId String
   course       Course     @relation(fields: [courseId], references: [id])
   courseId     String
-  courseCode   String     // local code at this university, e.g. "CS301"
+  courseCode   String // local code at this university, e.g. "CS301"
   creditHours  Int?
   year         Int
   semester     Int
 
-  materials      CourseMaterial[]
-  pastExams      PastExam[]
-  notes          Note[]
-  quizzes        Quiz[]
-  chats          ChatSession[]
-  generatedExams GeneratedExam[]
-  topicStats     TopicStatistic[]
-  weakTopics     WeakTopic[]
+  materials         CourseMaterial[]
+  pastExams         PastExam[]
+  notes             Note[]
+  quizzes           Quiz[]
+  chats             ChatSession[]
+  generatedExams    GeneratedExam[]
+  topicStats        TopicStatistic[]
+  weakTopics        WeakTopic[]
+  studentSelections StudentCourseSelection[]
 
-  @@unique([curriculumId, courseId, year, semester]) // one row per course per curriculum-slot
+  @@unique([curriculumId, courseId, year, semester])
   @@index([curriculumId])
   @@index([courseId])
 }
 
 // ---------- Students ----------
-// (Student and StudentProfile unchanged)
 
-enum SubscriptionPlan {
+enum subscriptionPlan {
   FREE
   PRO
-  UNLIMITED
 }
 
 model Student {
-  id                String    @id @default(uuid())
-  firstName         String
-  lastName          String
-  email             String    @unique
-  passwordHash      String?
-  googleId          String?   @unique
-  emailVerified     Boolean   @default(false)
-  subscriptionPlan  SubscriptionPlan @default(FREE)
+  id            String  @id @default(uuid())
+  firstName     String
+  lastName      String
+  email         String  @unique
+  passwordHash  String?
+  googleId      String? @unique
+  emailVerified Boolean @default(false)
 
-  verificationToken           String?   @unique
-  verificationTokenExpiresAt  DateTime?
+  verificationToken          String?   @unique
+  verificationTokenExpiresAt DateTime?
 
-  resetToken                  String?   @unique
-  resetTokenExpiresAt         DateTime?
+  resetToken          String?   @unique
+  resetTokenExpiresAt DateTime?
 
-  refreshToken                String?   @unique
-  refreshTokenExpiresAt       DateTime?
+  refreshToken          String?
+  refreshTokenExpiresAt DateTime?
 
-  createdAt         DateTime  @default(now())
-  profile            StudentProfile?
-  notes              Note[]
-  flashcardReviews   FlashcardReview[]
-  quizAttempts       QuizAttempt[]
-  chatSessions       ChatSession[]
+  createdAt DateTime @default(now())
+
+  profile               StudentProfile?
+  notes                 Note[]
+  flashcardReviews      FlashcardReview[]
+  quizAttempts          QuizAttempt[]
+  chatSessions          ChatSession[]
   generatedExamAttempts ExamAttempt[]
-  weakTopics         WeakTopic[]
-  upcomingEvents     UpcomingEvent[]
-  activityLogs       ActivityLog[]
+  weakTopics            WeakTopic[]
+  upcomingEvents        UpcomingEvent[]
+  activityLogs          ActivityLog[]
+  subscriptionPlan      subscriptionPlan  @default(FREE)
 }
 
 model StudentProfile {
@@ -120,9 +123,26 @@ model StudentProfile {
   currentYear     Int
   currentSemester Int
   updatedAt       DateTime   @updatedAt
+
+  selections StudentCourseSelection[]
 }
 
-// ---------- Course materials (scoped to CurriculumCourse now) ----------
+
+// Which specific courses a student is actually taking this semester —
+// not automatically every course in the curriculum's year/semester slot.
+model StudentCourseSelection {
+  id                 String           @id @default(uuid())
+  studentProfile     StudentProfile   @relation(fields: [studentProfileId], references: [id])
+  studentProfileId   String
+  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  curriculumCourseId String
+  createdAt          DateTime         @default(now())
+
+  @@unique([studentProfileId, curriculumCourseId])
+  @@index([studentProfileId])
+}
+
+// ---------- Course materials ----------
 
 enum MaterialStatus {
   QUEUED
@@ -130,93 +150,168 @@ enum MaterialStatus {
   ANALYZING
   READY
   FAILED
-  DELETED
+  DELETED // set by pdf.service.js on soft-delete
 }
 
 model CourseMaterial {
-
-  id          String          @id @default(uuid())
-  course      Course          @relation(fields: [courseId], references: [id])
-  courseId    String
-  title       String
-  fileUrl     String?         // null for student uploads stored in DB
-  fileData    Bytes?          // binary content for student-uploaded PDFs
-  status      MaterialStatus  @default(QUEUED)
-  summary     String?         // AI-generated summary text OR extracted PDF text
-  fileSize    Int?            // file size in bytes
-  uploadedBy  String?         // studentId who uploaded
-  progress    Float           @default(0) // percentage 0-100
-  createdAt   DateTime        @default(now())
+  id                 String              @id @default(uuid())
+  curriculumCourse   CurriculumCourse    @relation(fields: [curriculumCourseId], references: [id])
+  curriculumCourseId String
+  title              String
+  fileData           Bytes?              // raw PDF bytes — set on upload, cleared on soft-delete
+  fileSize           Int?
+  status             MaterialStatus      @default(QUEUED)
+  summary            String?
+  uploadedBy         String?             // studentId who uploaded
+  progress           Float               @default(0) // 0-100, reading progress
+  createdAt          DateTime            @default(now())
 
   chunks     MaterialChunk[]
   flashcards Flashcard[]
 
-  @@index([courseId])
+  @@index([curriculumCourseId])
   @@index([uploadedBy])
 }
 
-// MaterialChunk, Flashcard, FlashcardReview — UNCHANGED.
+model MaterialChunk {
+  id         String         @id @default(uuid())
+  material   CourseMaterial @relation(fields: [materialId], references: [id])
+  materialId String
+  content    String
+  page       Int?
+
+  @@index([materialId])
+}
 
 // ---------- Notes ----------
 
 model Note {
-  id                  String            @id @default(uuid())
-  student             Student           @relation(fields: [studentId], references: [id])
-  studentId           String
-  curriculumCourse    CurriculumCourse  @relation(fields: [curriculumCourseId], references: [id])
-  curriculumCourseId  String
-  content             String
-  updatedAt           DateTime          @updatedAt
+  id                 String           @id @default(uuid())
+  student            Student          @relation(fields: [studentId], references: [id])
+  studentId          String
+  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  curriculumCourseId String
+  content            String
+  updatedAt          DateTime         @updatedAt
 
   @@index([studentId, curriculumCourseId])
 }
 
+// ---------- Flashcards ----------
+
+model Flashcard {
+  id         String            @id @default(uuid())
+  material   CourseMaterial    @relation(fields: [materialId], references: [id])
+  materialId String
+  question   String
+  answer     String
+  reviews    FlashcardReview[]
+
+  @@index([materialId])
+}
+
+enum ReviewResult {
+  CORRECT
+  WRONG
+  SKIP
+}
+
+model FlashcardReview {
+  id          String       @id @default(uuid())
+  flashcard   Flashcard    @relation(fields: [flashcardId], references: [id])
+  flashcardId String
+  student     Student      @relation(fields: [studentId], references: [id])
+  studentId   String
+  result      ReviewResult
+  reviewedAt  DateTime     @default(now())
+
+  @@index([studentId])
+}
+
 // ---------- Quizzes ----------
 
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 model Quiz {
-  id                  String            @id @default(uuid())
-  curriculumCourse    CurriculumCourse  @relation(fields: [curriculumCourseId], references: [id])
-  curriculumCourseId  String
-  difficulty          Difficulty
-  questions           QuizQuestion[]
-  attempts            QuizAttempt[]
-  createdAt           DateTime          @default(now())
+  id                 String           @id @default(uuid())
+  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  curriculumCourseId String
+  difficulty         Difficulty
+  questions          QuizQuestion[]
+  attempts           QuizAttempt[]
+  createdAt          DateTime         @default(now())
 
   @@index([curriculumCourseId])
 }
 
-// QuizQuestion, QuizAttempt — UNCHANGED.
+model QuizQuestion {
+  id            String @id @default(uuid())
+  quiz          Quiz   @relation(fields: [quizId], references: [id])
+  quizId        String
+  question      String
+  correctAnswer String
+  choices       Json?
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid())
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+  quizId    String
+  student   Student  @relation(fields: [studentId], references: [id])
+  studentId String
+  score     Float
+  answers   Json
+  takenAt   DateTime @default(now())
+
+  @@index([studentId])
+}
 
 // ---------- Past exams & exam intelligence ----------
+
+
 
 enum ExamType {
   MID
   FINAL
-  QUIZ
 }
 
 model PastExam {
-  id                  String          @id @default(uuid())
-  curriculumCourse    CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
-  curriculumCourseId  String
-  year                Int
-  type                ExamType
-  fileUrl             String
-  chunks              PastExamChunk[]
+  id                 String           @id @default(uuid())
+  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  curriculumCourseId String
+  year               Int
+  type               ExamType
+  fileUrl            String
+  chunks             PastExamChunk[]
 
   @@index([curriculumCourseId])
 }
 
-// PastExamChunk — UNCHANGED.
+model PastExamChunk {
+  id         String   @id @default(uuid())
+  pastExam   PastExam @relation(fields: [pastExamId], references: [id])
+  pastExamId String
+  topic      String?
+  question   String
+  marks      Float?
+
+  @@index([pastExamId])
+}
 
 model TopicStatistic {
-  id                  String            @id @default(uuid())
-  curriculumCourse    CurriculumCourse  @relation(fields: [curriculumCourseId], references: [id])
-  curriculumCourseId  String
-  topic               String
-  frequency           Int
-  importance          Float
-  updatedAt           DateTime          @updatedAt
+  id                 String           @id @default(uuid())
+  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  curriculumCourseId String
+  topic              String
+  frequency          Int
+  importance         Float
+  updatedAt          DateTime         @updatedAt
 
   @@index([curriculumCourseId])
 }
@@ -224,48 +319,84 @@ model TopicStatistic {
 // ---------- AI Tutor chat ----------
 
 model ChatSession {
-  id                  String            @id @default(uuid())
-  student             Student           @relation(fields: [studentId], references: [id])
-  studentId           String
-  curriculumCourse    CurriculumCourse  @relation(fields: [curriculumCourseId], references: [id])
-  curriculumCourseId  String
-  createdAt           DateTime          @default(now())
-  messages            ChatMessage[]
+  id                 String           @id @default(uuid())
+  student            Student          @relation(fields: [studentId], references: [id])
+  studentId          String
+  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  curriculumCourseId String
+  createdAt          DateTime         @default(now())
+  messages           ChatMessage[]
 
   @@index([studentId, curriculumCourseId])
 }
 
-// ChatMessage — UNCHANGED.
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  session   ChatSession @relation(fields: [sessionId], references: [id])
+  sessionId String
+  role      ChatRole
+  content   String
+  createdAt DateTime    @default(now())
+
+  @@index([sessionId])
+}
 
 // ---------- AI-generated practice exams ----------
 
 model GeneratedExam {
-  id                  String                  @id @default(uuid())
-  curriculumCourse    CurriculumCourse        @relation(fields: [curriculumCourseId], references: [id])
-  curriculumCourseId  String
-  strategy            String
-  createdAt           DateTime                @default(now())
-  questions           GeneratedExamQuestion[]
-  attempts            ExamAttempt[]
+  id                 String                  @id @default(uuid())
+  curriculumCourse   CurriculumCourse        @relation(fields: [curriculumCourseId], references: [id])
+  curriculumCourseId String
+  strategy           String
+  createdAt          DateTime                @default(now())
+  questions          GeneratedExamQuestion[]
+  attempts           ExamAttempt[]
 
   @@index([curriculumCourseId])
 }
 
-// GeneratedExamQuestion, ExamAttempt — UNCHANGED.
+model GeneratedExamQuestion {
+  id             String        @id @default(uuid())
+  exam           GeneratedExam @relation(fields: [examId], references: [id])
+  examId         String
+  question       String
+  expectedAnswer String
+  topic          String?
+
+  @@index([examId])
+}
+
+model ExamAttempt {
+  id        String        @id @default(uuid())
+  exam      GeneratedExam @relation(fields: [examId], references: [id])
+  examId    String
+  student   Student       @relation(fields: [studentId], references: [id])
+  studentId String
+  score     Float?
+  feedback  Json?
+  takenAt   DateTime      @default(now())
+
+  @@index([studentId])
+}
 
 // ---------- Weak topics ----------
 
 model WeakTopic {
-  id                  String            @id @default(uuid())
-  student             Student           @relation(fields: [studentId], references: [id])
-  studentId           String
-  curriculumCourse    CurriculumCourse  @relation(fields: [curriculumCourseId], references: [id])
-  curriculumCourseId  String
-  topic               String
-  weakness            Float
-  updatedAt           DateTime          @updatedAt
+  id                 String           @id @default(uuid())
+  student            Student          @relation(fields: [studentId], references: [id])
+  studentId          String
+  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  curriculumCourseId String
+  topic              String
+  weakness           Float
+  updatedAt          DateTime         @updatedAt
 
-  @@index([studentId, courseId])
+  @@index([studentId, curriculumCourseId])
 }
 
 // ---------- Upcoming events (student-defined) ----------
@@ -291,6 +422,7 @@ model ActivityLog {
   student   Student  @relation(fields: [studentId], references: [id])
   studentId String
   createdAt DateTime @default(now())
+
 
   @@index([studentId, createdAt])
 }

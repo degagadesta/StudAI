@@ -9,9 +9,9 @@ import {
 // UPLOAD PDF
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function uploadPDF(studentId, courseId, file) {
+export async function uploadPDF(studentId, curriculumCourseId, file) {
   // 1. Validate required inputs
-  if (!courseId) {
+  if (!curriculumCourseId) {
     throw new AppError("Please select a course before uploading", 400);
   }
 
@@ -86,25 +86,24 @@ export async function uploadPDF(studentId, courseId, file) {
     );
   }
 
-  // 6. Verify that the selected course belongs
-  //    to the student's curriculum
-  const courseAccess =
-    await prisma.curriculumCourse.findFirst({
-      where: {
-        curriculumId: profile.curriculumId,
-        courseId,
-      },
-      select: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-          },
+  // 6. Verify that the curriculum course exists and belongs to student's curriculum
+  const curriculumCourse = await prisma.curriculumCourse.findFirst({
+    where: {
+      id: curriculumCourseId,
+      curriculumId: profile.curriculumId,
+    },
+    select: {
+      id: true,
+      course: {
+        select: {
+          id: true,
+          title: true,
         },
       },
-    });
+    },
+  });
 
-  if (!courseAccess) {
+  if (!curriculumCourse) {
     throw new AppError(
       "This course is not part of your curriculum",
       403
@@ -115,7 +114,7 @@ export async function uploadPDF(studentId, courseId, file) {
   //    file.buffer is stored as Bytes in PostgreSQL.
   const pdf = await prisma.courseMaterial.create({
     data: {
-      courseId,
+      curriculumCourseId,
       title: file.originalname,
       fileData: file.buffer,
       fileSize: file.size,
@@ -128,10 +127,15 @@ export async function uploadPDF(studentId, courseId, file) {
       fileSize: true,
       createdAt: true,
       progress: true,
-      course: {
+      curriculumCourse: {
         select: {
           id: true,
-          title: true,
+          course: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
         },
       },
     },
@@ -143,8 +147,9 @@ export async function uploadPDF(studentId, courseId, file) {
     fileName: pdf.title,
     fileSize: pdf.fileSize,
     uploadDate: pdf.createdAt,
-    courseId: pdf.course.id,
-    courseName: pdf.course.title,
+    curriculumCourseId: pdf.curriculumCourse.id,
+    courseId: pdf.curriculumCourse.course.id,
+    courseName: pdf.curriculumCourse.course.title,
     progress: pdf.progress,
   };
 }
@@ -168,10 +173,15 @@ export async function getStudentPDFs(studentId) {
       createdAt: true,
       progress: true,
 
-      course: {
+      curriculumCourse: {
         select: {
           id: true,
-          title: true,
+          course: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
         },
       },
     },
@@ -181,21 +191,22 @@ export async function getStudentPDFs(studentId) {
     },
   });
 
-  // Group PDFs by course
+  // Group PDFs by curriculum course
   const grouped = {};
 
   for (const pdf of pdfs) {
-    const courseId = pdf.course.id;
+    const curriculumCourseId = pdf.curriculumCourse.id;
 
-    if (!grouped[courseId]) {
-      grouped[courseId] = {
-        courseId: pdf.course.id,
-        courseName: pdf.course.title,
+    if (!grouped[curriculumCourseId]) {
+      grouped[curriculumCourseId] = {
+        curriculumCourseId: pdf.curriculumCourse.id,
+        courseId: pdf.curriculumCourse.course.id,
+        courseName: pdf.curriculumCourse.course.title,
         pdfs: [],
       };
     }
 
-    grouped[courseId].pdfs.push({
+    grouped[curriculumCourseId].pdfs.push({
       id: pdf.id,
       fileName: pdf.title,
       fileSize: pdf.fileSize,

@@ -23,7 +23,7 @@ import CoursesPage from "./pages/Coursepage";
 import SchedulePage from "./pages/Schedulepage";
 import ProfilePage from "./pages/Profilepage";
 import AnalyticsPage from "./pages/AnalyticsPage";
-import NotificationsPage from "./pages/NotificationsPage";
+import NotificationsPage from "./pages/NotificationsModal";
 import SettingsModal from "./pages/SettingsModal";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";

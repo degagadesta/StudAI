@@ -1,25 +1,29 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { Search, Bell, Settings } from "lucide-react";
-import { Link } from "react-router-dom";
 import { stripControlChars, capLength } from "../../utils/security/sanitize";
 import { getAcademicProfile } from "../../api/Coursesapi";
+import { getUpcomingEventNotifications } from "../../api/NotificationApi";
 import SettingsModal from "../../pages/SettingsModal";
+import NotificationsModal from "../../pages/NotificationsModal";
 
 const SEARCH_MAX_LEN = 100;
 
 interface TopbarProps {
   onSearch?: (query: string) => void;
-  hasUnreadNotifications?: boolean;
+  unreadCount?: number;
 }
 
 export default function Topbar({
   onSearch,
-  hasUnreadNotifications = true,
+  unreadCount: externalUnreadCount,
 }: TopbarProps) {
   const [query, setQuery] = useState("");
   const [firstName, setFirstName] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
+  // Fetch Academic Profile
   useEffect(() => {
     let cancelled = false;
     getAcademicProfile()
@@ -32,6 +36,26 @@ export default function Topbar({
     };
   }, []);
 
+  // Fetch Notification Count
+  const fetchNotificationCount = async () => {
+    try {
+      const notifications = await getUpcomingEventNotifications();
+      // Counts all unread notifications (or total items if read field is omitted)
+      const count = notifications.filter((n) => !n.read).length;
+      setUnreadCount(count);
+    } catch (err) {
+      // Silently fail if endpoint is temporarily unreachable
+    }
+  };
+
+  useEffect(() => {
+    if (externalUnreadCount !== undefined) {
+      setUnreadCount(externalUnreadCount);
+    } else {
+      fetchNotificationCount();
+    }
+  }, [externalUnreadCount, isNotificationsOpen]);
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const cleaned = capLength(
       stripControlChars(e.target.value),
@@ -39,6 +63,11 @@ export default function Topbar({
     );
     setQuery(cleaned);
     onSearch?.(cleaned.trim());
+  };
+
+  const handleCloseNotifications = () => {
+    setIsNotificationsOpen(false);
+    fetchNotificationCount(); // Sync count when closing the modal
   };
 
   return (
@@ -68,16 +97,20 @@ export default function Topbar({
             </span>
           </div>
 
-          <Link
-            to="/app/notifications"
+          {/* Trigger Notifications Modal with Dynamic Badge Count */}
+          <button
+            type="button"
+            onClick={() => setIsNotificationsOpen(true)}
             aria-label="Notifications"
-            className="relative w-11 h-11 rounded-full bg-[#FFFDF7] border border-[#DCD2B4] flex items-center justify-center text-[#5B6156] hover:bg-[#EFE8D4] transition-colors"
+            className="relative w-11 h-11 rounded-full bg-[#FFFDF7] border border-[#DCD2B4] flex items-center justify-center text-[#5B6156] hover:bg-[#EFE8D4] transition-colors cursor-pointer"
           >
             <Bell size={17} strokeWidth={1.9} />
-            {hasUnreadNotifications && (
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#D85A30] ring-2 ring-[#FFFDF7]" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] px-1 bg-[#D85A30] text-[#FFFDF7] text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-[#FFFDF7] leading-none">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
             )}
-          </Link>
+          </button>
 
           {/* Trigger Settings Modal */}
           <button
@@ -90,6 +123,12 @@ export default function Topbar({
           </button>
         </div>
       </header>
+
+      {/* Notifications Modal Render */}
+      <NotificationsModal
+        isOpen={isNotificationsOpen}
+        onClose={handleCloseNotifications}
+      />
 
       {/* Settings Modal Render */}
       <SettingsModal

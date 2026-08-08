@@ -2,51 +2,55 @@ import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 
 export async function getAcademicProfile(studentId) {
-    const student = await prisma.student.findUnique({
-        where: { id: studentId },
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+      subscriptionPlan: true,
+      profile: {
         select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-            profile: {
+          currentYear: true,
+          currentSemester: true,
+          curriculum: {
+            select: {
+              label: true,
+              department: {
                 select: {
-                    currentYear: true,
-                    currentSemester: true,
-                    curriculum: {
-                        select: {
-                            label: true,
-                            department: {
-                                select: {
-                                    name: true,
-                                    university: {
-                                        select: {
-                                            name: true,
-                                        },
-                                    },
-                                },
-                            },
-                        },
+                  name: true,
+                  university: {
+                    select: {
+                      name: true,
                     },
+                  },
                 },
+              },
             },
+          },
         },
-    });
+      },
+    },
+  });
 
-    if (!student) {
-        throw new AppError("Account not found", 404);
-    }
+  console.log("user profile: ", student);
 
-    if (!student.profile) {
-        throw new AppError("Please complete your onboarding first", 400);
-    }
+  if (!student) {
+    throw new AppError("Account not found", 404);
+  }
 
-    return {
-        fullName: `${student.firstName} ${student.lastName}`,
-        university: student.profile.curriculum.department.university.name,
-        department: student.profile.curriculum.department.name,
-        year: student.profile.currentYear,
-        semester: student.profile.currentSemester,
-    };
+  if (!student.profile) {
+    throw new AppError("Please complete your onboarding first", 400);
+  }
+
+  return {
+    fullName: `${student.firstName} ${student.lastName}`,
+    university: student.profile.curriculum.department.university.name,
+    department: student.profile.curriculum.department.name,
+    year: student.profile.currentYear,
+    semester: student.profile.currentSemester,
+    subscriptionPlan: student.subscriptionPlan,
+  };
 }
 
 /**

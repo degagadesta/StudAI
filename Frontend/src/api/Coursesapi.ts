@@ -41,3 +41,26 @@ export async function getCourses(): Promise<Course[]> {
   );
   return res.data.data;
 }
+
+export async function getAvailableCourses(): Promise<Course[]> {
+  // Fetches available department courses from the database
+  const res = await api.get<{ success: boolean; data: Course[] }>("/courses");
+  return res.data.data;
+}
+
+export async function deleteCourse(courseId: string): Promise<void> {
+  await api.delete(`/courses/${courseId}`);
+}
+
+export async function createCourse(courseId: string): Promise<void> {
+  await api.post(`/courses`, { courseId });
+}
+
+export async function uploadCoursePdf(
+  courseId: string,
+  file: File,
+): Promise<void> {
+  const formData = new FormData();
+  formData.append("file", file);
+  await api.post(`/courses/${courseId}/pdfs`, formData);
+}

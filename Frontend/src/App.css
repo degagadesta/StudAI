@@ -1,3 +1,13 @@
+/* ============================================
+   LEGACY APP.CSS
+   ============================================
+   This file contains legacy component styles.
+   For theme-aware colors, use the new theme system
+   defined in index.css with CSS custom properties.
+   
+   See: THEME_README.md for documentation
+   ============================================ */
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;

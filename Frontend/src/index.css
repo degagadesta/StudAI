@@ -1,1 +1,294 @@
 @import "tailwindcss";
+
+/* ============================================
+   THEME SYSTEM - CSS CUSTOM PROPERTIES
+   ============================================ */
+
+@layer base {
+  :root {
+    /* ========== LIGHT THEME (DEFAULT) ========== */
+    
+    /* Backgrounds & Surfaces */
+    --color-bg-page: #F6F1E3;
+    --color-bg-surface: #FFFDF7;
+    --color-bg-surface-hover: #F9F6EE;
+    --color-bg-elevated: #EFE8D4;
+    
+    /* Text Colors */
+    --color-text-primary: #253D31;
+    --color-text-secondary: #5B6156;
+    --color-text-muted: #A9A18A;
+    --color-text-inverse: #F6F1E3;
+    
+    /* Borders */
+    --color-border: #DCD2B4;
+    --color-border-hover: #8CA37E;
+    
+    /* Primary Accent (Forest Green) */
+    --color-accent-primary: #253D31;
+    --color-accent-primary-hover: #2F4A3D;
+    --color-accent-primary-light: #8CA37E;
+    --color-accent-primary-bg: #EFE8D4;
+    
+    /* Secondary Accent (Warm tones) */
+    --color-accent-secondary: #8CA37E;
+    --color-accent-secondary-hover: #7A9168;
+    
+    /* Status Colors */
+    --color-success: #8CA37E;
+    --color-success-bg: rgba(140, 163, 126, 0.2);
+    --color-error: #8B3A3A;
+    --color-error-bg: #F7E8E8;
+    --color-warning: #F2A93B;
+    --color-warning-bg: rgba(242, 169, 59, 0.15);
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(37, 61, 49, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(37, 61, 49, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(37, 61, 49, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(37, 61, 49, 0.1);
+  }
+
+  .dark {
+    /* ========== DARK THEME ========== */
+    
+    /* Backgrounds & Surfaces - Layered depth system */
+    --color-bg-page: #0D0F0D;          /* Near-black with slight green tint */
+    --color-bg-surface: #151815;        /* Charcoal-green, lighter than page */
+    --color-bg-surface-hover: #1C201C; /* Third layer for hover/nested */
+    --color-bg-elevated: #212521;       /* Fourth layer for elevated cards */
+    
+    /* Text Colors - Warm and readable */
+    --color-text-primary: #F2F1EC;      /* Warm off-white, not pure white */
+    --color-text-secondary: #8A8D87;    /* Medium gray with warmth */
+    --color-text-muted: #5A5D58;        /* Darker muted text */
+    --color-text-inverse: #0D0F0D;      /* Dark text on light backgrounds */
+    
+    /* Borders - Subtle, low contrast */
+    --color-border: #2A2E2A;            /* Visible but not prominent */
+    --color-border-hover: #3A3E3A;      /* Slightly lighter on hover */
+    
+    /* Primary Accent - Vivid Green */
+    --color-accent-primary: #7ED957;     /* Vivid yellow-leaning green */
+    --color-accent-primary-hover: #8FE168; /* Brighter on hover */
+    --color-accent-primary-light: #7ED957; /* Same as primary in dark */
+    --color-accent-primary-bg: rgba(126, 217, 87, 0.15); /* Subtle green tint */
+    
+    /* Secondary Accent - Warm Orange */
+    --color-accent-secondary: #F2A93B;   /* Warm orange for highlights */
+    --color-accent-secondary-hover: #FFB84D; /* Brighter orange on hover */
+    
+    /* Status Colors */
+    --color-success: #7ED957;
+    --color-success-bg: rgba(126, 217, 87, 0.15);
+    --color-error: #E67E7E;
+    --color-error-bg: rgba(230, 126, 126, 0.15);
+    --color-warning: #F2A93B;
+    --color-warning-bg: rgba(242, 169, 59, 0.15);
+    
+    /* Shadows - Deeper and more dramatic in dark mode */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Apply theme to body */
+  body {
+    background-color: var(--color-bg-page);
+    color: var(--color-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Scrollbar styling for dark mode */
+  .dark {
+    scrollbar-color: var(--color-border) var(--color-bg-surface);
+  }
+
+  .dark ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: var(--color-bg-surface);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 6px;
+    border: 2px solid var(--color-bg-surface);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-border-hover);
+  }
+
+  /* Selection colors */
+  ::selection {
+    background-color: var(--color-accent-primary);
+    color: var(--color-text-inverse);
+  }
+
+  .dark ::selection {
+    background-color: var(--color-accent-primary);
+    color: var(--color-bg-page);
+  }
+}
+
+/* ============================================
+   THEME-AWARE UTILITY CLASSES
+   ============================================ */
+
+@layer utilities {
+  /* Background utilities */
+  .bg-page { background-color: var(--color-bg-page); }
+  .bg-surface { background-color: var(--color-bg-surface); }
+  .bg-surface-hover { background-color: var(--color-bg-surface-hover); }
+  .bg-elevated { background-color: var(--color-bg-elevated); }
+  
+  /* Text utilities */
+  .text-primary { color: var(--color-text-primary); }
+  .text-secondary { color: var(--color-text-secondary); }
+  .text-muted { color: var(--color-text-muted); }
+  .text-inverse { color: var(--color-text-inverse); }
+  
+  /* Border utilities */
+  .border-default { border-color: var(--color-border); }
+  .border-hover { border-color: var(--color-border-hover); }
+  
+  /* Accent utilities */
+  .bg-accent { background-color: var(--color-accent-primary); }
+  .bg-accent-hover { background-color: var(--color-accent-primary-hover); }
+  .bg-accent-light { background-color: var(--color-accent-primary-bg); }
+  .text-accent { color: var(--color-accent-primary); }
+  .border-accent { border-color: var(--color-accent-primary); }
+  
+  .bg-accent-secondary { background-color: var(--color-accent-secondary); }
+  .text-accent-secondary { color: var(--color-accent-secondary); }
+  
+  /* Status utilities */
+  .bg-success { background-color: var(--color-success); }
+  .bg-success-light { background-color: var(--color-success-bg); }
+  .text-success { color: var(--color-success); }
+  
+  .bg-error { background-color: var(--color-error-bg); }
+  .text-error { color: var(--color-error); }
+  .border-error { border-color: var(--color-error); }
+  
+  .bg-warning { background-color: var(--color-warning-bg); }
+  .text-warning { color: var(--color-warning); }
+  .border-warning { border-color: var(--color-warning); }
+  
+  /* Background for text colors (helper for preview) */
+  .bg-primary { background-color: var(--color-text-primary); }
+  .bg-secondary { background-color: var(--color-text-secondary); }
+  
+  /* Ring colors for focus states */
+  .ring-accent { --tw-ring-color: var(--color-accent-primary); }
+  .ring-offset-page { --tw-ring-offset-color: var(--color-bg-page); }
+  
+  /* Hover transitions */
+  .hover-surface:hover { background-color: var(--color-bg-surface-hover); }
+  .hover-accent:hover { background-color: var(--color-accent-primary-hover); }
+  .hover-border:hover { border-color: var(--color-border-hover); }
+  
+  /* Focus states */
+  .focus-accent:focus {
+    outline: 2px solid var(--color-accent-primary);
+    outline-offset: 2px;
+  }
+  
+  .focus-ring:focus {
+    box-shadow: 0 0 0 3px var(--color-accent-primary-bg);
+  }
+  
+  /* Placeholder text */
+  .placeholder-muted::placeholder {
+    color: var(--color-text-muted);
+  }
+  
+  /* Divider lines */
+  .divide-default > * + * {
+    border-top-color: var(--color-border);
+  }
+  
+  /* Shadow utilities with theme awareness */
+  .shadow-sm-theme { box-shadow: var(--shadow-sm); }
+  .shadow-md-theme { box-shadow: var(--shadow-md); }
+  .shadow-lg-theme { box-shadow: var(--shadow-lg); }
+  .shadow-xl-theme { box-shadow: var(--shadow-xl); }
+}
+
+/* ============================================
+   SMOOTH TRANSITIONS
+   ============================================ */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* ============================================
+   CHART & DATA VISUALIZATION HELPERS
+   ============================================ */
+
+@layer components {
+  /* Chart fill with theme-aware accent */
+  .chart-fill {
+    fill: var(--color-accent-primary);
+    fill-opacity: 0.2;
+  }
+  
+  .chart-fill-solid {
+    fill: var(--color-accent-primary);
+  }
+  
+  /* Chart stroke/line with theme-aware accent */
+  .chart-stroke {
+    stroke: var(--color-accent-primary);
+    stroke-width: 2px;
+    fill: none;
+  }
+  
+  /* Secondary chart color (orange accent in dark mode) */
+  .chart-fill-secondary {
+    fill: var(--color-accent-secondary);
+    fill-opacity: 0.2;
+  }
+  
+  .chart-stroke-secondary {
+    stroke: var(--color-accent-secondary);
+    stroke-width: 2px;
+    fill: none;
+  }
+  
+  /* Grid lines for charts */
+  .chart-grid {
+    stroke: var(--color-border);
+    stroke-width: 1px;
+    stroke-dasharray: 4 4;
+  }
+  
+  /* Chart axis */
+  .chart-axis {
+    stroke: var(--color-border);
+    stroke-width: 1px;
+  }
+  
+  /* Chart text labels */
+  .chart-text {
+    fill: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  
+  /* Tooltip styling */
+  .chart-tooltip {
+    background-color: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: var(--shadow-lg);
+  }
+}

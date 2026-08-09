@@ -292,12 +292,12 @@ export default function OnboardingPage() {
   const ActiveIcon = FEATURES[activeSlide].icon;
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[#F6F1E3]">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-page">
       {/* Left — cream panel: the onboarding wizard */}
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md border-l-2 border-[#B08D4F]/50 pl-7">
           <div className="flex items-center justify-between mb-6">
-            <span className="font-mono text-xs text-[#5B6156]">
+            <span className="font-mono text-xs text-secondary">
               STEP {step} OF 4
             </span>
             <div className="flex gap-1.5">
@@ -305,7 +305,7 @@ export default function OnboardingPage() {
                 <span
                   key={i}
                   className={`w-6 h-1.5 rounded-full transition-all ${
-                    i <= step ? "bg-[#2F4A3D]" : "bg-[#DCD2B4]"
+                    i <= step ? "bg-accent" : "bg-[#DCD2B4]"
                   }`}
                 />
               ))}
@@ -313,7 +313,7 @@ export default function OnboardingPage() {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-sm text-[#8B3A3A] bg-[#F7E8E8] border border-[#E3B8B8] rounded-lg px-3.5 py-2.5 mb-5">
+            <div className="flex items-center gap-2 text-sm text-error bg-error border border-error rounded-lg px-3.5 py-2.5 mb-5">
               {error}
             </div>
           )}
@@ -321,30 +321,30 @@ export default function OnboardingPage() {
           {/* STEP 1 — University */}
           {step === 1 && (
             <div>
-              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5B6156] bg-[#EFE8D4] border border-[#DCD2B4] px-2.5 py-1 rounded-full mb-4">
-                <GraduationCap size={13} className="text-[#2F4A3D]" />
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-secondary bg-elevated border border-default px-2.5 py-1 rounded-full mb-4">
+                <GraduationCap size={13} className="text-accent" />
                 Academic institution
               </span>
-              <h2 className="font-serif text-2xl text-[#253D31] mb-1.5">
+              <h2 className="font-serif text-2xl text-primary mb-1.5">
                 Where do you study?
               </h2>
-              <p className="text-sm text-[#5B6156] mb-6">
+              <p className="text-sm text-secondary mb-6">
                 We use this to match your department's curriculum and past
                 exams.
               </p>
 
               {university ? (
-                <div className="flex items-center justify-between bg-[#FFFDF7] border border-[#8CA37E] rounded-xl p-4">
+                <div className="flex items-center justify-between bg-surface border border-accent rounded-xl p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-[#8CA37E]/20 flex items-center justify-center shrink-0">
-                      <Pin size={16} className="text-[#2F4A3D]" />
+                    <div className="w-9 h-9 rounded-lg bg-accent-secondary/20 flex items-center justify-center shrink-0">
+                      <Pin size={16} className="text-accent" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#253D31]">
+                      <p className="text-sm font-medium text-primary">
                         {university.name}
                       </p>
                       {university.city && (
-                        <p className="text-xs text-[#5B6156]">
+                        <p className="text-xs text-secondary">
                           {university.city}
                         </p>
                       )}
@@ -353,7 +353,7 @@ export default function OnboardingPage() {
                   <button
                     type="button"
                     onClick={changeUniversity}
-                    className="text-xs font-medium text-[#2F4A3D] hover:underline shrink-0"
+                    className="text-xs font-medium text-accent hover:underline shrink-0"
                   >
                     Change
                   </button>
@@ -361,7 +361,7 @@ export default function OnboardingPage() {
               ) : !showSearch ? (
                 <div>
                   {isLoading ? (
-                    <p className="text-sm text-[#5B6156] text-center py-8">
+                    <p className="text-sm text-secondary text-center py-8">
                       Loading universities...
                     </p>
                   ) : (
@@ -377,9 +377,9 @@ export default function OnboardingPage() {
                               key={u.id}
                               type="button"
                               onClick={() => pinUniversity(u)}
-                              className="flex flex-col items-start gap-1 p-4 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl text-left hover:border-[#8CA37E] transition-colors"
+                              className="flex flex-col items-start gap-1 p-4 bg-surface border border-default rounded-xl text-left hover:border-accent transition-colors"
                             >
-                              <span className="font-serif text-base text-[#253D31]">
+                              <span className="font-serif text-base text-primary">
                                 {u.name
                                   .split(" ")
                                   .map((w) => w[0])
@@ -387,7 +387,7 @@ export default function OnboardingPage() {
                                   .slice(0, 4)
                                   .toUpperCase()}
                               </span>
-                              <span className="text-[11px] text-[#5B6156] leading-tight">
+                              <span className="text-[11px] text-secondary leading-tight">
                                 {u.name}
                               </span>
                             </button>
@@ -395,10 +395,10 @@ export default function OnboardingPage() {
                         <button
                           type="button"
                           onClick={() => setShowSearch(true)}
-                          className="flex flex-col items-center justify-center gap-1.5 p-4 bg-[#EFE8D4] border border-dashed border-[#B08D4F] rounded-xl hover:bg-[#E9E0C6] transition-colors"
+                          className="flex flex-col items-center justify-center gap-1.5 p-4 bg-elevated border border-dashed border-[#B08D4F] rounded-xl hover:bg-[#E9E0C6] transition-colors"
                         >
-                          <Search size={16} className="text-[#2F4A3D]" />
-                          <span className="text-xs font-medium text-[#2F4A3D]">
+                          <Search size={16} className="text-accent" />
+                          <span className="text-xs font-medium text-accent">
                             More
                           </span>
                         </button>
@@ -411,7 +411,7 @@ export default function OnboardingPage() {
                   <div className="relative mb-3">
                     <Search
                       size={15}
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A9A18A]"
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
                     />
                     <input
                       type="text"
@@ -420,7 +420,7 @@ export default function OnboardingPage() {
                       onChange={handleSearchChange}
                       maxLength={SEARCH_MAX_LEN}
                       placeholder="Search your university..."
-                      className="w-full pl-10 pr-9 py-3 text-sm bg-[#FFFDF7] border border-[#DCD2B4] rounded-lg outline-none placeholder:text-[#A9A18A] focus:border-[#8CA37E] focus:ring-4 focus:ring-[#8CA37E]/20"
+                      className="w-full pl-10 pr-9 py-3 text-sm bg-surface border border-default rounded-lg outline-none placeholder:text-muted focus:border-accent focus:ring-4 focus:ring-accent/20"
                     />
                     <button
                       type="button"
@@ -429,7 +429,7 @@ export default function OnboardingPage() {
                         setQuery("");
                       }}
                       aria-label="Back to suggestions"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A9A18A] hover:text-[#5B6156]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-secondary"
                     >
                       <X size={15} />
                     </button>
@@ -442,18 +442,18 @@ export default function OnboardingPage() {
                           key={u.id}
                           type="button"
                           onClick={() => pinUniversity(u)}
-                          className="text-left px-3.5 py-2.5 text-sm text-[#3A382F] bg-[#FFFDF7] border border-[#DCD2B4] rounded-lg hover:border-[#8CA37E] hover:bg-[#F4EFDD] transition-colors"
+                          className="text-left px-3.5 py-2.5 text-sm text-[#3A382F] bg-surface border border-default rounded-lg hover:border-accent hover:bg-surface-hover transition-colors"
                         >
                           <div className="font-medium">{u.name}</div>
                           {u.city && (
-                            <div className="text-xs text-[#5B6156]">
+                            <div className="text-xs text-secondary">
                               {u.city}
                             </div>
                           )}
                         </button>
                       ))
                     ) : (
-                      <p className="text-xs text-[#A9A18A] px-1 py-2">
+                      <p className="text-xs text-muted px-1 py-2">
                         No matches — try a different spelling.
                       </p>
                     )}
@@ -466,21 +466,21 @@ export default function OnboardingPage() {
           {/* STEP 2 — Department */}
           {step === 2 && (
             <div>
-              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5B6156] bg-[#EFE8D4] border border-[#DCD2B4] px-2.5 py-1 rounded-full mb-4">
-                <BookOpen size={13} className="text-[#2F4A3D]" />
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-secondary bg-elevated border border-default px-2.5 py-1 rounded-full mb-4">
+                <BookOpen size={13} className="text-accent" />
                 Department
               </span>
-              <h2 className="font-serif text-2xl text-[#253D31] mb-1.5">
+              <h2 className="font-serif text-2xl text-primary mb-1.5">
                 What's your department?
               </h2>
-              <p className="text-sm text-[#5B6156] mb-6">{university?.name}</p>
+              <p className="text-sm text-secondary mb-6">{university?.name}</p>
 
               {isLoading ? (
-                <p className="text-sm text-[#5B6156] text-center py-8">
+                <p className="text-sm text-secondary text-center py-8">
                   Loading departments...
                 </p>
               ) : departments.length === 0 ? (
-                <p className="text-sm text-[#8B3A3A] text-center py-8">
+                <p className="text-sm text-error text-center py-8">
                   No departments found for this university.
                 </p>
               ) : (
@@ -494,13 +494,13 @@ export default function OnboardingPage() {
                         onClick={() => setDepartment(dept)}
                         className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm text-left transition-colors ${
                           isSelected
-                            ? "bg-[#FFFDF7] border-[#8CA37E] text-[#253D31] font-medium"
-                            : "bg-[#FFFDF7] border-[#DCD2B4] text-[#5B6156] hover:border-[#C7BE9E]"
+                            ? "bg-surface border-accent text-primary font-medium"
+                            : "bg-surface border-default text-secondary hover:border-[#C7BE9E]"
                         }`}
                       >
                         {dept.name}
                         {isSelected && (
-                          <CheckCircle2 size={17} className="text-[#2F4A3D]" />
+                          <CheckCircle2 size={17} className="text-accent" />
                         )}
                       </button>
                     );
@@ -513,18 +513,18 @@ export default function OnboardingPage() {
           {/* STEP 3 — Year & Semester */}
           {step === 3 && (
             <div>
-              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5B6156] bg-[#EFE8D4] border border-[#DCD2B4] px-2.5 py-1 rounded-full mb-4">
-                <Calendar size={13} className="text-[#2F4A3D]" />
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-secondary bg-elevated border border-default px-2.5 py-1 rounded-full mb-4">
+                <Calendar size={13} className="text-accent" />
                 Academic timeline
               </span>
-              <h2 className="font-serif text-2xl text-[#253D31] mb-1.5">
+              <h2 className="font-serif text-2xl text-primary mb-1.5">
                 Year & semester
               </h2>
-              <p className="text-sm text-[#5B6156] mb-6">
+              <p className="text-sm text-secondary mb-6">
                 {department?.name} · {university?.name}
               </p>
 
-              <p className="text-xs font-medium text-[#5B6156] mb-2">Year</p>
+              <p className="text-xs font-medium text-secondary mb-2">Year</p>
               <div className="grid grid-cols-5 gap-2 mb-6">
                 {YEARS.map((y) => (
                   <button
@@ -533,8 +533,8 @@ export default function OnboardingPage() {
                     onClick={() => setYear(y)}
                     className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                       year === y
-                        ? "bg-[#2F4A3D] border-[#2F4A3D] text-[#F6F1E3]"
-                        : "bg-[#FFFDF7] border-[#DCD2B4] text-[#5B6156] hover:border-[#8CA37E]"
+                        ? "bg-accent border-[#2F4A3D] text-inverse"
+                        : "bg-surface border-default text-secondary hover:border-accent"
                     }`}
                   >
                     {y}
@@ -542,7 +542,7 @@ export default function OnboardingPage() {
                 ))}
               </div>
 
-              <p className="text-xs font-medium text-[#5B6156] mb-2">
+              <p className="text-xs font-medium text-secondary mb-2">
                 Semester
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -553,8 +553,8 @@ export default function OnboardingPage() {
                     onClick={() => setSemester(s)}
                     className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                       semester === s
-                        ? "bg-[#2F4A3D] border-[#2F4A3D] text-[#F6F1E3]"
-                        : "bg-[#FFFDF7] border-[#DCD2B4] text-[#5B6156] hover:border-[#8CA37E]"
+                        ? "bg-accent border-[#2F4A3D] text-inverse"
+                        : "bg-surface border-default text-secondary hover:border-accent"
                     }`}
                   >
                     Semester {s}
@@ -567,34 +567,34 @@ export default function OnboardingPage() {
           {/* STEP 4 — Course Selection */}
           {step === 4 && (
             <div>
-              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5B6156] bg-[#EFE8D4] border border-[#DCD2B4] px-2.5 py-1 rounded-full mb-4">
-                <BookMarked size={13} className="text-[#2F4A3D]" />
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-secondary bg-elevated border border-default px-2.5 py-1 rounded-full mb-4">
+                <BookMarked size={13} className="text-accent" />
                 Select courses
               </span>
-              <h2 className="font-serif text-2xl text-[#253D31] mb-1.5">
+              <h2 className="font-serif text-2xl text-primary mb-1.5">
                 Choose your courses
               </h2>
-              <p className="text-sm text-[#5B6156] mb-6">
+              <p className="text-sm text-secondary mb-6">
                 Year {year} · Semester {semester} · {department?.name}
               </p>
 
               {isLoading ? (
-                <p className="text-sm text-[#5B6156] text-center py-8">
+                <p className="text-sm text-secondary text-center py-8">
                   Loading courses...
                 </p>
               ) : availableCourses.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-sm text-[#8B3A3A] mb-2">
+                  <p className="text-sm text-error mb-2">
                     No courses found for this selection.
                   </p>
-                  <p className="text-xs text-[#5B6156]">
+                  <p className="text-xs text-secondary">
                     Please contact support or try a different year/semester.
                   </p>
                 </div>
               ) : (
                 <>
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs text-[#5B6156]">
+                    <p className="text-xs text-secondary">
                       {selectedCourses.size} of {availableCourses.length}{" "}
                       selected
                     </p>
@@ -609,7 +609,7 @@ export default function OnboardingPage() {
                           );
                         }
                       }}
-                      className="text-xs font-medium text-[#2F4A3D] hover:underline"
+                      className="text-xs font-medium text-accent hover:underline"
                     >
                       {selectedCourses.size === availableCourses.length
                         ? "Deselect all"
@@ -626,41 +626,41 @@ export default function OnboardingPage() {
                           onClick={() => toggleCourse(course.id)}
                           className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${
                             isSelected
-                              ? "bg-[#FFFDF7] border-[#8CA37E]"
-                              : "bg-[#FFFDF7] border-[#DCD2B4] hover:border-[#C7BE9E]"
+                              ? "bg-surface border-accent"
+                              : "bg-surface border-default hover:border-[#C7BE9E]"
                           }`}
                         >
                           <div
                             className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
                               isSelected
-                                ? "bg-[#2F4A3D] border-[#2F4A3D]"
-                                : "bg-white border-[#DCD2B4]"
+                                ? "bg-accent border-[#2F4A3D]"
+                                : "bg-surface border-default"
                             }`}
                           >
                             {isSelected && (
                               <CheckCircle2
                                 size={14}
-                                className="text-[#F6F1E3]"
+                                className="text-inverse"
                               />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-mono text-xs text-[#2F4A3D] bg-[#EFE8D4] px-2 py-0.5 rounded">
+                              <span className="font-mono text-xs text-accent bg-elevated px-2 py-0.5 rounded">
                                 {course.courseCode}
                               </span>
                               {course.creditHours && (
-                                <span className="text-xs text-[#5B6156]">
+                                <span className="text-xs text-secondary">
                                   {course.creditHours} credit
                                   {course.creditHours > 1 ? "s" : ""}
                                 </span>
                               )}
                             </div>
-                            <p className="text-sm font-medium text-[#253D31] mb-0.5">
+                            <p className="text-sm font-medium text-primary mb-0.5">
                               {course.title}
                             </p>
                             {course.description && (
-                              <p className="text-xs text-[#5B6156] line-clamp-2">
+                              <p className="text-xs text-secondary line-clamp-2">
                                 {course.description}
                               </p>
                             )}
@@ -675,12 +675,12 @@ export default function OnboardingPage() {
           )}
 
           {/* Navigation */}
-          <div className="flex items-center justify-between pt-8 mt-6 border-t border-[#DCD2B4]">
+          <div className="flex items-center justify-between pt-8 mt-6 border-t border-default">
             {step > 1 ? (
               <button
                 type="button"
                 onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3 | 4)}
-                className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium text-[#5B6156] hover:text-[#253D31] rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium text-secondary hover:text-primary rounded-lg transition-colors"
               >
                 <ArrowLeft size={15} />
                 Back
@@ -698,7 +698,7 @@ export default function OnboardingPage() {
                   (step === 3 && !canContinueStep3)
                 }
                 onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3 | 4)}
-                className="flex items-center gap-1.5 px-6 py-2.5 bg-[#2F4A3D] hover:bg-[#253D31] disabled:opacity-50 disabled:cursor-not-allowed text-[#F6F1E3] text-sm font-semibold rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-6 py-2.5 bg-accent hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-inverse text-sm font-semibold rounded-lg transition-colors"
               >
                 Continue
                 <ArrowRight size={16} />
@@ -708,7 +708,7 @@ export default function OnboardingPage() {
                 type="button"
                 disabled={!canFinish || isSubmitting}
                 onClick={handleFinish}
-                className="flex items-center gap-1.5 px-6 py-2.5 bg-[#2F4A3D] hover:bg-[#253D31] disabled:opacity-50 disabled:cursor-not-allowed text-[#F6F1E3] text-sm font-semibold rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-6 py-2.5 bg-accent hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed text-inverse text-sm font-semibold rounded-lg transition-colors"
               >
                 {isSubmitting ? "Saving setup..." : "Complete setup"}
                 {!isSubmitting && <Sparkles size={16} />}
@@ -719,27 +719,27 @@ export default function OnboardingPage() {
       </div>
 
       {/* Right — green panel: feature slideshow */}
-      <div className="hidden lg:flex relative flex-col justify-between bg-[#253D31] text-[#F6F1E3] p-14 overflow-hidden">
+      <div className="hidden lg:flex relative flex-col justify-between bg-accent text-inverse p-14 overflow-hidden">
         <div className="font-serif text-xl tracking-wide">
-          Stud<span className="text-[#C7D3B9]">AI</span>
+          Stud<span className="text-accent-light">AI</span>
         </div>
 
         {/* Slide content */}
         <div className="relative max-w-sm mx-auto w-full">
           {/* Floating decorative card borders — purely visual, sit behind the content */}
-          <div className="absolute -top-6 -left-10 w-40 h-24 rounded-2xl border border-[#F6F1E3]/15 -rotate-6 pointer-events-none" />
+          <div className="absolute -top-6 -left-10 w-40 h-24 rounded-2xl border border-inverse/15 -rotate-6 pointer-events-none" />
           <div className="absolute top-10 -right-12 w-32 h-32 rounded-2xl border border-[#B08D4F]/25 rotate-12 pointer-events-none" />
-          <div className="absolute -bottom-8 left-4 w-44 h-20 rounded-2xl border border-[#8CA37E]/20 rotate-3 pointer-events-none" />
+          <div className="absolute -bottom-8 left-4 w-44 h-20 rounded-2xl border border-accent/20 rotate-3 pointer-events-none" />
 
           <div key={activeSlide} className="animate-slide-fade">
-            <span className="relative inline-flex items-center gap-1.5 font-mono text-xs text-[#C7D3B9] bg-[#2C4739] border border-[#F6F1E3]/15 px-2.5 py-1 rounded-full mb-6">
+            <span className="relative inline-flex items-center gap-1.5 font-mono text-xs text-accent-light bg-accent border border-inverse/15 px-2.5 py-1 rounded-full mb-6">
               {FEATURES[activeSlide].tag}
             </span>
 
-            <div className="relative w-16 h-16 rounded-2xl bg-[#2C4739] border border-[#F6F1E3]/15 flex items-center justify-center mb-6">
+            <div className="relative w-16 h-16 rounded-2xl bg-accent border border-inverse/15 flex items-center justify-center mb-6">
               <ActiveIcon
                 size={28}
-                className="text-[#C7D3B9]"
+                className="text-accent-light"
                 strokeWidth={1.75}
               />
             </div>
@@ -747,7 +747,7 @@ export default function OnboardingPage() {
             <h2 className="relative font-serif text-2xl leading-snug mb-3">
               {FEATURES[activeSlide].title}
             </h2>
-            <p className="relative text-sm leading-relaxed text-[#F6F1E3]/70 min-h-[4.5rem]">
+            <p className="relative text-sm leading-relaxed text-inverse/70 min-h-[4.5rem]">
               {FEATURES[activeSlide].description}
             </p>
           </div>
@@ -768,8 +768,8 @@ export default function OnboardingPage() {
                   aria-current={isActive}
                   className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-colors ${
                     isActive
-                      ? "bg-[#8CA37E] border-[#8CA37E] text-[#1A2B22]"
-                      : "bg-[#2C4739] border-[#F6F1E3]/15 text-[#F6F1E3]/50 hover:text-[#F6F1E3]/80"
+                      ? "bg-accent-secondary border-accent text-[#1A2B22]"
+                      : "bg-accent border-inverse/15 text-inverse/50 hover:text-inverse/80"
                   }`}
                 >
                   <Icon size={17} strokeWidth={1.75} />
@@ -785,14 +785,14 @@ export default function OnboardingPage() {
                 key={index}
                 className={`h-1 rounded-full transition-all ${
                   index === activeSlide
-                    ? "w-6 bg-[#C7D3B9]"
-                    : "w-1.5 bg-[#F6F1E3]/20"
+                    ? "w-6 bg-accent-light"
+                    : "w-1.5 bg-page/20"
                 }`}
               />
             ))}
           </div>
 
-          <p className="text-xs text-[#F6F1E3]/50 font-mono">
+          <p className="text-xs text-inverse/50 font-mono">
             Trusted by 1,200+ students · 3 universities
           </p>
         </div>

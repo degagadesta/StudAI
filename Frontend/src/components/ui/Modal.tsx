@@ -31,15 +31,15 @@ export default function Modal({
       onClick={onClose}
     >
       <div
-        className="bg-[#FFFDF7] border border-[#DCD2B4] rounded-2xl w-full max-w-md p-6 shadow-xl"
+        className="bg-surface border border-default rounded-2xl w-full max-w-md p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <p className="font-serif text-lg text-[#253D31]">{title}</p>
+          <p className="font-serif text-lg text-primary">{title}</p>
           <button
             type="button"
             onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-[#F4EFDD] text-[#5B6156] transition-colors"
+            className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-hover text-secondary transition-colors"
           >
             <X size={16} />
           </button>

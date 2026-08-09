@@ -24,10 +24,10 @@ export default function PlanTab({ profile, onUpgradeClick }: PlanTabProps) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="font-serif text-xl text-[#253D31]">
+        <h3 className="font-serif text-xl text-primary">
           Subscription Plans
         </h3>
-        <p className="text-xs text-[#5B6156] mt-0.5">
+        <p className="text-xs text-secondary mt-0.5">
           Choose the plan that fits your study workload and resource needs.
         </p>
       </div>

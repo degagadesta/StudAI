@@ -121,15 +121,15 @@ export default function SchedulePage() {
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4">
-        <div className="h-96 rounded-2xl bg-[#EFE8D4] animate-pulse" />
-        <div className="h-96 rounded-2xl bg-[#EFE8D4] animate-pulse" />
+        <div className="h-96 rounded-2xl bg-elevated animate-pulse" />
+        <div className="h-96 rounded-2xl bg-elevated animate-pulse" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-6xl mx-auto flex items-center gap-2 text-sm text-[#8B3A3A] bg-[#F7E8E8] border border-[#E3B8B8] rounded-lg px-3.5 py-2.5">
+      <div className="max-w-6xl mx-auto flex items-center gap-2 text-sm text-error bg-error border border-error rounded-lg px-3.5 py-2.5">
         {error}
       </div>
     );
@@ -138,11 +138,11 @@ export default function SchedulePage() {
   return (
     <div className="max-w-6xl mx-auto flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="font-serif text-2xl text-[#253D31]">Schedule</p>
+        <p className="font-serif text-2xl text-primary">Schedule</p>
         <button
           type="button"
           onClick={openCreateModal}
-          className="w-9 h-9 rounded-full bg-[#253D31] text-[#F6F1E3] flex items-center justify-center hover:bg-[#2F4A3D] transition-colors"
+          className="w-9 h-9 rounded-full bg-accent text-inverse flex items-center justify-center hover-accent transition-colors focus:ring-2 focus:ring-accent"
         >
           <Plus size={16} />
         </button>
@@ -168,7 +168,7 @@ export default function SchedulePage() {
                 <button
                   type="button"
                   onClick={handleShowAllEvents}
-                  className="text-xs font-semibold text-[#2F4A3D] bg-[#EAF3DE] px-3 py-1.5 rounded-full hover:bg-[#DCEAC9] transition-colors"
+                  className="text-xs font-semibold text-accent bg-accent-light px-3 py-1.5 rounded-full hover:bg-elevated transition-colors focus:ring-2 focus:ring-accent"
                 >
                   All Events
                 </button>
@@ -186,8 +186,8 @@ export default function SchedulePage() {
               onEdit={openEditModal}
             />
           ) : (
-            <div className="bg-[#FFFDF7] border border-dashed border-[#DCD2B4] rounded-2xl p-6 h-64 flex items-center justify-center">
-              <p className="text-sm text-[#A9A18A]">
+            <div className="bg-surface border border-dashed border-default rounded-2xl p-6 h-64 flex items-center justify-center">
+              <p className="text-sm text-muted">
                 Select an event to see details
               </p>
             </div>

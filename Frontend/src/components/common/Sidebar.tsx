@@ -27,11 +27,11 @@ export default function Sidebar() {
   return (
     <aside className="w-20 shrink-0 flex flex-col items-center justify-between py-6 h-screen sticky top-0">
       <div className="flex flex-col items-center gap-6">
-        <div className="w-9 h-9 rounded-lg bg-[#2F4A3D] flex items-center justify-center text-[#C7D3B9] font-serif text-sm">
+        <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center text-accent-light font-serif text-sm">
           S
         </div>
 
-        <nav className="flex flex-col gap-2 bg-[#FFFDF7] border border-[#DCD2B4] rounded-3xl p-2">
+        <nav className="flex flex-col gap-2 bg-surface border border-default rounded-3xl p-2">
           {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -41,8 +41,8 @@ export default function Sidebar() {
               className={({ isActive }) =>
                 `w-11 h-11 rounded-2xl flex items-center justify-center transition-colors ${
                   isActive
-                    ? "bg-[#253D31] text-[#F6F1E3]"
-                    : "text-[#A9A18A] hover:text-[#5B6156] hover:bg-[#EFE8D4]"
+                    ? "bg-accent text-inverse"
+                    : "text-muted hover:text-secondary hover:bg-elevated"
                 }`
               }
             >
@@ -60,8 +60,8 @@ export default function Sidebar() {
           className={({ isActive }) =>
             `w-11 h-11 rounded-2xl flex items-center justify-center transition-colors ${
               isActive
-                ? "bg-[#253D31] text-[#F6F1E3]"
-                : "text-[#A9A18A] hover:text-[#5B6156] hover:bg-[#EFE8D4]"
+                ? "bg-accent text-inverse"
+                : "text-muted hover:text-secondary hover:bg-elevated"
             }`
           }
         >
@@ -72,7 +72,7 @@ export default function Sidebar() {
           onClick={handleLogout}
           aria-label="Logout"
           title="Logout"
-          className="w-11 h-11 rounded-2xl flex items-center justify-center text-[#A9A18A] hover:text-[#8B3A3A] hover:bg-[#F7E8E8] transition-colors"
+          className="w-11 h-11 rounded-2xl flex items-center justify-center text-muted hover:text-error hover:bg-error transition-colors"
         >
           <LogOut size={19} strokeWidth={1.9} />
         </button>

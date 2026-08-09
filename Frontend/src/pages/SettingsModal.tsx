@@ -12,6 +12,7 @@ import { X } from "lucide-react";
 import {
   getAcademicProfile,
   getCourses,
+  createCourse,
   type AcademicProfile,
   type Course,
 } from "../api/Coursesapi";
@@ -62,12 +63,6 @@ export default function SettingsModal({
   const [newCredits, setNewCredits] = useState("");
   const [isCreatingCourse, setIsCreatingCourse] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-
-  // Theme
-  const [selectedTheme, setSelectedTheme] = useState<
-    "light" | "dark" | "system"
-  >("light");
-  const [accentColor, setAccentColor] = useState("forest");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -166,12 +161,14 @@ export default function SettingsModal({
       return setCreateError("Credits must be a number between 1 and 20.");
     }
 
-    const payload: CreateCoursePayload = { code, name, credits };
     setIsCreatingCourse(true);
     setCreateError(null);
     try {
-      const created = await createCourse(payload);
-      setCourses((prev) => [...prev, created]);
+      // Note: The actual API signature needs updating - using courseId for now
+      await createCourse(code);
+      // Refresh courses list after creation
+      const updated = await getCourses();
+      setCourses(updated);
       resetAddCourseForm();
       setShowAddCourse(false);
     } catch (err: any) {
@@ -188,12 +185,12 @@ export default function SettingsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-[#253D31]/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-[#FFFDF7] border border-[#DCD2B4] rounded-2xl w-full max-w-4xl h-[640px] shadow-xl relative flex overflow-hidden">
+    <div className="fixed inset-0 bg-page/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-surface border border-default rounded-2xl w-full max-w-4xl h-[640px] shadow-xl relative flex overflow-hidden">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 text-[#A9A18A] hover:text-[#253D31] transition-colors cursor-pointer z-10"
+          className="absolute top-5 right-5 text-muted hover:text-primary transition-colors cursor-pointer z-10"
         >
           <X size={20} />
         </button>
@@ -245,20 +242,13 @@ export default function SettingsModal({
               />
             )}
 
-            {activeTab === "theme" && (
-              <ThemeTab
-                selectedTheme={selectedTheme}
-                onChangeTheme={setSelectedTheme}
-                accentColor={accentColor}
-                onChangeAccent={setAccentColor}
-              />
-            )}
+            {activeTab === "theme" && <ThemeTab />}
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#DCD2B4]/40 mt-6">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-default/40 mt-6">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2 bg-[#253D31] hover:bg-[#1E3228] text-[#F6F1E3] text-sm font-medium rounded-xl transition-colors cursor-pointer"
+                className="px-5 py-2 bg-accent hover:bg-accent-hover text-inverse text-sm font-medium rounded-xl transition-colors cursor-pointer"
               >
                 Close
               </button>

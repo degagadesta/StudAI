@@ -19,16 +19,16 @@ export default function ProfileTab({
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="font-serif text-xl text-[#253D31]">Profile Details</h3>
-        <p className="text-xs text-[#5B6156] mt-0.5">
+        <h3 className="font-serif text-xl text-primary">Profile Details</h3>
+        <p className="text-xs text-secondary mt-0.5">
           Your current academic information from the system.
         </p>
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-12 text-[#253D31] gap-2">
+        <div className="flex flex-col items-center justify-center py-12 text-primary gap-2">
           <Loader2 size={24} className="animate-spin" />
-          <span className="text-xs text-[#5B6156]">Loading profile...</span>
+          <span className="text-xs text-secondary">Loading profile...</span>
         </div>
       ) : profile ? (
         <div className="space-y-3 pt-1">
@@ -41,18 +41,18 @@ export default function ProfileTab({
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl text-xs text-[#8A3A3A]">
+        <div className="p-4 bg-surface border border-default rounded-xl text-xs text-[#8A3A3A]">
           {errorMessage || "Failed to load academic profile."}
         </div>
       )}
 
-      <div className="pt-4 border-t border-[#DCD2B4]/60 space-y-2">
-        <p className="text-xs font-medium text-[#5B6156]">Account Actions</p>
+      <div className="pt-4 border-t border-default/60 space-y-2">
+        <p className="text-xs font-medium text-secondary">Account Actions</p>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={onLogout}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#DCD2B4] bg-[#FFFDF7] text-[#253D31] hover:bg-[#EFE8D4] text-xs font-medium transition-colors cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-default bg-surface text-primary hover:bg-elevated text-xs font-medium transition-colors cursor-pointer"
           >
             <LogOut size={15} />
             Log Out
@@ -74,9 +74,9 @@ export default function ProfileTab({
 
 function InfoRow({ label, value }: { label: string; value?: string | number }) {
   return (
-    <div className="p-3.5 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl">
-      <p className="text-xs text-[#5B6156]">{label}</p>
-      <p className="text-sm font-medium text-[#253D31] mt-0.5">
+    <div className="p-3.5 bg-surface border border-default rounded-xl">
+      <p className="text-xs text-secondary">{label}</p>
+      <p className="text-sm font-medium text-primary mt-0.5">
         {value ?? "—"}
       </p>
     </div>

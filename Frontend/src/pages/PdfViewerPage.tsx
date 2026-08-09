@@ -104,14 +104,14 @@ export default function PdfViewerPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full py-24">
-        <Loader2 size={24} className="text-[#2F4A3D] animate-spin" />
+        <Loader2 size={24} className="text-accent animate-spin" />
       </div>
     );
   }
 
   if (error || !material) {
     return (
-      <div className="max-w-2xl mx-auto flex items-center gap-2 text-sm text-[#8B3A3A] bg-[#F7E8E8] border border-[#E3B8B8] rounded-lg px-3.5 py-2.5">
+      <div className="max-w-2xl mx-auto flex items-center gap-2 text-sm text-error bg-error border border-error rounded-lg px-3.5 py-2.5">
         {error ?? "Material not found."}
       </div>
     );
@@ -123,40 +123,40 @@ export default function PdfViewerPage() {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-sm text-[#5B6156] hover:text-[#253D31] transition-colors"
+          className="flex items-center gap-1.5 text-sm text-secondary hover:text-primary transition-colors"
         >
           <ArrowLeft size={16} />
           Back
         </button>
 
         <div className="text-center">
-          <p className="text-sm font-medium text-[#253D31]">
+          <p className="text-sm font-medium text-primary">
             {material.fileName}
           </p>
-          <p className="text-xs text-[#A9A18A]">{material.courseName}</p>
+          <p className="text-xs text-muted">{material.courseName}</p>
         </div>
 
-        <span className="text-xs font-mono text-[#5B6156] w-16 text-right">
+        <span className="text-xs font-mono text-secondary w-16 text-right">
           {percent}%
         </span>
       </div>
 
       <div className="h-1.5 bg-[#DCD2B4] rounded-full overflow-hidden mb-6">
         <div
-          className="h-full bg-[#8CA37E] transition-all duration-300"
+          className="h-full bg-accent-secondary transition-all duration-300"
           style={{ width: `${percent}%` }}
         />
       </div>
 
-      <div className="flex justify-center bg-[#FFFDF7] border border-[#DCD2B4] rounded-2xl p-4 min-h-[600px]">
+      <div className="flex justify-center bg-surface border border-default rounded-2xl p-4 min-h-[600px]">
         <Document
           file={material.fileUrl}
           onLoadSuccess={onDocumentLoad}
           loading={
-            <Loader2 size={24} className="text-[#2F4A3D] animate-spin my-24" />
+            <Loader2 size={24} className="text-accent animate-spin my-24" />
           }
           error={
-            <p className="text-sm text-[#8B3A3A] my-24">
+            <p className="text-sm text-error my-24">
               Could not render this PDF.
             </p>
           }
@@ -170,13 +170,13 @@ export default function PdfViewerPage() {
           type="button"
           onClick={goPrev}
           disabled={pageNumber <= 1}
-          className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-[#5B6156] disabled:opacity-40 disabled:cursor-not-allowed hover:text-[#253D31] transition-colors"
+          className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-secondary disabled:opacity-40 disabled:cursor-not-allowed hover:text-primary transition-colors"
         >
           <ChevronLeft size={16} />
           Previous
         </button>
 
-        <span className="text-sm text-[#5B6156] font-mono">
+        <span className="text-sm text-secondary font-mono">
           Page {pageNumber} of {numPages ?? "…"}
         </span>
 
@@ -184,7 +184,7 @@ export default function PdfViewerPage() {
           type="button"
           onClick={goNext}
           disabled={!numPages || pageNumber >= numPages}
-          className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-[#5B6156] disabled:opacity-40 disabled:cursor-not-allowed hover:text-[#253D31] transition-colors"
+          className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-secondary disabled:opacity-40 disabled:cursor-not-allowed hover:text-primary transition-colors"
         >
           Next
           <ChevronRight size={16} />

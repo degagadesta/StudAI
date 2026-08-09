@@ -123,14 +123,14 @@ export default function ResetPassword() {
   if (!token) {
     console.log('[ResetPassword] Rendering invalid link screen (no token)');
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3] px-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-[#253D31] mb-2">Invalid Link</h2>
-          <p className="text-gray-600 mb-4">This password reset link is invalid or has expired.</p>
+      <div className="min-h-screen flex items-center justify-center bg-page px-4">
+        <div className="max-w-md w-full bg-surface rounded-2xl shadow-lg p-8 text-center">
+          <AlertCircle className="w-16 h-16 text-error mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-primary mb-2">Invalid Link</h2>
+          <p className="text-secondary mb-4">This password reset link is invalid or has expired.</p>
           <button
             onClick={() => navigate("/forgot-password")}
-            className="px-6 py-2 bg-[#253D31] hover:bg-[#1a2b21] text-white font-semibold rounded-lg transition-colors"
+            className="px-6 py-2 bg-accent hover-accent text-inverse font-semibold rounded-lg transition-colors focus:ring-2 focus:ring-accent"
           >
             Request New Link
           </button>
@@ -142,8 +142,8 @@ export default function ResetPassword() {
   // Show loading state briefly to prevent flash
   if (!isPageReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3]">
-        <div className="text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-page">
+        <div className="text-secondary">Loading...</div>
       </div>
     );
   }
@@ -151,13 +151,13 @@ export default function ResetPassword() {
   if (success) {
     console.log('[ResetPassword] Rendering success screen');
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3] px-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-[#253D31] mb-2">
+      <div className="min-h-screen flex items-center justify-center bg-page px-4">
+        <div className="max-w-md w-full bg-surface rounded-2xl shadow-lg p-8 text-center">
+          <CheckCircle className="w-16 h-16 text-accent mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-primary mb-2">
             Password Reset Successful!
           </h2>
-          <p className="text-gray-600">
+          <p className="text-secondary">
             Your password has been reset. You'll be redirected to login shortly.
           </p>
         </div>
@@ -167,25 +167,25 @@ export default function ResetPassword() {
 
   console.log('[ResetPassword] Rendering reset password form');
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3] px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-page px-4">
+      <div className="max-w-md w-full bg-surface rounded-2xl shadow-lg p-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-[#253D31] mb-2">Reset Password</h2>
-          <p className="text-gray-600">Enter your new password below.</p>
+          <h2 className="text-3xl font-bold text-primary mb-2">Reset Password</h2>
+          <p className="text-secondary">Enter your new password below.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Form Error */}
           {errors.form && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <span className="text-sm text-red-700">{errors.form}</span>
+            <div className="flex items-center gap-2 p-3 bg-error border border-error rounded-lg">
+              <AlertCircle className="w-5 h-5 text-error flex-shrink-0" />
+              <span className="text-sm text-error">{errors.form}</span>
             </div>
           )}
 
           {/* New Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-[#253D31] mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-primary mb-1">
               New Password
             </label>
             <div className="relative">
@@ -196,26 +196,26 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 value={password}
                 onChange={handlePasswordChange}
-                className={`w-full px-4 py-2 border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-lg focus:ring-2 focus:ring-[#8B4513] focus:border-transparent pr-10`}
+                className={`w-full px-4 py-2 border ${errors.password ? "border-error" : "border-default"} rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent pr-10`}
                 disabled={isSubmitting}
                 placeholder="8+ chars, 1 uppercase, 1 lowercase, 1 number"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-secondary"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-            {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password}</p>}
+            {errors.password && <p className="text-xs text-error mt-1">{errors.password}</p>}
           </div>
 
           {/* Confirm Password */}
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-sm font-medium text-[#253D31] mb-1"
+              className="block text-sm font-medium text-primary mb-1"
             >
               Confirm New Password
             </label>
@@ -227,19 +227,19 @@ export default function ResetPassword() {
                 autoComplete="new-password"
                 value={confirmPassword}
                 onChange={handleConfirmPasswordChange}
-                className={`w-full px-4 py-2 border ${errors.confirmPassword ? "border-red-500" : "border-gray-300"} rounded-lg focus:ring-2 focus:ring-[#8B4513] focus:border-transparent pr-10`}
+                className={`w-full px-4 py-2 border ${errors.confirmPassword ? "border-error" : "border-default"} rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent pr-10`}
                 disabled={isSubmitting}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-secondary"
               >
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
             {errors.confirmPassword && (
-              <p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>
+              <p className="text-xs text-error mt-1">{errors.confirmPassword}</p>
             )}
           </div>
 
@@ -247,7 +247,7 @@ export default function ResetPassword() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-[#253D31] hover:bg-[#1a2b21] disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
+            className="w-full bg-accent hover-accent disabled:opacity-60 disabled:cursor-not-allowed text-inverse font-semibold py-3 rounded-lg transition-colors focus:ring-2 focus:ring-accent"
           >
             {isSubmitting ? "Resetting Password..." : "Reset Password"}
           </button>

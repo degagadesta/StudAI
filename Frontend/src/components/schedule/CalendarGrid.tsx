@@ -28,8 +28,8 @@ export default function CalendarGrid({
   }
 
   return (
-    <div className="bg-[#FFFDF7] border border-[#DCD2B4] rounded-2xl p-6">
-      <p className="text-xs font-mono text-[#A9A18A] uppercase tracking-wide mb-1">
+    <div className="bg-surface border border-default rounded-2xl p-6">
+      <p className="text-xs font-mono text-muted uppercase tracking-wide mb-1">
         Calendar
       </p>
 
@@ -37,17 +37,17 @@ export default function CalendarGrid({
         <button
           type="button"
           onClick={() => goToMonth(-1)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[#F4EFDD] text-[#5B6156] transition-colors"
+          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-surface-hover text-secondary transition-colors"
         >
           <ChevronLeft size={16} />
         </button>
-        <p className="font-serif text-xl text-[#253D31]">
+        <p className="font-serif text-xl text-primary">
           {viewDate.toLocaleDateString("en-US", { month: "long" })}
         </p>
         <button
           type="button"
           onClick={() => goToMonth(1)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[#F4EFDD] text-[#5B6156] transition-colors"
+          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-surface-hover text-secondary transition-colors"
         >
           <ChevronRight size={16} />
         </button>
@@ -55,7 +55,7 @@ export default function CalendarGrid({
 
       <div className="grid grid-cols-7 gap-y-2 text-center">
         {WEEKDAY_LABELS.map((d, i) => (
-          <div key={i} className="text-xs text-[#A9A18A] font-medium pb-1">
+          <div key={i} className="text-xs text-muted font-medium pb-1">
             {d}
           </div>
         ))}
@@ -72,15 +72,15 @@ export default function CalendarGrid({
             "relative w-9 h-9 mx-auto rounded-full text-sm flex items-center justify-center transition-colors ";
 
           if (isSelected) {
-            cellClasses += "bg-[#253D31] text-[#F6F1E3] cursor-pointer";
+            cellClasses += "bg-accent text-inverse cursor-pointer";
           } else if (hasEvent) {
             // dark green marking for dates that have user-created events
             cellClasses +=
-              "text-[#253D31] font-semibold bg-[#EAF3DE] hover:bg-[#DCEAC9] cursor-pointer";
+              "text-primary font-semibold bg-accent-light hover:bg-elevated cursor-pointer";
           } else if (isToday) {
-            cellClasses += "text-[#2F4A3D] font-semibold cursor-not-allowed";
+            cellClasses += "text-accent font-semibold cursor-not-allowed";
           } else if (inCurrentMonth) {
-            cellClasses += "text-[#253D31] cursor-not-allowed opacity-70";
+            cellClasses += "text-primary cursor-not-allowed opacity-70";
           } else {
             cellClasses += "text-[#DCD2B4] cursor-not-allowed";
           }
@@ -97,7 +97,7 @@ export default function CalendarGrid({
               {hasEvent && (
                 <span
                   className={`absolute bottom-0.5 w-1.5 h-1.5 rounded-full ${
-                    isSelected ? "bg-[#8CA37E]" : "bg-[#253D31]"
+                    isSelected ? "bg-accent-secondary" : "bg-accent"
                   }`}
                 />
               )}

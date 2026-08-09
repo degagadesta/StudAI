@@ -28,23 +28,23 @@ function StatCard({ icon: Icon, label, value, dark = false }: StatCardProps) {
     <div
       className={`p-5 rounded-2xl ${
         dark
-          ? "bg-[#253D31] text-[#F6F1E3]"
-          : "bg-[#FFFDF7] border border-[#DCD2B4]"
+          ? "bg-accent text-inverse"
+          : "bg-surface border border-default"
       }`}
     >
       <div className="flex items-center gap-1.5 mb-1.5">
         <Icon
           size={15}
-          className={dark ? "text-[#C7D3B9]" : "text-[#2F4A3D]"}
+          className={dark ? "text-accent-light" : "text-accent"}
         />
         <p
-          className={`text-xs ${dark ? "text-[#F6F1E3]/70" : "text-[#5B6156]"}`}
+          className={`text-xs ${dark ? "text-inverse/70" : "text-secondary"}`}
         >
           {label}
         </p>
       </div>
       <p
-        className={`font-serif text-2xl ${dark ? "text-[#F6F1E3]" : "text-[#253D31]"}`}
+        className={`font-serif text-2xl ${dark ? "text-inverse" : "text-primary"}`}
       >
         {value}
       </p>
@@ -109,19 +109,19 @@ export default function AnalyticsPage() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-24 rounded-2xl bg-[#EFE8D4] animate-pulse"
+              className="h-24 rounded-2xl bg-elevated animate-pulse"
             />
           ))}
         </div>
-        <div className="h-72 rounded-2xl bg-[#EFE8D4] animate-pulse" />
-        <div className="h-96 rounded-2xl bg-[#EFE8D4] animate-pulse" />
+        <div className="h-72 rounded-2xl bg-elevated animate-pulse" />
+        <div className="h-96 rounded-2xl bg-elevated animate-pulse" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-6xl mx-auto flex items-center gap-2 text-sm text-[#8B3A3A] bg-[#F7E8E8] border border-[#E3B8B8] rounded-lg px-3.5 py-2.5">
+      <div className="max-w-6xl mx-auto flex items-center gap-2 text-sm text-error bg-error border border-error rounded-lg px-3.5 py-2.5">
         {error}
       </div>
     );

@@ -20,7 +20,7 @@ export default function PlanCard({
   if (plan.unlimited) {
     return (
       <div
-        className={`p-4 rounded-2xl border transition-all flex flex-col justify-between relative bg-gradient-to-b from-[#253D31] to-[#1B2E25] text-[#F6F1E3] ${
+        className={`p-4 rounded-2xl border transition-all flex flex-col justify-between relative bg-gradient-to-b from-[#253D31] to-[#1B2E25] text-inverse ${
           isActive ? "ring-2 ring-[#8CA37E] shadow-md" : "border-[#253D31]"
         }`}
       >
@@ -31,7 +31,7 @@ export default function PlanCard({
               {plan.name}
             </span>
             {plan.badge && (
-              <span className="px-2 py-0.5 text-[10px] font-medium bg-[#EFE8D4] text-[#253D31] rounded-full">
+              <span className="px-2 py-0.5 text-[10px] font-medium bg-elevated text-primary rounded-full">
                 {plan.badge}
               </span>
             )}
@@ -43,14 +43,14 @@ export default function PlanCard({
             </span>
           </p>
 
-          <div className="border-t border-[#DCD2B4]/20 pt-3 space-y-2">
+          <div className="border-t border-default/20 pt-3 space-y-2">
             <p className="text-xs text-[#EFE8D4] font-medium">
               Everything Unlimited:
             </p>
             <ul className="text-xs text-[#DCD2B4] space-y-2">
               {plan.features.map((f) => (
                 <li key={f.label} className="flex items-center gap-1.5">
-                  <CheckCircle2 size={14} className="text-[#8CA37E] shrink-0" />
+                  <CheckCircle2 size={14} className="text-accent shrink-0" />
                   <span>{f.label}</span>
                 </li>
               ))}
@@ -64,8 +64,8 @@ export default function PlanCard({
           onClick={() => onSelect(plan.id)}
           className={`w-full mt-4 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
             isActive
-              ? "bg-[#EFE8D4] text-[#253D31] cursor-default font-semibold"
-              : "bg-[#FFFDF7] text-[#253D31] hover:bg-[#EFE8D4]"
+              ? "bg-elevated text-primary cursor-default font-semibold"
+              : "bg-surface text-primary hover:bg-elevated"
           }`}
         >
           {isActive ? "Active Plan" : `Upgrade to ${plan.name}`}
@@ -78,44 +78,44 @@ export default function PlanCard({
     <div
       className={`p-4 rounded-2xl border transition-all flex flex-col justify-between ${
         isActive
-          ? "bg-[#FFFDF7] border-[#253D31] shadow-sm ring-1 ring-[#253D31]"
-          : "bg-[#FFFDF7] border-[#DCD2B4]"
+          ? "bg-surface border-[#253D31] shadow-sm ring-1 ring-[#253D31]"
+          : "bg-surface border-default"
       }`}
     >
       <div>
         <div className="flex items-center justify-between mb-2">
-          <span className="font-serif text-base text-[#253D31] flex items-center gap-1">
+          <span className="font-serif text-base text-primary flex items-center gap-1">
             {plan.id === "standard" && (
               <Zap size={15} className="text-[#1E5652]" />
             )}
             {displayName ?? plan.name}
           </span>
           {isActive && (
-            <span className="px-2 py-0.5 text-[10px] font-medium bg-[#253D31] text-[#F6F1E3] rounded-full">
+            <span className="px-2 py-0.5 text-[10px] font-medium bg-accent text-inverse rounded-full">
               Current
             </span>
           )}
         </div>
-        <p className="text-lg font-bold text-[#253D31] mb-3">
+        <p className="text-lg font-bold text-primary mb-3">
           {plan.price}{" "}
-          <span className="text-xs font-normal text-[#5B6156]">
+          <span className="text-xs font-normal text-secondary">
             {plan.priceSuffix}
           </span>
         </p>
 
-        <ul className="text-xs text-[#5B6156] space-y-2 border-t border-[#DCD2B4]/50 pt-3">
+        <ul className="text-xs text-secondary space-y-2 border-t border-default/50 pt-3">
           {plan.features.map((f) => (
             <li key={f.label} className="flex items-start gap-1.5">
               <CheckCircle2
                 size={14}
                 className={`shrink-0 mt-0.5 ${
-                  plan.id === "standard" ? "text-[#1E5652]" : "text-[#8CA37E]"
+                  plan.id === "standard" ? "text-[#1E5652]" : "text-accent"
                 }`}
               />
               <span>
                 {f.label}
                 {f.sub && (
-                  <span className="text-[10px] text-[#A9A18A] block">
+                  <span className="text-[10px] text-muted block">
                     {f.sub}
                   </span>
                 )}
@@ -131,10 +131,10 @@ export default function PlanCard({
         onClick={() => onSelect(plan.id)}
         className={`w-full mt-4 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
           isActive
-            ? "bg-[#EFE8D4] text-[#253D31] cursor-default"
+            ? "bg-elevated text-primary cursor-default"
             : plan.id === "free"
-              ? "border border-[#DCD2B4] text-[#A9A18A] cursor-not-allowed"
-              : "bg-[#253D31] text-[#F6F1E3] hover:bg-[#1E3228]"
+              ? "border border-default text-muted cursor-not-allowed"
+              : "bg-accent text-inverse hover:bg-accent"
         }`}
       >
         {isActive

@@ -86,18 +86,18 @@ export default function NotificationsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-      <div className="bg-[#FFFDF7] border border-[#DCD2B4] rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh]">
+      <div className="bg-surface border border-default rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh]">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[#DCD2B4]/60">
+        <div className="flex items-center justify-between p-5 border-b border-default/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-[#EFE8D4] flex items-center justify-center text-[#253D31]">
+            <div className="w-8 h-8 rounded-full bg-elevated flex items-center justify-center text-primary">
               <Bell size={16} />
             </div>
             <div>
-              <h3 className="font-serif text-lg font-medium text-[#253D31] leading-none">
+              <h3 className="font-serif text-lg font-medium text-primary leading-none">
                 Upcoming Events
               </h3>
-              <p className="text-xs text-[#5B6156] mt-1">
+              <p className="text-xs text-secondary mt-1">
                 Deadlines and upcoming schedules
               </p>
             </div>
@@ -105,7 +105,7 @@ export default function NotificationsModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-[#A9A18A] hover:text-[#253D31] hover:bg-[#EFE8D4] rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 text-muted hover:text-primary hover:bg-elevated rounded-lg transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
@@ -113,7 +113,7 @@ export default function NotificationsModal({
 
         {/* Error Banner */}
         {error && (
-          <div className="mx-4 mt-3 p-3 bg-[#F7E8E8] border border-[#E3B8B8] text-[#8B3A3A] text-xs rounded-xl">
+          <div className="mx-4 mt-3 p-3 bg-error border border-error text-error text-xs rounded-xl">
             {error}
           </div>
         )}
@@ -121,12 +121,12 @@ export default function NotificationsModal({
         {/* Notification Event List */}
         <div className="p-4 overflow-y-auto space-y-2.5 min-h-[200px] max-h-[380px]">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12 text-[#5B6156] gap-2">
-              <Loader2 size={22} className="animate-spin text-[#2F4A3D]" />
+            <div className="flex flex-col items-center justify-center py-12 text-secondary gap-2">
+              <Loader2 size={22} className="animate-spin text-accent" />
               <span className="text-xs">Fetching upcoming events…</span>
             </div>
           ) : events.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-[#A9A18A]">
+            <div className="flex flex-col items-center justify-center py-12 text-muted">
               <Calendar size={28} className="mb-2 stroke-1 opacity-60" />
               <p className="text-xs">No upcoming events scheduled.</p>
             </div>
@@ -136,25 +136,25 @@ export default function NotificationsModal({
                 key={event.id}
                 className={`p-3.5 border rounded-xl flex items-center justify-between transition-all group relative ${
                   event.read
-                    ? "bg-[#FFFDF7] border-[#DCD2B4]/60 opacity-70"
-                    : "bg-[#FAF7EE] border-[#DCD2B4] hover:border-[#8CA37E]"
+                    ? "bg-surface border-default/60 opacity-70"
+                    : "bg-[#FAF7EE] border-default hover:border-accent"
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0 pr-2">
-                  <div className="w-9 h-9 rounded-lg bg-[#EFE8D4] flex items-center justify-center shrink-0">
-                    <Calendar size={17} className="text-[#2F4A3D]" />
+                  <div className="w-9 h-9 rounded-lg bg-elevated flex items-center justify-center shrink-0">
+                    <Calendar size={17} className="text-accent" />
                   </div>
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-semibold text-[#253D31] truncate">
+                      <p className="text-xs font-semibold text-primary truncate">
                         {event.title}
                       </p>
                       {!event.read && (
                         <span className="w-2 h-2 rounded-full bg-[#D85A30] shrink-0" />
                       )}
                     </div>
-                    <p className="text-[11px] text-[#5B6156] mt-0.5 font-mono">
+                    <p className="text-[11px] text-secondary mt-0.5 font-mono">
                       {event.eventDate}
                     </p>
                   </div>
@@ -165,8 +165,8 @@ export default function NotificationsModal({
                   <span
                     className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${
                       event.daysLeft <= 2
-                        ? "bg-[#F7E8E8] text-[#8B3A3A] border border-[#E3B8B8]"
-                        : "bg-[#EFE8D4] text-[#1E5652]"
+                        ? "bg-error text-error border border-error"
+                        : "bg-elevated text-[#1E5652]"
                     }`}
                   >
                     {formatDaysLeft(event.daysLeft)}
@@ -178,7 +178,7 @@ export default function NotificationsModal({
                       type="button"
                       onClick={() => handleMarkAsRead(event.id)}
                       title="Mark as read"
-                      className="p-1.5 text-[#5B6156] hover:text-[#1E5652] hover:bg-[#EFE8D4] rounded-md transition-all cursor-pointer"
+                      className="p-1.5 text-secondary hover:text-[#1E5652] hover:bg-elevated rounded-md transition-all cursor-pointer"
                     >
                       <Check size={14} />
                     </button>
@@ -189,7 +189,7 @@ export default function NotificationsModal({
                     type="button"
                     onClick={() => handleDelete(event.id)}
                     title="Dismiss notification"
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-[#A9A18A] hover:text-[#8B3A3A] hover:bg-[#F7E8E8] rounded-md transition-all cursor-pointer"
+                    className="opacity-0 group-hover:opacity-100 p-1.5 text-muted hover:text-error hover:bg-error rounded-md transition-all cursor-pointer"
                   >
                     <Trash2 size={14} />
                   </button>

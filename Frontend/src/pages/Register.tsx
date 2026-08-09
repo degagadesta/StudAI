@@ -206,13 +206,13 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3] px-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-          <CheckCircle className="w-16 h-16 text-[#2F4A3D] mx-auto mb-4" />
-          <h2 className="font-serif text-2xl text-[#253D31] mb-2">
+      <div className="min-h-screen flex items-center justify-center bg-page px-4">
+        <div className="max-w-md w-full bg-surface rounded-2xl shadow-lg p-8 text-center">
+          <CheckCircle className="w-16 h-16 text-accent mx-auto mb-4" />
+          <h2 className="font-serif text-2xl text-primary mb-2">
             Registration successful!
           </h2>
-          <p className="text-sm text-[#5B6156]">
+          <p className="text-sm text-secondary">
             Please check your email to verify your account. You'll be redirected
             to login shortly.
           </p>
@@ -222,36 +222,36 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[#F6F1E3]">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-page">
       {/* Left — brand panel */}
-      <div className="hidden lg:flex relative flex-col justify-between bg-[#253D31] text-[#F6F1E3] p-14 overflow-hidden">
+      <div className="hidden lg:flex relative flex-col justify-between bg-accent text-inverse p-14 overflow-hidden">
         <div className="font-serif text-xl tracking-wide">
-          Stud<span className="text-[#C7D3B9]">AI</span>
+          Stud<span className="text-accent-light">AI</span>
         </div>
 
         <div className="relative w-72 h-72 mx-auto">
-          <div className="absolute top-8 left-2 -rotate-6 w-56 h-36 rounded-xl bg-[#2C4739] border border-[#F6F1E3]/20 p-5 font-mono text-xs text-[#F6F1E3]/75">
-            <span className="inline-block text-[10px] uppercase tracking-wide bg-[#C7D3B9] text-[#253D31] px-2 py-1 rounded mb-4">
+          <div className="absolute top-8 left-2 -rotate-6 w-56 h-36 rounded-xl bg-accent border border-inverse/20 p-5 font-mono text-xs text-inverse/75">
+            <span className="inline-block text-[10px] uppercase tracking-wide bg-accent-light text-primary px-2 py-1 rounded mb-4">
               Setup
             </span>
             Smart Workspace
-            <div className="h-px bg-[#F6F1E3]/20 my-2" />
+            <div className="h-px bg-page/20 my-2" />
             Configuring AI Engine
           </div>
-          <div className="absolute top-16 left-16 rotate-3 w-56 h-36 rounded-xl bg-[#33513F] border border-[#F6F1E3]/20 p-5 font-mono text-xs text-[#F6F1E3]/75 z-10">
-            <span className="inline-block text-[10px] uppercase tracking-wide bg-[#C7D3B9] text-[#253D31] px-2 py-1 rounded mb-4">
+          <div className="absolute top-16 left-16 rotate-3 w-56 h-36 rounded-xl bg-accent border border-inverse/20 p-5 font-mono text-xs text-inverse/75 z-10">
+            <span className="inline-block text-[10px] uppercase tracking-wide bg-accent-light text-primary px-2 py-1 rounded mb-4">
               Sync
             </span>
             Courses & Flashcards
-            <div className="h-px bg-[#F6F1E3]/20 my-2" />
+            <div className="h-px bg-page/20 my-2" />
             Ready to import
           </div>
-          <div className="absolute top-24 left-6 -rotate-2 w-56 h-36 rounded-xl bg-[#3B5C47] border border-[#F6F1E3]/20 p-5 font-mono text-xs text-[#F6F1E3]/75 z-20">
-            <span className="inline-block text-[10px] uppercase tracking-wide bg-[#B08D4F] text-[#2A2013] px-2 py-1 rounded mb-4">
+          <div className="absolute top-24 left-6 -rotate-2 w-56 h-36 rounded-xl bg-accent border border-inverse/20 p-5 font-mono text-xs text-inverse/75 z-20">
+            <span className="inline-block text-[10px] uppercase tracking-wide bg-accent-secondary text-[#2A2013] px-2 py-1 rounded mb-4">
               Account
             </span>
             Student Access
-            <div className="h-px bg-[#F6F1E3]/20 my-2" />
+            <div className="h-px bg-page/20 my-2" />
             Free Tier Enabled
           </div>
         </div>
@@ -260,12 +260,12 @@ export default function RegisterPage() {
           <h1 className="font-serif text-3xl leading-snug mb-4 max-w-sm">
             Join your smart study workspace.
           </h1>
-          <p className="text-sm leading-relaxed text-[#F6F1E3]/70 max-w-sm">
+          <p className="text-sm leading-relaxed text-inverse/70 max-w-sm">
             Create an account to extract insights from lecture notes, generate
             practice exams, and track your weak topics.
           </p>
-          <div className="flex items-center gap-2 text-xs text-[#F6F1E3]/50 mt-7">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C7D3B9]" />
+          <div className="flex items-center gap-2 text-xs text-inverse/50 mt-7">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-light" />
             AASTU · Software Engineering
           </div>
         </div>
@@ -274,15 +274,15 @@ export default function RegisterPage() {
       {/* Right — form panel */}
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm border-l-2 border-[#B08D4F]/50 pl-7">
-          <span className="inline-flex items-center gap-1.5 font-mono text-xs text-[#5B6156] bg-[#EFE8D4] border border-[#DCD2B4] px-2.5 py-1 rounded-full mb-4">
-            <b className="text-[#2F4A3D] font-semibold">AASTU</b> → Software
+          <span className="inline-flex items-center gap-1.5 font-mono text-xs text-secondary bg-elevated border border-default px-2.5 py-1 rounded-full mb-4">
+            <b className="text-accent font-semibold">AASTU</b> → Software
             Engineering
           </span>
 
-          <h2 className="font-serif text-3xl text-[#253D31] mb-4">
+          <h2 className="font-serif text-3xl text-primary mb-4">
             Create an account
           </h2>
-          <p className="text-sm text-[#5B6156] mb-4">
+          <p className="text-sm text-secondary mb-4">
             Get started with StudAI today.
           </p>
 
@@ -292,7 +292,7 @@ export default function RegisterPage() {
             noValidate
           >
             {errors.form && (
-              <div className="flex items-center gap-2 text-sm text-[#8B3A3A] bg-[#F7E8E8] border border-[#E3B8B8] rounded-lg px-3.5 py-2.5">
+              <div className="flex items-center gap-2 text-sm text-error bg-error border border-error rounded-lg px-3.5 py-2.5">
                 <AlertCircle size={15} className="shrink-0" />
                 {errors.form}
               </div>
@@ -302,7 +302,7 @@ export default function RegisterPage() {
               <div>
                 <label
                   htmlFor="firstName"
-                  className="block text-xs font-medium text-[#5B6156] mb-1"
+                  className="block text-xs font-medium text-secondary mb-1"
                 >
                   First Name
                 </label>
@@ -316,14 +316,14 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Abebe"
                   aria-invalid={!!errors.firstName}
-                  className={`w-full px-3.5 py-2.5 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
+                  className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
                     errors.firstName
-                      ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
-                      : "border-[#DCD2B4] focus:border-[#8CA37E] focus:ring-[#8CA37E]/20"
+                      ? "border-error focus:border-error focus:ring-error/15"
+                      : "border-default focus:border-accent focus:ring-accent/20"
                   }`}
                 />
                 {errors.firstName && (
-                  <p className="mt-1.5 text-xs text-[#8B3A3A]">
+                  <p className="mt-1.5 text-xs text-error">
                     {errors.firstName}
                   </p>
                 )}
@@ -332,7 +332,7 @@ export default function RegisterPage() {
               <div>
                 <label
                   htmlFor="lastName"
-                  className="block text-xs font-medium text-[#5B6156] mb-1"
+                  className="block text-xs font-medium text-secondary mb-1"
                 >
                   Last Name
                 </label>
@@ -346,14 +346,14 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Bikila"
                   aria-invalid={!!errors.lastName}
-                  className={`w-full px-3.5 py-2.5 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
+                  className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
                     errors.lastName
-                      ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
-                      : "border-[#DCD2B4] focus:border-[#8CA37E] focus:ring-[#8CA37E]/20"
+                      ? "border-error focus:border-error focus:ring-error/15"
+                      : "border-default focus:border-accent focus:ring-accent/20"
                   }`}
                 />
                 {errors.lastName && (
-                  <p className="mt-1.5 text-xs text-[#8B3A3A]">
+                  <p className="mt-1.5 text-xs text-error">
                     {errors.lastName}
                   </p>
                 )}
@@ -363,7 +363,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-xs font-medium text-[#5B6156] mb-1"
+                className="block text-xs font-medium text-secondary mb-1"
               >
                 Email
               </label>
@@ -377,21 +377,21 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 placeholder="yourname@aastustudent.edu.et"
                 aria-invalid={!!errors.email}
-                className={`w-full px-3.5 py-2.5 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
+                className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
                   errors.email
-                    ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
-                    : "border-[#DCD2B4] focus:border-[#8CA37E] focus:ring-[#8CA37E]/20"
+                    ? "border-error focus:border-error focus:ring-error/15"
+                    : "border-default focus:border-accent focus:ring-accent/20"
                 }`}
               />
               {errors.email && (
-                <p className="mt-1.5 text-xs text-[#8B3A3A]">{errors.email}</p>
+                <p className="mt-1.5 text-xs text-error">{errors.email}</p>
               )}
             </div>
 
             <div className="relative">
               <label
                 htmlFor="password"
-                className="block text-xs font-medium text-[#5B6156] mb-1"
+                className="block text-xs font-medium text-secondary mb-1"
               >
                 Password
               </label>
@@ -405,38 +405,38 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 placeholder="Create a strong password"
                 aria-invalid={!!errors.password}
-                className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
+                className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
                   errors.password
-                    ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
-                    : "border-[#DCD2B4] focus:border-[#8CA37E] focus:ring-[#8CA37E]/20"
+                    ? "border-error focus:border-error focus:ring-error/15"
+                    : "border-default focus:border-accent focus:ring-accent/20"
                 }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute right-3 top-[32px] text-[#A9A18A] hover:text-[#5B6156]"
+                className="absolute right-3 top-[32px] text-muted hover:text-secondary"
               >
                 {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
               {errors.password && (
-                <p className="mt-1.5 text-xs text-[#8B3A3A]">
+                <p className="mt-1.5 text-xs text-error">
                   {errors.password}
                 </p>
               )}
             </div>
 
             {values.password.length > 0 && (
-              <div className="grid grid-cols-2 gap-1.5 bg-[#EFE8D4]/50 border border-[#DCD2B4] p-2.5 rounded-lg text-[11px]">
+              <div className="grid grid-cols-2 gap-1.5 bg-elevated/50 border border-default p-2.5 rounded-lg text-[11px]">
                 {passwordCriteria.map((c, i) => (
                   <div
                     key={i}
-                    className={`flex items-center gap-1 ${c.valid ? "text-[#2F4A3D] font-medium" : "text-[#5B6156]"}`}
+                    className={`flex items-center gap-1 ${c.valid ? "text-accent font-medium" : "text-secondary"}`}
                   >
                     {c.valid ? (
-                      <Check size={12} className="text-[#2F4A3D]" />
+                      <Check size={12} className="text-accent" />
                     ) : (
-                      <X size={12} className="text-[#8B3A3A]" />
+                      <X size={12} className="text-error" />
                     )}
                     {c.label}
                   </div>
@@ -447,7 +447,7 @@ export default function RegisterPage() {
             <div className="relative">
               <label
                 htmlFor="confirmPassword"
-                className="block text-xs font-medium text-[#5B6156] mb-1"
+                className="block text-xs font-medium text-secondary mb-1"
               >
                 Confirm Password
               </label>
@@ -461,10 +461,10 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 placeholder="Re-enter your password"
                 aria-invalid={!!errors.confirmPassword}
-                className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-[#FFFDF7] border rounded-lg outline-none placeholder:text-[#A9A18A] focus:ring-4 ${
+                className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
                   errors.confirmPassword
-                    ? "border-[#C97B7B] focus:border-[#C97B7B] focus:ring-[#C97B7B]/15"
-                    : "border-[#DCD2B4] focus:border-[#8CA37E] focus:ring-[#8CA37E]/20"
+                    ? "border-error focus:border-error focus:ring-error/15"
+                    : "border-default focus:border-accent focus:ring-accent/20"
                 }`}
               />
               <button
@@ -473,19 +473,19 @@ export default function RegisterPage() {
                 aria-label={
                   showConfirmPassword ? "Hide password" : "Show password"
                 }
-                className="absolute right-3 top-[32px] text-[#A9A18A] hover:text-[#5B6156]"
+                className="absolute right-3 top-[32px] text-muted hover:text-secondary"
               >
                 {showConfirmPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
               {errors.confirmPassword && (
-                <p className="mt-1.5 text-xs text-[#8B3A3A]">
+                <p className="mt-1.5 text-xs text-error">
                   {errors.confirmPassword}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="flex items-start gap-2 text-xs text-[#5B6156] cursor-pointer">
+              <label className="flex items-start gap-2 text-xs text-secondary cursor-pointer">
                 <input
                   type="checkbox"
                   name="acceptTerms"
@@ -497,14 +497,14 @@ export default function RegisterPage() {
                   I agree to the{" "}
                   <a
                     href="#"
-                    className="text-[#2F4A3D] font-medium hover:underline"
+                    className="text-accent font-medium hover:underline"
                   >
                     Terms of Service
                   </a>{" "}
                   and{" "}
                   <a
                     href="#"
-                    className="text-[#2F4A3D] font-medium hover:underline"
+                    className="text-accent font-medium hover:underline"
                   >
                     Privacy Policy
                   </a>
@@ -512,7 +512,7 @@ export default function RegisterPage() {
                 </span>
               </label>
               {errors.acceptTerms && (
-                <p className="mt-1 text-xs text-[#8B3A3A]">
+                <p className="mt-1 text-xs text-error">
                   {errors.acceptTerms}
                 </p>
               )}
@@ -521,14 +521,14 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-1 flex items-center justify-center gap-1.5 py-3 bg-[#2F4A3D] hover:bg-[#253D31] disabled:opacity-60 disabled:cursor-not-allowed text-[#F6F1E3] text-sm font-semibold rounded-lg transition-colors active:scale-[0.99]"
+              className="mt-1 flex items-center justify-center gap-1.5 py-3 bg-accent hover:bg-accent disabled:opacity-60 disabled:cursor-not-allowed text-inverse text-sm font-semibold rounded-lg transition-colors active:scale-[0.99]"
             >
               {isSubmitting ? "Creating account..." : "Create account"}
               {!isSubmitting && <ArrowRight size={16} />}
             </button>
           </form>
 
-          <div className="flex items-center gap-3 my-5 text-xs text-[#A9A18A]">
+          <div className="flex items-center gap-3 my-5 text-xs text-muted">
             <span className="flex-1 h-px bg-[#DCD2B4]" />
             or
             <span className="flex-1 h-px bg-[#DCD2B4]" />
@@ -546,11 +546,11 @@ export default function RegisterPage() {
             />
           </div>
 
-          <p className="text-center text-sm text-[#5B6156] mt-4">
+          <p className="text-center text-sm text-secondary mt-4">
             Already have an account?{" "}
             <Link
               to="/login"
-              className="font-medium text-[#2F4A3D] hover:underline"
+              className="font-medium text-accent hover:underline"
             >
               Sign in
             </Link>

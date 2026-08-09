@@ -52,29 +52,29 @@ export default function CourseTab({
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-serif text-xl text-[#253D31]">
+          <h3 className="font-serif text-xl text-primary">
             Course Preferences
           </h3>
-          <p className="text-xs text-[#5B6156] mt-0.5">
+          <p className="text-xs text-secondary mt-0.5">
             Manage the courses tied to your account.
           </p>
         </div>
         <button
           type="button"
           onClick={onToggleAddCourse}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-[#253D31] hover:bg-[#1E3228] text-[#F6F1E3] text-xs font-medium rounded-xl transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-accent hover:bg-accent text-inverse text-xs font-medium rounded-xl transition-colors cursor-pointer"
         >
           <Plus size={14} />
           Add Course
         </button>
       </div>
 
-      <div className="flex items-center justify-between p-4 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl">
+      <div className="flex items-center justify-between p-4 bg-surface border border-default rounded-xl">
         <div>
-          <p className="text-sm font-medium text-[#253D31]">
+          <p className="text-sm font-medium text-primary">
             Auto-load Course Materials
           </p>
-          <p className="text-xs text-[#5B6156]">
+          <p className="text-xs text-secondary">
             Directly load uploaded files as cards on the current page
           </p>
         </div>
@@ -87,7 +87,7 @@ export default function CourseTab({
       </div>
 
       {showAddCourse && (
-        <div className="p-4 bg-[#F9F6EE] border border-[#DCD2B4] rounded-xl space-y-3">
+        <div className="p-4 bg-surface-hover border border-default rounded-xl space-y-3">
           {createError && (
             <p className="text-xs text-[#8A3A3A]">{createError}</p>
           )}
@@ -111,7 +111,7 @@ export default function CourseTab({
               }
             />
             <div>
-              <label className="block text-[11px] font-medium text-[#5B6156] mb-1">
+              <label className="block text-[11px] font-medium text-secondary mb-1">
                 Credits
               </label>
               <input
@@ -121,7 +121,7 @@ export default function CourseTab({
                 value={newCredits}
                 onChange={(e) => onChangeCredits(e.target.value)}
                 placeholder="4"
-                className="w-full px-3 py-2 text-sm bg-[#FFFDF7] border border-[#DCD2B4] rounded-lg outline-none placeholder:text-[#A9A18A] focus:border-[#8CA37E] focus:ring-4 focus:ring-[#8CA37E]/20"
+                className="w-full px-3 py-2 text-sm bg-surface border border-default rounded-lg outline-none placeholder:text-muted focus:border-accent focus:ring-4 focus:ring-accent/20"
               />
             </div>
           </div>
@@ -129,7 +129,7 @@ export default function CourseTab({
             <button
               type="button"
               onClick={onCancelAddCourse}
-              className="px-3.5 py-2 border border-[#DCD2B4] text-[#253D31] hover:bg-[#EFE8D4] text-xs font-medium rounded-lg transition-colors cursor-pointer"
+              className="px-3.5 py-2 border border-default text-primary hover:bg-elevated text-xs font-medium rounded-lg transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -137,7 +137,7 @@ export default function CourseTab({
               type="button"
               disabled={isCreatingCourse}
               onClick={onSaveCourse}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#253D31] hover:bg-[#1E3228] disabled:opacity-60 disabled:cursor-not-allowed text-[#F6F1E3] text-xs font-medium rounded-lg transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-accent hover:bg-accent disabled:opacity-60 disabled:cursor-not-allowed text-inverse text-xs font-medium rounded-lg transition-colors cursor-pointer"
             >
               {isCreatingCourse && (
                 <Loader2 size={13} className="animate-spin" />
@@ -149,19 +149,19 @@ export default function CourseTab({
       )}
 
       <div>
-        <p className="text-xs font-medium text-[#5B6156] mb-2">Your courses</p>
+        <p className="text-xs font-medium text-secondary mb-2">Your courses</p>
 
         {isLoadingCourses ? (
-          <div className="flex items-center justify-center py-8 text-[#253D31] gap-2">
+          <div className="flex items-center justify-center py-8 text-primary gap-2">
             <Loader2 size={20} className="animate-spin" />
-            <span className="text-xs text-[#5B6156]">Loading courses...</span>
+            <span className="text-xs text-secondary">Loading courses...</span>
           </div>
         ) : coursesError ? (
           <div className="p-4 bg-[#FDF2F2] border border-[#E5C3C3] rounded-xl text-xs text-[#8A3A3A]">
             {coursesError}
           </div>
         ) : courses.length === 0 ? (
-          <p className="text-sm text-[#5B6156]">
+          <p className="text-sm text-secondary">
             No courses found for your current year and semester yet.
           </p>
         ) : (
@@ -169,17 +169,17 @@ export default function CourseTab({
             {courses.map((course) => (
               <div
                 key={course.id}
-                className="flex items-center justify-between p-3.5 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl"
+                className="flex items-center justify-between p-3.5 bg-surface border border-default rounded-xl"
               >
                 <div>
-                  <p className="text-sm font-medium text-[#253D31]">
+                  <p className="text-sm font-medium text-primary">
                     {course.name}
                   </p>
-                  <p className="text-xs text-[#A9A18A] font-mono mt-0.5">
+                  <p className="text-xs text-muted font-mono mt-0.5">
                     {course.code}
                   </p>
                 </div>
-                <span className="text-xs text-[#5B6156] bg-[#EFE8D4] px-2.5 py-1 rounded-full shrink-0">
+                <span className="text-xs text-secondary bg-elevated px-2.5 py-1 rounded-full shrink-0">
                   {course.credits} ECTS
                 </span>
               </div>
@@ -206,7 +206,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[11px] font-medium text-[#5B6156] mb-1">
+      <label className="block text-[11px] font-medium text-secondary mb-1">
         {label}
       </label>
       <input
@@ -215,7 +215,7 @@ function Field({
         maxLength={maxLength}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2 text-sm bg-[#FFFDF7] border border-[#DCD2B4] rounded-lg outline-none placeholder:text-[#A9A18A] focus:border-[#8CA37E] focus:ring-4 focus:ring-[#8CA37E]/20"
+        className="w-full px-3 py-2 text-sm bg-surface border border-default rounded-lg outline-none placeholder:text-muted focus:border-accent focus:ring-4 focus:ring-accent/20"
       />
     </div>
   );

@@ -97,46 +97,46 @@ export default function EventFormModal({
       onClose={onClose}
       title={mode === "create" ? "New event" : "Edit event"}
     >
-      {error && <p className="text-xs text-[#8B3A3A] mb-3">{error}</p>}
+      {error && <p className="text-xs text-error mb-3">{error}</p>}
 
       <div className="flex flex-col gap-3">
         <div>
-          <label className="text-xs text-[#5B6156] mb-1 block">Title</label>
+          <label className="text-xs text-secondary mb-1 block">Title</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Event title"
-            className="w-full text-sm px-3 py-2 rounded-lg border border-[#DCD2B4] bg-white focus:outline-none focus:ring-1 focus:ring-[#8CA37E]"
+            className="w-full text-sm px-3 py-2 rounded-lg border border-default bg-surface focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="text-xs text-[#5B6156] mb-1 block">
+            <label className="text-xs text-secondary mb-1 block">
               Deadline date
             </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full text-sm px-3 py-2 rounded-lg border border-[#DCD2B4] bg-white focus:outline-none focus:ring-1 focus:ring-[#8CA37E]"
+              className="w-full text-sm px-3 py-2 rounded-lg border border-default bg-surface focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
           <div className="flex-1">
-            <label className="text-xs text-[#5B6156] mb-1 block">
+            <label className="text-xs text-secondary mb-1 block">
               Deadline time
             </label>
             <input
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="w-full text-sm px-3 py-2 rounded-lg border border-[#DCD2B4] bg-white focus:outline-none focus:ring-1 focus:ring-[#8CA37E]"
+              className="w-full text-sm px-3 py-2 rounded-lg border border-default bg-surface focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
         </div>
 
         <div>
-          <label className="text-xs text-[#5B6156] mb-1 block">
+          <label className="text-xs text-secondary mb-1 block">
             Description
           </label>
           <textarea
@@ -144,7 +144,7 @@ export default function EventFormModal({
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Description (optional)"
             rows={3}
-            className="w-full text-sm px-3 py-2 rounded-lg border border-[#DCD2B4] bg-white focus:outline-none focus:ring-1 focus:ring-[#8CA37E]"
+            className="w-full text-sm px-3 py-2 rounded-lg border border-default bg-surface focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
 
@@ -152,7 +152,7 @@ export default function EventFormModal({
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="py-2 bg-[#2F4A3D] hover:bg-[#253D31] disabled:opacity-60 text-[#F6F1E3] text-xs font-semibold rounded-lg transition-colors"
+          className="py-2 bg-accent hover:bg-accent disabled:opacity-60 text-inverse text-xs font-semibold rounded-lg transition-colors"
         >
           {isSubmitting
             ? "Saving..."

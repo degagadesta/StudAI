@@ -17,25 +17,25 @@ export default function MaterialsProgressTable({
   const navigate = useNavigate();
 
   return (
-    <div className="bg-[#FFFDF7] border border-[#DCD2B4] rounded-2xl p-6">
+    <div className="bg-surface border border-default rounded-2xl p-6">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <p className="font-serif text-lg text-[#253D31]">
+          <p className="font-serif text-lg text-primary">
             Uploaded materials
           </p>
-          <p className="text-xs text-[#5B6156] mt-0.5">
+          <p className="text-xs text-secondary mt-0.5">
             Progress across every PDF you've uploaded
           </p>
         </div>
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-[#5B6156]">No materials uploaded yet.</p>
+        <p className="text-sm text-secondary">No materials uploaded yet.</p>
       ) : (
         <>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-[#A9A18A] uppercase tracking-wide">
+              <tr className="text-left text-xs text-muted uppercase tracking-wide">
                 <th className="pb-2.5 font-medium w-10">#</th>
                 <th className="pb-2.5 font-medium">File name</th>
                 <th className="pb-2.5 font-medium">Uploaded</th>
@@ -46,24 +46,24 @@ export default function MaterialsProgressTable({
             <tbody>
               {rows.map((row, i) => (
                 <tr key={row.id} className="border-t border-[#EFE8D4]">
-                  <td className="py-2.5 text-[#A9A18A] font-mono text-xs">
+                  <td className="py-2.5 text-muted font-mono text-xs">
                     {(page - 1) * rows.length + i + 1}
                   </td>
-                  <td className="py-2.5 text-[#253D31] font-medium truncate max-w-[220px]">
+                  <td className="py-2.5 text-primary font-medium truncate max-w-[220px]">
                     {row.fileName}
                   </td>
-                  <td className="py-2.5 text-[#5B6156]">
+                  <td className="py-2.5 text-secondary">
                     {new Date(row.uploadedAt).toLocaleDateString()}
                   </td>
                   <td className="py-2.5">
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-24 bg-[#DCD2B4] rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-[#8CA37E]"
+                          className="h-full bg-accent-secondary"
                           style={{ width: `${row.progress}%` }}
                         />
                       </div>
-                      <span className="text-xs text-[#5B6156]">
+                      <span className="text-xs text-secondary">
                         {row.progress}%
                       </span>
                     </div>
@@ -72,7 +72,7 @@ export default function MaterialsProgressTable({
                     <button
                       type="button"
                       onClick={() => navigate(row.workspacePath)}
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg hover:bg-[#EAF3DE] text-[#2F4A3D] transition-colors"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg hover:bg-accent-light text-accent transition-colors"
                     >
                       <Eye size={15} />
                     </button>
@@ -90,8 +90,8 @@ export default function MaterialsProgressTable({
                   onClick={() => onPageChange(p)}
                   className={`w-7 h-7 rounded-lg text-xs font-mono transition-colors ${
                     p === page
-                      ? "bg-[#253D31] text-[#F6F1E3]"
-                      : "text-[#5B6156] hover:bg-[#F4EFDD]"
+                      ? "bg-accent text-inverse"
+                      : "text-secondary hover:bg-surface-hover"
                   }`}
                 >
                   {p}

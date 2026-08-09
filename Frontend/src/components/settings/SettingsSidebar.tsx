@@ -19,19 +19,19 @@ export default function SettingsSidebar({
   onChange,
 }: SettingsSidebarProps) {
   return (
-    <aside className="w-56 border-r border-[#DCD2B4]/60 bg-[#F9F6EE] p-6 flex flex-col justify-between shrink-0">
+    <aside className="w-56 border-r border-default/60 bg-surface-hover p-6 flex flex-col justify-between shrink-0">
       <div>
-        <h2 className="font-serif text-xl text-[#253D31] mb-6">Settings</h2>
+        <h2 className="font-serif text-xl text-primary mb-6">Settings</h2>
         <nav className="space-y-1.5">
           {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => onChange(id)}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                 activeTab === id
-                  ? "bg-[#253D31] text-[#F6F1E3]"
-                  : "text-[#5B6156] hover:bg-[#EFE8D4] hover:text-[#253D31]"
+                  ? "bg-accent text-inverse shadow-sm"
+                  : "text-secondary hover:bg-elevated hover:text-primary"
               }`}
             >
               <Icon size={18} />
@@ -40,7 +40,7 @@ export default function SettingsSidebar({
           ))}
         </nav>
       </div>
-      <p className="text-xs text-[#A9A18A]">StudAI Preferences v1.0</p>
+      <p className="text-xs text-muted">StudAI Preferences v1.0</p>
     </aside>
   );
 }

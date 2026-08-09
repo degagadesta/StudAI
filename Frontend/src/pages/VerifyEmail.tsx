@@ -92,12 +92,12 @@ export default function VerifyEmail() {
   }, [searchParams, setUser, navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F6F1E3] px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-[#DCD2B4] p-8">
+    <div className="min-h-screen flex items-center justify-center bg-page px-4">
+      <div className="max-w-md w-full bg-surface rounded-2xl shadow-lg border border-default p-8">
         {/* Logo */}
         <div className="text-center mb-6">
-          <h1 className="font-serif text-2xl text-[#253D31]">
-            Stud<span className="text-[#8CA37E]">AI</span>
+          <h1 className="font-serif text-2xl text-primary">
+            Stud<span className="text-accent">AI</span>
           </h1>
         </div>
 
@@ -105,26 +105,26 @@ export default function VerifyEmail() {
         <div className="text-center">
           {status === "loading" && (
             <>
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#EFE8D4] flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-[#2F4A3D] animate-spin" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-elevated flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-accent animate-spin" />
               </div>
-              <h2 className="text-xl font-serif text-[#253D31] mb-2">
+              <h2 className="text-xl font-serif text-primary mb-2">
                 Verifying Your Email
               </h2>
-              <p className="text-sm text-[#5B6156]">Please wait...</p>
+              <p className="text-sm text-secondary">Please wait...</p>
             </>
           )}
 
           {status === "success" && (
             <>
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#8CA37E]/20 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-[#2F4A3D]" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent/20 flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-accent" />
               </div>
-              <h2 className="text-xl font-serif text-[#253D31] mb-2">
+              <h2 className="text-xl font-serif text-primary mb-2">
                 Email Verified! 🎉
               </h2>
-              <p className="text-sm text-[#5B6156] mb-6">{message}</p>
-              <div className="flex items-center justify-center gap-2 text-sm text-[#5B6156]">
+              <p className="text-sm text-secondary mb-6">{message}</p>
+              <div className="flex items-center justify-center gap-2 text-sm text-secondary">
                 <Loader2 size={16} className="animate-spin" />
                 <span>Redirecting...</span>
               </div>
@@ -133,23 +133,23 @@ export default function VerifyEmail() {
 
           {status === "error" && (
             <>
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#F7E8E8] flex items-center justify-center">
-                <XCircle className="w-8 h-8 text-[#8B3A3A]" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-error flex items-center justify-center">
+                <XCircle className="w-8 h-8 text-error" />
               </div>
-              <h2 className="text-xl font-serif text-[#253D31] mb-2">
+              <h2 className="text-xl font-serif text-primary mb-2">
                 Verification Failed
               </h2>
-              <p className="text-sm text-[#5B6156] mb-6">{message}</p>
+              <p className="text-sm text-secondary mb-6">{message}</p>
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => navigate("/login")}
-                  className="w-full py-3 bg-[#2F4A3D] hover:bg-[#253D31] text-white font-medium rounded-lg transition-colors"
+                  className="w-full py-3 bg-accent hover-accent text-inverse font-medium rounded-lg transition-colors focus:ring-2 focus:ring-accent"
                 >
                   Go to Login
                 </button>
                 <button
                   onClick={() => navigate("/register")}
-                  className="w-full py-3 bg-white border border-[#DCD2B4] hover:bg-[#F6F1E3] text-[#2F4A3D] font-medium rounded-lg transition-colors"
+                  className="w-full py-3 bg-surface border border-default hover:bg-page text-accent font-medium rounded-lg transition-colors focus:ring-2 focus:ring-accent"
                 >
                   Register Again
                 </button>
@@ -160,11 +160,11 @@ export default function VerifyEmail() {
 
         {/* Help Text */}
         {status === "error" && (
-          <p className="text-center text-xs text-[#5B6156] mt-6">
+          <p className="text-center text-xs text-secondary mt-6">
             Need help?{" "}
             <a
               href="mailto:support@studai.et"
-              className="text-[#2F4A3D] hover:underline"
+              className="text-accent hover:underline"
             >
               Contact Support
             </a>

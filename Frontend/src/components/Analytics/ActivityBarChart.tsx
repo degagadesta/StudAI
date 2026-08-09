@@ -51,18 +51,18 @@ function Bars({
             onMouseLeave={() => setHovered(null)}
           >
             {isActive && (
-              <div className="absolute -top-9 bg-[#253D31] text-[#F6F1E3] text-xs font-mono px-2.5 py-1 rounded-lg whitespace-nowrap">
+              <div className="absolute -top-9 bg-accent text-inverse text-xs font-mono px-2.5 py-1 rounded-lg whitespace-nowrap">
                 {b.value}
                 {unit}
               </div>
             )}
             <div
               className={`w-full rounded-lg transition-colors ${
-                isActive ? "bg-[#8CA37E]" : "bg-[#EFE8D4]"
+                isActive ? "bg-accent-secondary" : "bg-elevated"
               }`}
               style={{ height: `${Math.max(heightPct, 3)}%` }}
             />
-            <span className="text-xs text-[#A9A18A]">{b.label}</span>
+            <span className="text-xs text-muted">{b.label}</span>
           </div>
         );
       })}
@@ -80,21 +80,21 @@ export default function ActivityBarChart({
   const buckets = data[range];
 
   return (
-    <div className="bg-[#FFFDF7] border border-[#DCD2B4] rounded-2xl p-6">
+    <div className="bg-surface border border-default rounded-2xl p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-serif text-lg text-[#253D31]">Time spent</p>
-          <p className="text-xs text-[#5B6156] mt-0.5">{config.helper}</p>
+          <p className="font-serif text-lg text-primary">Time spent</p>
+          <p className="text-xs text-secondary mt-0.5">{config.helper}</p>
         </div>
-        <div className="flex bg-[#F4EFDD] rounded-full p-1">
+        <div className="flex bg-surface-hover rounded-full p-1">
           {(Object.keys(RANGE_CONFIG) as Range[]).map((r) => (
             <button
               key={r}
               onClick={() => setRange(r)}
               className={`text-xs px-3 py-1 rounded-full transition-colors ${
                 range === r
-                  ? "bg-[#253D31] text-[#F6F1E3]"
-                  : "text-[#5B6156] hover:text-[#253D31]"
+                  ? "bg-accent text-inverse"
+                  : "text-secondary hover:text-primary"
               }`}
             >
               {RANGE_CONFIG[r].label}

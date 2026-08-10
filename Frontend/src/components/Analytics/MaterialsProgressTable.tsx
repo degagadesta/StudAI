@@ -20,9 +20,7 @@ export default function MaterialsProgressTable({
     <div className="bg-surface border border-default rounded-2xl p-6">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <p className="font-serif text-lg text-primary">
-            Uploaded materials
-          </p>
+          <p className="font-serif text-lg text-primary">Uploaded materials</p>
           <p className="text-xs text-secondary mt-0.5">
             Progress across every PDF you've uploaded
           </p>
@@ -36,7 +34,7 @@ export default function MaterialsProgressTable({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-muted uppercase tracking-wide">
-                <th className="pb-2.5 font-medium w-10">#</th>
+                <th className="pb-2.5 font-medium w-10">ID</th>
                 <th className="pb-2.5 font-medium">File name</th>
                 <th className="pb-2.5 font-medium">Uploaded</th>
                 <th className="pb-2.5 font-medium">Progress</th>

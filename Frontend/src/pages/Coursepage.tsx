@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, MouseEvent } from "react";
+import { useState, useEffect, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   X,
@@ -13,9 +13,9 @@ import {
 } from "lucide-react";
 import {
   getCourses,
-  // getAvailableCourses,
-  // deleteCourse,
-  // createCourse,
+  getAvailableCourses,
+  deleteCourse,
+  createCourse,
   type Course,
 } from "../api/Coursesapi";
 import { getMaterials, type Material } from "../api/Materialsapi";
@@ -59,43 +59,43 @@ export default function CoursesPage() {
     fetchEnrolledCourses();
   }, []);
 
-  // Open modal and fetch department catalog from GET /courses
-  const handleOpenAddModal = async () => {
+  // Open modal — actual catalog fetch happens in the debounced effect below
+  const handleOpenAddModal = () => {
     setIsAddModalOpen(true);
     setVisibleCount(3);
     setSearchQuery("");
     setCatalogError(null);
-    setIsLoadingCatalog(true);
-
-    try {
-      const catalogData = await getAvailableCourses();
-      setDepartmentCatalog(catalogData || []);
-    } catch (err) {
-      setCatalogError(
-        getApiErrorMessage(err, "Could not fetch department courses."),
-      );
-    } finally {
-      setIsLoadingCatalog(false);
-    }
   };
 
-  // Search filter and match prioritization
-  const filteredCatalog = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return departmentCatalog;
+  // Debounced server-side catalog search whenever the query (or modal open state) changes
+  useEffect(() => {
+    if (!isAddModalOpen) return;
 
-    return [...departmentCatalog].sort((a, b) => {
-      const aNameMatch = a.name.toLowerCase().includes(query);
-      const aCodeMatch = a.code.toLowerCase().includes(query);
-      const bNameMatch = b.name.toLowerCase().includes(query);
-      const bCodeMatch = b.code.toLowerCase().includes(query);
+    const controller = new AbortController();
+    setIsLoadingCatalog(true);
+    setCatalogError(null);
 
-      const aScore = (aNameMatch ? 2 : 0) + (aCodeMatch ? 1 : 0);
-      const bScore = (bNameMatch ? 2 : 0) + (bCodeMatch ? 1 : 0);
+    const timer = setTimeout(async () => {
+      try {
+        const catalogData = await getAvailableCourses(searchQuery);
+        setDepartmentCatalog(catalogData || []);
+        setVisibleCount(3);
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          setCatalogError(
+            getApiErrorMessage(err, "Could not fetch department courses."),
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsLoadingCatalog(false);
+      }
+    }, 300); // debounce so we don't hit the API on every keystroke
 
-      return bScore - aScore;
-    });
-  }, [searchQuery, departmentCatalog]);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchQuery, isAddModalOpen]);
 
   // Select course card to load materials
   const handleSelectCourse = async (course: Course) => {
@@ -118,7 +118,7 @@ export default function CoursesPage() {
     }
   };
 
-  // Unenroll / Delete course
+  // Unenroll / Drop course
   const handleDeleteCourse = async (e: MouseEvent, courseId: string) => {
     e.stopPropagation();
 
@@ -137,7 +137,7 @@ export default function CoursesPage() {
     }
   };
 
-  // Enroll course by posting courseId to backend
+  // Enroll course by posting curriculumCourseId to backend
   const handleAddCourse = async (catalogCourse: Course) => {
     const isAlreadyEnrolled = courses.some(
       (c) =>
@@ -155,7 +155,7 @@ export default function CoursesPage() {
     setSuccessMessage(null);
 
     try {
-      // POST /courses with { courseId: catalogCourse.id }
+      // POST /student/courses/select with { curriculumCourseId: catalogCourse.id }
       await createCourse(catalogCourse.id);
 
       // Refresh enrolled list from server
@@ -274,7 +274,7 @@ export default function CoursesPage() {
         /* Enrolled Course List View */
         <div>
           <h2 className="font-serif text-lg text-primary mb-4">
-            Courses this semester
+            Courses enrolled
           </h2>
 
           {isLoading ? (
@@ -390,21 +390,21 @@ export default function CoursesPage() {
               {isLoadingCatalog ? (
                 <div className="flex flex-col items-center justify-center py-8 text-secondary gap-2">
                   <Loader2 size={20} className="animate-spin text-accent" />
-                  <span className="text-xs">
-                    Loading department courses from database…
-                  </span>
+                  <span className="text-xs">Loading department courses…</span>
                 </div>
-              ) : filteredCatalog.length === 0 ? (
+              ) : departmentCatalog.length === 0 ? (
                 <p className="text-xs text-center text-muted py-8">
                   No department courses matching your query.
                 </p>
               ) : (
-                filteredCatalog.slice(0, visibleCount).map((catCourse) => {
-                  const isEnrolled = courses.some(
-                    (c) =>
-                      c.id === catCourse.id ||
-                      c.code.toLowerCase() === catCourse.code.toLowerCase(),
-                  );
+                departmentCatalog.slice(0, visibleCount).map((catCourse) => {
+                  const isEnrolled =
+                    catCourse.isEnrolled ??
+                    courses.some(
+                      (c) =>
+                        c.id === catCourse.id ||
+                        c.code.toLowerCase() === catCourse.code.toLowerCase(),
+                    );
 
                   return (
                     <div
@@ -460,7 +460,7 @@ export default function CoursesPage() {
             </div>
 
             {/* See More Expand */}
-            {!isLoadingCatalog && visibleCount < filteredCatalog.length && (
+            {!isLoadingCatalog && visibleCount < departmentCatalog.length && (
               <div className="p-3 border-t border-default/60 text-center bg-[#FAF7EE]">
                 <button
                   type="button"

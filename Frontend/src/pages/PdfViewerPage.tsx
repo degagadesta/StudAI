@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import {
-  getMaterial,
+  getMaterials,
   updateMaterialProgress,
   type Material,
 } from "../api/Materialsapi";
@@ -22,15 +22,16 @@ export default function PdfViewerPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
   const [furthestPage, setFurthestPage] = useState(1);
   const hasRestoredStartingPage = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  // 1. Load Material Data
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    getMaterial(id)
+    getMaterials(id)
       .then((data) => {
         if (!cancelled) setMaterial(data);
       })
@@ -46,6 +47,7 @@ export default function PdfViewerPage() {
     };
   }, [id]);
 
+  // 2. Initial Document Load & Progress Restoration
   const onDocumentLoad = ({ numPages: total }: { numPages: number }): void => {
     setNumPages(total);
 
@@ -54,12 +56,47 @@ export default function PdfViewerPage() {
         1,
         Math.round((material.progress / 100) * total),
       );
-      setPageNumber(startingPage);
       setFurthestPage(startingPage);
       hasRestoredStartingPage.current = true;
+
+      // Scroll to starting page position
+      setTimeout(() => {
+        pageRefs.current[startingPage - 1]?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 300);
     }
   };
 
+  // 3. Track Current Visible Page on Scroll using IntersectionObserver
+  useEffect(() => {
+    if (!numPages) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const pageNum = Number(
+              entry.target.getAttribute("data-page-number"),
+            );
+            if (pageNum) {
+              setFurthestPage((prev) => Math.max(prev, pageNum));
+            }
+          }
+        });
+      },
+      { threshold: 0.3 },
+    );
+
+    pageRefs.current.forEach((el) => {
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [numPages]);
+
+  // 4. Progress Saving API Calls
   const saveProgress = useCallback(
     (page: number, total: number) => {
       if (!id) return;
@@ -90,105 +127,80 @@ export default function PdfViewerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const changePage = (newPage: number): void => {
-    setPageNumber(newPage);
-    setFurthestPage((prev) => Math.max(prev, newPage));
-  };
-
-  const goPrev = (): void => changePage(Math.max(1, pageNumber - 1));
-  const goNext = (): void =>
-    changePage(numPages ? Math.min(numPages, pageNumber + 1) : pageNumber);
-
   const percent = numPages ? Math.round((furthestPage / numPages) * 100) : 0;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full py-24">
-        <Loader2 size={24} className="text-accent animate-spin" />
+        <Loader2 size={24} className="text-[#2F4A3D] animate-spin" />
       </div>
     );
   }
 
   if (error || !material) {
     return (
-      <div className="max-w-2xl mx-auto flex items-center gap-2 text-sm text-error bg-error border border-error rounded-lg px-3.5 py-2.5">
+      <div className="max-w-2xl mx-auto flex items-center gap-2 text-sm text-[#8B3A3A] bg-[#F7E8E8] border border-[#E3B8B8] rounded-lg px-3.5 py-2.5">
         {error ?? "Material not found."}
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col">
-      <div className="flex items-center justify-between mb-5">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-sm text-secondary hover:text-primary transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Back
-        </button>
-
+    <div className="max-w-4xl mx-auto flex flex-col h-full">
+      {/* Header bar */}
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <div className="text-center">
-          <p className="text-sm font-medium text-primary">
+          <p className="text-sm font-medium text-[#253D31]">
             {material.fileName}
           </p>
-          <p className="text-xs text-muted">{material.courseName}</p>
+          <p className="text-xs text-[#A9A18A]">{material.courseName}</p>
         </div>
 
-        <span className="text-xs font-mono text-secondary w-16 text-right">
+        <span className="text-xs font-mono text-[#5B6156] w-16 text-right">
           {percent}%
         </span>
       </div>
 
-      <div className="h-1.5 bg-[#DCD2B4] rounded-full overflow-hidden mb-6">
+      {/* Progress Bar */}
+      <div className="h-1.5 bg-[#DCD2B4] rounded-full overflow-hidden mb-4 shrink-0">
         <div
-          className="h-full bg-accent-secondary transition-all duration-300"
+          className="h-full bg-[#8CA37E] transition-all duration-300"
           style={{ width: `${percent}%` }}
         />
       </div>
 
-      <div className="flex justify-center bg-surface border border-default rounded-2xl p-4 min-h-[600px]">
+      {/* Scrollable PDF Document Container */}
+      <div className="flex-1 overflow-y-auto bg-[#FFFDF7] border border-[#DCD2B4] rounded-2xl p-6 shadow-inner flex flex-col items-center">
         <Document
           file={material.fileUrl}
           onLoadSuccess={onDocumentLoad}
           loading={
-            <Loader2 size={24} className="text-accent animate-spin my-24" />
+            <Loader2 size={24} className="text-[#2F4A3D] animate-spin my-24" />
           }
           error={
-            <p className="text-sm text-error my-24">
+            <p className="text-sm text-[#8B3A3A] my-24">
               Could not render this PDF.
             </p>
           }
+          className="flex flex-col items-center gap-6"
         >
-          <Page pageNumber={pageNumber} width={640} />
+          {numPages &&
+            Array.from(new Array(numPages), (_, index) => {
+              const pageNum = index + 1;
+              return (
+                <div
+                  key={`page_${pageNum}`}
+                  ref={(el) => {
+                    pageRefs.current[index] = el;
+                  }}
+                  data-page-number={pageNum}
+                  className="shadow-md rounded-lg overflow-hidden bg-white border border-[#EBE5D5]"
+                >
+                  <Page pageNumber={pageNum} width={640} />
+                </div>
+              );
+            })}
         </Document>
-      </div>
-
-      <div className="flex items-center justify-center gap-4 mt-6">
-        <button
-          type="button"
-          onClick={goPrev}
-          disabled={pageNumber <= 1}
-          className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-secondary disabled:opacity-40 disabled:cursor-not-allowed hover:text-primary transition-colors"
-        >
-          <ChevronLeft size={16} />
-          Previous
-        </button>
-
-        <span className="text-sm text-secondary font-mono">
-          Page {pageNumber} of {numPages ?? "…"}
-        </span>
-
-        <button
-          type="button"
-          onClick={goNext}
-          disabled={!numPages || pageNumber >= numPages}
-          className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-secondary disabled:opacity-40 disabled:cursor-not-allowed hover:text-primary transition-colors"
-        >
-          Next
-          <ChevronRight size={16} />
-        </button>
       </div>
     </div>
   );

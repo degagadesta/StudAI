@@ -260,9 +260,7 @@ export default function StartStudyingPage() {
         )}
       </div>
 
-      {uploadError && (
-        <p className="mt-3 text-sm text-error">{uploadError}</p>
-      )}
+      {uploadError && <p className="mt-3 text-sm text-error">{uploadError}</p>}
 
       {/* Materials Grid */}
       <h2 className="font-serif text-lg text-primary mt-10 mb-4">
@@ -289,7 +287,7 @@ export default function StartStudyingPage() {
           {materials.map((m) => (
             <Link
               key={m.id}
-              to={`/app/workspace/${m.id}`}
+              to={`/workspace/${m.id}`}
               className="group relative p-5 bg-surface border border-default rounded-xl hover-border transition-colors cursor-pointer block"
             >
               {/* Delete ("X") Button */}

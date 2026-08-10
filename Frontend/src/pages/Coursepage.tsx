@@ -26,6 +26,10 @@ export default function CoursesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Search state for main courses list
+  const [searchQueryMain, setSearchQueryMain] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
   // Selected course state for viewing materials
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -44,20 +48,37 @@ export default function CoursesPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Load enrolled student courses
-  const fetchEnrolledCourses = async () => {
+  const fetchEnrolledCourses = async (search?: string) => {
+    setIsSearching(!!search);
     try {
-      const coursesData = await getCourses();
+      const coursesData = await getCourses(search);
       setCourses(coursesData);
     } catch (err) {
       setError(getApiErrorMessage(err, "Could not load your courses."));
     } finally {
       setIsLoading(false);
+      setIsSearching(false);
     }
   };
 
   useEffect(() => {
     fetchEnrolledCourses();
   }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    if (selectedCourse) return; // Don't search when viewing course details
+
+    const timeoutId = setTimeout(() => {
+      if (searchQueryMain.trim()) {
+        fetchEnrolledCourses(searchQueryMain.trim());
+      } else {
+        fetchEnrolledCourses();
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQueryMain, selectedCourse]);
 
   // Open modal and fetch department catalog from GET /courses
   const handleOpenAddModal = async () => {
@@ -413,11 +434,10 @@ export default function CoursesPage() {
                     <div
                       key={catCourse.id}
                       onClick={() => !isEnrolled && handleAddCourse(catCourse)}
-                      className={`p-3.5 rounded-xl border flex items-center justify-between transition-all ${
-                        isEnrolled
-                          ? "bg-[#F3EFE3] border-default opacity-75 cursor-default"
-                          : "bg-surface border-default hover:border-accent cursor-pointer hover:bg-[#FDFBF3]"
-                      }`}
+                      className={`p-3.5 rounded-xl border flex items-center justify-between transition-all ${isEnrolled
+                        ? "bg-[#F3EFE3] border-default opacity-75 cursor-default"
+                        : "bg-surface border-default hover:border-accent cursor-pointer hover:bg-[#FDFBF3]"
+                        }`}
                     >
                       <div className="min-w-0 pr-3">
                         <div className="flex items-center gap-2">
@@ -438,11 +458,10 @@ export default function CoursesPage() {
                       <button
                         type="button"
                         disabled={isEnrolled || addingCourseId === catCourse.id}
-                        className={`text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 shrink-0 ${
-                          isEnrolled
-                            ? "text-secondary bg-transparent"
-                            : "bg-accent text-[#FFFDF7] hover:bg-accent"
-                        }`}
+                        className={`text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 shrink-0 ${isEnrolled
+                          ? "text-secondary bg-transparent"
+                          : "bg-accent text-[#FFFDF7] hover:bg-accent"
+                          }`}
                       >
                         {addingCourseId === catCourse.id ? (
                           <Loader2 size={14} className="animate-spin" />

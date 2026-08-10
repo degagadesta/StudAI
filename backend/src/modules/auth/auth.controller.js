@@ -1,5 +1,6 @@
 import * as authService from "./auth.service.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import * as activityService from "../activity/activity.service.js";
 
 export const registerHandler = asyncHandler(async (req, res) => {
   const result = await authService.register(req.body);
@@ -107,6 +108,17 @@ export const refreshTokenHandler = asyncHandler(async (req, res) => {
 });
 
 export const logoutHandler = asyncHandler(async (req, res) => {
+  // Close any active session
+  try {
+    const activeSession = await activityService.getActiveSession(req.studentId);
+    if (activeSession) {
+      await activityService.closeSession(activeSession.sessionId);
+    }
+  } catch (err) {
+    console.error("Error closing session on logout:", err.message);
+    // Don't fail logout if session close fails
+  }
+
   await authService.logout(req.studentId);
 
   // Clear the refresh token cookie

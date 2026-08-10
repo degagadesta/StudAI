@@ -129,28 +129,33 @@ async function getDailyActivity(studentId, now) {
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Count activity logs (1 log = 1 hour of usage)
-    let hours = 0;
+    let activeHours = 0;
     try {
-      if (prisma.activityLog) {
-        hours = await prisma.activityLog.count({
-          where: {
-            studentId,
-            createdAt: {
-              gte: startOfDay,
-              lte: endOfDay,
-            },
+      // Get all sessions for this day
+      const sessions = await prisma.activitySession.findMany({
+        where: {
+          studentId,
+          startedAt: {
+            gte: startOfDay,
+            lte: endOfDay,
           },
-        });
-      }
+        },
+        select: {
+          duration: true,
+        },
+      });
+
+      // Sum total duration and convert to hours
+      const totalSeconds = sessions.reduce((sum, s) => sum + s.duration, 0);
+      activeHours = parseFloat((totalSeconds / 3600).toFixed(2)); // Convert to hours with 2 decimals
     } catch (err) {
-      console.error("Error counting activity logs:", err.message);
+      console.error("Error calculating daily activity:", err.message);
     }
 
     daily.push({
-      date: startOfDay.toISOString().split("T")[0], // YYYY-MM-DD
-      day: startOfDay.toLocaleDateString("en-US", { weekday: "short" }), // Mon, Tue, etc.
-      hours,
+      date: startOfDay.toISOString().split("T")[0],
+      day: startOfDay.toLocaleDateString("en-US", { weekday: "short" }),
+      hours: activeHours,
     });
   }
 
@@ -170,26 +175,24 @@ async function getWeeklyActivity(studentId, now) {
     startOfWeek.setDate(endOfWeek.getDate() - 6);
     startOfWeek.setHours(0, 0, 0, 0);
 
-    // Get all activity logs for this week
+    // Get all sessions for this week
     let uniqueDays = 0;
     try {
-      if (prisma.activityLog) {
-        const logs = await prisma.activityLog.findMany({
-          where: {
-            studentId,
-            createdAt: {
-              gte: startOfWeek,
-              lte: endOfWeek,
-            },
+      const sessions = await prisma.activitySession.findMany({
+        where: {
+          studentId,
+          startedAt: {
+            gte: startOfWeek,
+            lte: endOfWeek,
           },
-          select: { createdAt: true },
-        });
+        },
+        select: { startedAt: true },
+      });
 
-        // Count unique days (how many days user was active)
-        uniqueDays = new Set(
-          logs.map((log) => log.createdAt.toISOString().split("T")[0]),
-        ).size;
-      }
+      // Count unique days (how many days user was active)
+      uniqueDays = new Set(
+        sessions.map((session) => session.startedAt.toISOString().split("T")[0])
+      ).size;
     } catch (err) {
       console.error("Error getting weekly activity:", err.message);
     }
@@ -218,26 +221,24 @@ async function getMonthlyActivity(studentId, now) {
     const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
     endOfMonth.setHours(23, 59, 59, 999);
 
-    // Get all activity logs for this month
+    // Get all sessions for this month
     let uniqueDays = 0;
     try {
-      if (prisma.activityLog) {
-        const logs = await prisma.activityLog.findMany({
-          where: {
-            studentId,
-            createdAt: {
-              gte: startOfMonth,
-              lte: endOfMonth,
-            },
+      const sessions = await prisma.activitySession.findMany({
+        where: {
+          studentId,
+          startedAt: {
+            gte: startOfMonth,
+            lte: endOfMonth,
           },
-          select: { createdAt: true },
-        });
+        },
+        select: { startedAt: true },
+      });
 
-        // Count unique days
-        uniqueDays = new Set(
-          logs.map((log) => log.createdAt.toISOString().split("T")[0]),
-        ).size;
-      }
+      // Count unique days
+      uniqueDays = new Set(
+        sessions.map((session) => session.startedAt.toISOString().split("T")[0])
+      ).size;
     } catch (err) {
       console.error("Error getting monthly activity:", err.message);
     }

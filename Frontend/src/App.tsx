@@ -9,6 +9,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { OnboardingRoute } from "./components/OnboardingRoute";
 
 import LoginPage from "./pages/LoginPage";
 import Register from "./pages/Register";
@@ -20,7 +21,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 // Dashboard tab routes (sidebar + topbar shell)
 import DashboardLayout from "./layouts/DashboardLayout";
 import StartStudyingPage from "./pages/StartStudyingPage";
-import CoursesPage from "./pages/Coursepage";
+import CoursesPage from "./pages/CoursePage";
 import SchedulePage from "./pages/Schedulepage";
 import ProfilePage from "./pages/Profilepage";
 import AnalyticsPage from "./pages/AnalyticsPage";
@@ -59,13 +60,13 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
 
-            {/* Protected Onboarding Flow */}
+            {/* Protected Onboarding Flow - Uses OnboardingRoute instead of ProtectedRoute */}
             <Route
               path="/onboarding"
               element={
-                <ProtectedRoute>
+                <OnboardingRoute>
                   <OnboardingPage />
-                </ProtectedRoute>
+                </OnboardingRoute>
               }
             />
 

@@ -1,22 +1,14 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-// import {
-//   getAcademicProfile,
-//   getCourses,
-//   createCourse,
-//   type AcademicProfile,
-//   type Course,
-//   type CreateCoursePayload,
-// } from "../../api/Coursesapi";
-
 import {
   getAcademicProfile,
   getCourses,
-  createCourse,
+  addCourseSelection,
+  dropCourseSelection,
   type AcademicProfile,
   type Course,
 } from "../api/Coursesapi";
-
+// import { updateBasicInfo, updateAcademicInfo } from "../api/studentApi";
 import SettingsSidebar from "../components/settings/SettingsSidebar";
 import DeleteAccountConfirm from "../components/settings/DeleteAccountConfirm";
 import ProfileTab from "../components/settings/tabs/ProfileTab";
@@ -24,6 +16,8 @@ import PlanTab from "../components/settings/tabs/PlanTab";
 import CourseTab from "../components/settings/tabs/CourseTab";
 import ThemeTab from "../components/settings/tabs/ThemeTab";
 import type { SubscriptionTier } from "../utils/PlanData";
+
+type TabType = "profile" | "plan" | "course" | "theme";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -53,72 +47,58 @@ export default function SettingsModal({
   const [currentPlan, setCurrentPlan] = useState<SubscriptionTier>("free");
 
   // Courses
-  const [autoLoadMaterials, setAutoLoadMaterials] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
-  const [showAddCourse, setShowAddCourse] = useState(false);
-  const [newCode, setNewCode] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newCredits, setNewCredits] = useState("");
-  const [isCreatingCourse, setIsCreatingCourse] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
+  // Load profile when modal opens
   useEffect(() => {
     if (!isOpen) return;
-    let isMounted = true;
-
-    (async () => {
-      setIsLoadingProfile(true);
-      setErrorMessage(null);
-      try {
-        const data = await getAcademicProfile();
-        if (isMounted) setProfile(data);
-      } catch (err: any) {
-        if (isMounted) {
-          console.error("Error loading academic profile:", err);
-          setErrorMessage(
-            err?.response?.data?.message ||
-              "Unable to load profile from server. Please check your connection.",
-          );
-        }
-      } finally {
-        if (isMounted) setIsLoadingProfile(false);
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
+    loadProfile();
   }, [isOpen]);
 
+  // Load courses when modal opens or when switching to course tab
   useEffect(() => {
     if (!isOpen) return;
-    let isMounted = true;
+    if (activeTab === "course") {
+      loadCourses();
+    }
+  }, [isOpen, activeTab]);
 
-    (async () => {
-      setIsLoadingCourses(true);
-      setCoursesError(null);
-      try {
-        const data = await getCourses();
-        if (isMounted) setCourses(data);
-      } catch (err: any) {
-        if (isMounted) {
-          console.error("Error loading courses:", err);
-          setCoursesError(
-            err?.response?.data?.message ||
-              "Unable to load your courses. Please check your connection.",
-          );
-        }
-      } finally {
-        if (isMounted) setIsLoadingCourses(false);
-      }
-    })();
+  const loadProfile = async () => {
+    setIsLoadingProfile(true);
+    setErrorMessage(null);
+    try {
+      const data = await getAcademicProfile();
+      setProfile(data);
+      setCurrentPlan(data.subscriptionPlan.toLowerCase() as SubscriptionTier);
+    } catch (err: any) {
+      console.error("Error loading academic profile:", err);
+      setErrorMessage(
+        err?.response?.data?.message ||
+          "Unable to load profile from server. Please check your connection.",
+      );
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
 
-    return () => {
-      isMounted = false;
-    };
-  }, [isOpen]);
+  const loadCourses = async () => {
+    setIsLoadingCourses(true);
+    setCoursesError(null);
+    try {
+      const data = await getCourses();
+      setCourses(data);
+    } catch (err: any) {
+      console.error("Error loading courses:", err);
+      setCoursesError(
+        err?.response?.data?.message ||
+          "Unable to load your courses. Please check your connection.",
+      );
+    } finally {
+      setIsLoadingCourses(false);
+    }
+  };
 
   const handleLogout = () => {
     onClose();
@@ -143,42 +123,38 @@ export default function SettingsModal({
     }
   };
 
-  const resetAddCourseForm = () => {
-    setNewCode("");
-    setNewName("");
-    setNewCredits("");
-    setCreateError(null);
+  const handleUpdateProfile = async (updates: {
+    firstName: string;
+    lastName: string;
+  }) => {
+    await updateBasicInfo(updates);
+    await loadProfile(); // Refresh profile
   };
 
-  const handleCreateCourse = async () => {
-    const code = newCode.trim();
-    const name = newName.trim();
-    const credits = Number(newCredits);
+  const handleUpdateAcademic = async (updates: {
+    currentYear: number;
+    currentSemester: number;
+  }) => {
+    const result = await updateAcademicInfo(updates);
+    await loadProfile(); // Refresh profile
+    await loadCourses(); // Refresh courses as they may have changed
 
-    if (!code) return setCreateError("Course code is required.");
-    if (!name) return setCreateError("Course name is required.");
-    if (!Number.isFinite(credits) || credits <= 0 || credits > 20) {
-      return setCreateError("Credits must be a number between 1 and 20.");
+    // Show warning if course selections were cleared
+    if (result.warning) {
+      alert(result.warning);
     }
+  };
 
-    setIsCreatingCourse(true);
-    setCreateError(null);
-    try {
-      // Note: The actual API signature needs updating - using courseId for now
-      await createCourse(code);
-      // Refresh courses list after creation
-      const updated = await getCourses();
-      setCourses(updated);
-      resetAddCourseForm();
-      setShowAddCourse(false);
-    } catch (err: any) {
-      console.error("Failed to create course:", err);
-      setCreateError(
-        err?.response?.data?.message ||
-          "Could not add this course. Please try again.",
-      );
-    } finally {
-      setIsCreatingCourse(false);
+  const handleAddCourse = async (curriculumCourseId: string) => {
+    const result = await addCourseSelection(curriculumCourseId);
+    console.log("Course added:", result.message);
+  };
+
+  const handleRemoveCourse = async (curriculumCourseId: string) => {
+    const result = await dropCourseSelection(curriculumCourseId);
+    console.log("Course removed:", result.message);
+    if (result.warning) {
+      alert(result.warning);
     }
   };
 
@@ -206,6 +182,8 @@ export default function SettingsModal({
                 errorMessage={errorMessage}
                 onLogout={handleLogout}
                 onRequestDelete={() => setShowDeleteConfirm(true)}
+                onUpdateProfile={handleUpdateProfile}
+                onUpdateAcademic={handleUpdateAcademic}
               />
             )}
 
@@ -219,26 +197,12 @@ export default function SettingsModal({
 
             {activeTab === "course" && (
               <CourseTab
-                autoLoadMaterials={autoLoadMaterials}
-                onToggleAutoLoad={setAutoLoadMaterials}
-                showAddCourse={showAddCourse}
-                onToggleAddCourse={() => setShowAddCourse((s) => !s)}
-                newCode={newCode}
-                newName={newName}
-                newCredits={newCredits}
-                onChangeCode={setNewCode}
-                onChangeName={setNewName}
-                onChangeCredits={setNewCredits}
-                createError={createError}
-                isCreatingCourse={isCreatingCourse}
-                onSaveCourse={handleCreateCourse}
-                onCancelAddCourse={() => {
-                  setShowAddCourse(false);
-                  resetAddCourseForm();
-                }}
                 isLoadingCourses={isLoadingCourses}
                 coursesError={coursesError}
                 courses={courses}
+                onAddCourse={handleAddCourse}
+                onRemoveCourse={handleRemoveCourse}
+                onRefreshCourses={loadCourses}
               />
             )}
 

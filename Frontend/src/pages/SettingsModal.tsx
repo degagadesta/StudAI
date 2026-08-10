@@ -1,14 +1,5 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-// import {
-//   getAcademicProfile,
-//   getCourses,
-//   createCourse,
-//   type AcademicProfile,
-//   type Course,
-//   type CreateCoursePayload,
-// } from "../../api/Coursesapi";
-
 import {
   getAcademicProfile,
   getCourses,
@@ -25,9 +16,12 @@ import CourseTab from "../components/settings/tabs/CourseTab";
 import ThemeTab from "../components/settings/tabs/ThemeTab";
 import type { SubscriptionTier } from "../utils/PlanData";
 
+export type TabType = "profile" | "plan" | "course" | "theme";
+
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: TabType;
   onLogout?: () => void;
   onDeleteAccount?: () => void;
 }
@@ -35,10 +29,18 @@ interface SettingsModalProps {
 export default function SettingsModal({
   isOpen,
   onClose,
+  initialTab = "profile",
   onLogout,
   onDeleteAccount,
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("profile");
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+
+  // Sync activeTab when modal opens or initialTab changes
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   // Profile
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
@@ -164,9 +166,7 @@ export default function SettingsModal({
     setIsCreatingCourse(true);
     setCreateError(null);
     try {
-      // Note: The actual API signature needs updating - using courseId for now
       await createCourse(code);
-      // Refresh courses list after creation
       const updated = await getCourses();
       setCourses(updated);
       resetAddCourseForm();

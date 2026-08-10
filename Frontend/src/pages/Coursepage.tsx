@@ -240,7 +240,7 @@ export default function CoursesPage() {
               {materials.map((m) => (
                 <Link
                   key={m.id}
-                  to={`/app/workspace/${m.id}`}
+                  to={`/workspace/${m.id}`}
                   className="group relative p-5 bg-surface border border-default rounded-xl hover:border-accent transition-colors cursor-pointer block"
                 >
                   <div className="flex items-start gap-3 mb-4 pr-6">
@@ -324,10 +324,7 @@ export default function CoursesPage() {
                     className="p-1.5 text-muted hover:text-error hover:bg-error rounded-lg transition-colors cursor-pointer shrink-0 ml-2"
                   >
                     {deletingCourseId === course.id ? (
-                      <Loader2
-                        size={16}
-                        className="animate-spin text-error"
-                      />
+                      <Loader2 size={16} className="animate-spin text-error" />
                     ) : (
                       <X size={16} />
                     )}

@@ -72,7 +72,7 @@ export default function Topbar({
 
   return (
     <>
-      <header className="flex items-center justify-between gap-6 px-8 pt-8 pb-6">
+      <header className="flex items-center justify-between gap-6 px-8 pt-8 pb-6 ">
         <div>
           <h1 className="font-serif text-2xl text-primary leading-tight">
             Hello, {firstName ?? "Student"}!

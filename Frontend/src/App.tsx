@@ -27,6 +27,8 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import NotificationsPage from "./pages/NotificationsModal";
 import SettingsModal from "./pages/SettingsModal";
 
+import WorkspacePage from "./pages/workspacepage";
+
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 // Wrapper component to safely adapt SettingsModal to React Router navigation
@@ -52,51 +54,52 @@ export default function App() {
         <BrowserRouter>
           <AuthProvider>
             <Routes>
-            {/* Public Authentication Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
+              {/* Public Authentication Routes */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/workspace/:id" element={<WorkspacePage />} />
 
-            {/* Protected Onboarding Flow */}
-            <Route
-              path="/onboarding"
-              element={
-                <ProtectedRoute>
-                  <OnboardingPage />
-                </ProtectedRoute>
-              }
-            />
+              {/* Protected Onboarding Flow */}
+              <Route
+                path="/onboarding"
+                element={
+                  <ProtectedRoute>
+                    <OnboardingPage />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Redirect /dashboard legacy route to /app/analytics */}
-            <Route
-              path="/dashboard"
-              element={<Navigate to="/app/analytics" replace />}
-            />
+              {/* Redirect /dashboard legacy route to /app/analytics */}
+              <Route
+                path="/dashboard"
+                element={<Navigate to="/app/analytics" replace />}
+              />
 
-            {/* Main Application Layout */}
-            <Route
-              path="/app"
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="analytics" replace />} />
-              <Route path="start-studying" element={<StartStudyingPage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="courses" element={<CoursesPage />} />
-              <Route path="schedule" element={<SchedulePage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="settings" element={<SettingsModalWrapper />} />
-            </Route>
+              {/* Main Application Layout */}
+              <Route
+                path="/app"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="analytics" replace />} />
+                <Route path="start-studying" element={<StartStudyingPage />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="courses" element={<CoursesPage />} />
+                <Route path="schedule" element={<SchedulePage />} />
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="settings" element={<SettingsModalWrapper />} />
+              </Route>
 
-            {/* Root & Catch-all Fallbacks */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
+              {/* Root & Catch-all Fallbacks */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </AuthProvider>
         </BrowserRouter>

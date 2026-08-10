@@ -22,6 +22,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 import StartStudyingPage from "./pages/StartStudyingPage";
 import CoursesPage from "./pages/CoursePage";
+import WorkspacePage from "./pages/workspacepage";
 import SchedulePage from "./pages/Schedulepage";
 import ProfilePage from "./pages/Profilepage";
 import AnalyticsPage from "./pages/AnalyticsPage";
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/workspace/:id" element={<WorkspacePage />} /> 
 
             {/* Protected Onboarding Flow - Uses OnboardingRoute instead of ProtectedRoute */}
             <Route

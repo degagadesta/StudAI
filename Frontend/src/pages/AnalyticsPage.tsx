@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import {
   getAnalytics,
-  getMaterialsProgress,
   type AnalyticsSummary,
   type ActivityBreakdown,
   type MaterialProgressRow,
@@ -27,9 +26,7 @@ function StatCard({ icon: Icon, label, value, dark = false }: StatCardProps) {
   return (
     <div
       className={`p-5 rounded-2xl ${
-        dark
-          ? "bg-accent text-inverse"
-          : "bg-surface border border-default"
+        dark ? "bg-accent text-inverse" : "bg-surface border border-default"
       }`}
     >
       <div className="flex items-center gap-1.5 mb-1.5">
@@ -37,9 +34,7 @@ function StatCard({ icon: Icon, label, value, dark = false }: StatCardProps) {
           size={15}
           className={dark ? "text-accent-light" : "text-accent"}
         />
-        <p
-          className={`text-xs ${dark ? "text-inverse/70" : "text-secondary"}`}
-        >
+        <p className={`text-xs ${dark ? "text-inverse/70" : "text-secondary"}`}>
           {label}
         </p>
       </div>
@@ -52,25 +47,22 @@ function StatCard({ icon: Icon, label, value, dark = false }: StatCardProps) {
   );
 }
 
-const MATERIALS_PAGE_SIZE = 8;
-
 export default function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [activity, setActivity] = useState<ActivityBreakdown | null>(null);
   const [materials, setMaterials] = useState<MaterialProgressRow[]>([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch analytics data on mount
+  // Fetch analytics data (summary, activity, and materials) on mount
   useEffect(() => {
     let cancelled = false;
     getAnalytics()
-      .then(({ summary, activity }) => {
+      .then(({ summary, activity, materials }) => {
         if (cancelled) return;
         setSummary(summary);
         setActivity(activity);
+        setMaterials(materials);
       })
       .catch((err: unknown) => {
         if (!cancelled)
@@ -83,24 +75,6 @@ export default function AnalyticsPage() {
       cancelled = true;
     };
   }, []);
-
-  // Fetch materials progress (disabled until backend endpoint is ready)
-  useEffect(() => {
-    let cancelled = false;
-    getMaterialsProgress(page, MATERIALS_PAGE_SIZE)
-      .then((res) => {
-        if (cancelled) return;
-        setMaterials(res.rows);
-        setTotalPages(Math.max(1, Math.ceil(res.total / res.limit)));
-      })
-      .catch((err: unknown) => {
-        // Silently fail - endpoint doesn't exist yet
-        console.log("Materials endpoint not available yet");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [page]);
 
   if (isLoading) {
     return (
@@ -152,12 +126,7 @@ export default function AnalyticsPage() {
 
       <ActivityBarChart data={activity} />
 
-      <MaterialsProgressTable
-        rows={materials}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+      <MaterialsProgressTable rows={materials} />
     </div>
   );
 }

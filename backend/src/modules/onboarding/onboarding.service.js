@@ -177,6 +177,27 @@ export const completeOnboarding = async (
             },
         });
 
+        // Save selected courses to StudentCourseSelection table
+        if (selectedCourseIds && selectedCourseIds.length > 0) {
+            // Delete existing selections for this student to avoid conflicts
+            await tx.studentCourseSelection.deleteMany({
+                where: {
+                    studentProfileId: profile.id,
+                },
+            });
+
+            // Create new selections for the courses selected during onboarding
+            const selections = selectedCourseIds.map((curriculumCourseId) => ({
+                studentProfileId: profile.id,
+                curriculumCourseId: curriculumCourseId,
+            }));
+
+            await tx.studentCourseSelection.createMany({
+                data: selections,
+                skipDuplicates: true,
+            });
+        }
+
         // Load courses for the selected year and semester
         const courses = await tx.curriculumCourse.findMany({
             where: {

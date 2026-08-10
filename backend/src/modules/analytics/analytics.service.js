@@ -7,7 +7,11 @@ export async function getAnalytics(studentId) {
     try {
       const profile = await prisma.studentProfile.findUnique({
         where: { studentId },
-        select: { curriculumId: true, currentYear: true, currentSemester: true },
+        select: {
+          curriculumId: true,
+          currentYear: true,
+          currentSemester: true,
+        },
       });
 
       if (profile) {
@@ -20,16 +24,12 @@ export async function getAnalytics(studentId) {
         });
       }
     } catch (err) {
-      console.error('Error counting enrolled courses:', err.message);
+      console.error("Error counting enrolled courses:", err.message);
     }
 
-    // ── total PDFs uploaded ───────────────────────────────────────────────────
-    // TODO: Fix schema validation issues before counting uploaded PDFs
-    // The uploadedBy field exists in schema but Prisma client needs regeneration
-    const totalPdfsUploaded = 0; // Temporarily disabled until schema is fixed
-    // const totalPdfsUploaded = await prisma.courseMaterial.count({
-    //   where: { uploadedBy: studentId, status: "READY" },
-    // });
+    const totalPdfsUploaded = await prisma.courseMaterial.count({
+      where: { uploadedBy: studentId, status: "READY" },
+    });
 
     // ── total events saved ────────────────────────────────────────────────────
     let totalEvents = 0;
@@ -40,7 +40,7 @@ export async function getAnalytics(studentId) {
         });
       }
     } catch (err) {
-      console.error('Error counting events:', err.message);
+      console.error("Error counting events:", err.message);
     }
 
     // ── activity tracking ─────────────────────────────────────────────────────
@@ -55,19 +55,18 @@ export async function getAnalytics(studentId) {
     // Monthly: days for past 12 months
     const monthlyActivity = await getMonthlyActivity(studentId, now);
 
-
     return {
       enrolledCourses,
       totalPdfsUploaded,
       totalEvents,
       activity: {
-        daily: dailyActivity,   // Array of 7 days with hours
+        daily: dailyActivity, // Array of 7 days with hours
         weekly: weeklyActivity, // Array of 4 weeks with days
         monthly: monthlyActivity, // Array of 12 months with days
       },
     };
   } catch (error) {
-    console.error('Error in getAnalytics:', error);
+    console.error("Error in getAnalytics:", error);
     // Return default values if everything fails
     return {
       enrolledCourses: 0,
@@ -78,14 +77,14 @@ export async function getAnalytics(studentId) {
           const date = new Date();
           date.setDate(date.getDate() - (6 - i));
           return {
-            date: date.toISOString().split('T')[0],
-            day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+            date: date.toISOString().split("T")[0],
+            day: date.toLocaleDateString("en-US", { weekday: "short" }),
             hours: 0,
           };
         }),
         weekly: Array.from({ length: 4 }, (_, i) => ({
-          weekStart: '',
-          weekEnd: '',
+          weekStart: "",
+          weekEnd: "",
           weekLabel: `Week ${i + 1}`,
           days: 0,
         })),
@@ -93,7 +92,10 @@ export async function getAnalytics(studentId) {
           const date = new Date();
           date.setMonth(date.getMonth() - (11 - i));
           return {
-            month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            month: date.toLocaleDateString("en-US", {
+              month: "short",
+              year: "numeric",
+            }),
             year: date.getFullYear(),
             monthNumber: date.getMonth() + 1,
             days: 0,
@@ -133,12 +135,12 @@ async function getDailyActivity(studentId, now) {
         });
       }
     } catch (err) {
-      console.error('Error counting activity logs:', err.message);
+      console.error("Error counting activity logs:", err.message);
     }
 
     daily.push({
-      date: startOfDay.toISOString().split('T')[0], // YYYY-MM-DD
-      day: startOfDay.toLocaleDateString('en-US', { weekday: 'short' }), // Mon, Tue, etc.
+      date: startOfDay.toISOString().split("T")[0], // YYYY-MM-DD
+      day: startOfDay.toLocaleDateString("en-US", { weekday: "short" }), // Mon, Tue, etc.
       hours,
     });
   }
@@ -152,7 +154,7 @@ async function getWeeklyActivity(studentId, now) {
 
   for (let i = 3; i >= 0; i--) {
     const endOfWeek = new Date(now);
-    endOfWeek.setDate(now.getDate() - (i * 7));
+    endOfWeek.setDate(now.getDate() - i * 7);
     endOfWeek.setHours(23, 59, 59, 999);
 
     const startOfWeek = new Date(endOfWeek);
@@ -176,16 +178,16 @@ async function getWeeklyActivity(studentId, now) {
 
         // Count unique days (how many days user was active)
         uniqueDays = new Set(
-          logs.map(log => log.createdAt.toISOString().split('T')[0])
+          logs.map((log) => log.createdAt.toISOString().split("T")[0]),
         ).size;
       }
     } catch (err) {
-      console.error('Error getting weekly activity:', err.message);
+      console.error("Error getting weekly activity:", err.message);
     }
 
     weekly.push({
-      weekStart: startOfWeek.toISOString().split('T')[0],
-      weekEnd: endOfWeek.toISOString().split('T')[0],
+      weekStart: startOfWeek.toISOString().split("T")[0],
+      weekEnd: endOfWeek.toISOString().split("T")[0],
       weekLabel: `Week ${4 - i}`,
       days: uniqueDays,
     });
@@ -224,15 +226,18 @@ async function getMonthlyActivity(studentId, now) {
 
         // Count unique days
         uniqueDays = new Set(
-          logs.map(log => log.createdAt.toISOString().split('T')[0])
+          logs.map((log) => log.createdAt.toISOString().split("T")[0]),
         ).size;
       }
     } catch (err) {
-      console.error('Error getting monthly activity:', err.message);
+      console.error("Error getting monthly activity:", err.message);
     }
 
     monthly.push({
-      month: startOfMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), // Jan 2024
+      month: startOfMonth.toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+      }), // Jan 2024
       year: startOfMonth.getFullYear(),
       monthNumber: startOfMonth.getMonth() + 1,
       days: uniqueDays,

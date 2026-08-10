@@ -8,7 +8,8 @@ export interface Material {
   courseId: string;
   fileSize: number;
   uploadedAt: string; // ISO date string
-  progress: number; // 0–100, how much of the material has been studied
+  progress: number;
+  fileUrl: string; // URL to the PDF file
 }
 
 // Raw shape returned by GET /student/pdfs — grouped by curriculumCourseId,
@@ -29,9 +30,10 @@ interface GroupedMaterialsResponse {
 }
 
 export async function getMaterials(): Promise<Material[]> {
-  const res = await api.get<{ success: boolean; data: GroupedMaterialsResponse }>(
-    "/student/pdfs"
-  );
+  const res = await api.get<{
+    success: boolean;
+    data: GroupedMaterialsResponse;
+  }>("/student/pdfs");
 
   const grouped = res.data.data;
 
@@ -45,7 +47,8 @@ export async function getMaterials(): Promise<Material[]> {
       fileSize: pdf.fileSize,
       uploadedAt: pdf.uploadDate,
       progress: pdf.progress,
-    }))
+      fileUrl: `/student/pdfs/${pdf.id}/file`,
+    })),
   );
 }
 
@@ -98,6 +101,7 @@ export async function uploadMaterial(
     fileSize: d.fileSize,
     uploadedAt: d.uploadDate,
     progress: d.progress,
+    fileUrl: `/student/pdfs/${d.id}/file`, // Add this line
   };
 }
 

@@ -64,3 +64,13 @@ export async function uploadCoursePdf(
   formData.append("file", file);
   await api.post(`/courses/${courseId}/pdfs`, formData);
 }
+
+export async function updateAcademicProfile(
+  profileData: Partial<AcademicProfile>,
+): Promise<AcademicProfile> {
+  const res = await api.put<{ success: boolean; data: AcademicProfile }>(
+    "/edit-profile",
+    profileData,
+  );
+  return res.data.data;
+}

@@ -55,17 +55,12 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
   });
 
   if (!student) {
-    throw new AppError(
-      "Account not found. Please log in again",
-      404
-    );
+    throw new AppError("Account not found. Please log in again", 404);
   }
 
   // 4. Check upload limit for the last 24 hours
   // Deleted PDFs are also counted because we don't filter by status.
-  const last24Hours = new Date(
-    Date.now() - 24 * 60 * 60 * 1000
-  );
+  const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const uploadedInLast24h = await prisma.courseMaterial.count({
     where: {
@@ -76,18 +71,12 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     },
   });
 
-  if (
-    !canUploadMore(
-      student.subscriptionPlan,
-      uploadedInLast24h
-    )
-  ) {
-    const limit =
-      SUBSCRIPTION_LIMITS[student.subscriptionPlan];
+  if (!canUploadMore(student.subscriptionPlan, uploadedInLast24h)) {
+    const limit = SUBSCRIPTION_LIMITS[student.subscriptionPlan];
 
     throw new AppError(
       `You've reached your daily upload limit. Your ${student.subscriptionPlan} plan allows ${limit} PDF uploads per day. Try again tomorrow or upgrade your plan`,
-      403
+      403,
     );
   }
 
@@ -104,45 +93,35 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
   if (!profile) {
     throw new AppError(
       "Please complete your profile setup before uploading PDFs",
-      400
+      400,
     );
   }
 
   if (!profile.curriculumId) {
-    throw new AppError(
-      "Your profile is not connected to a curriculum",
-      400
-    );
+    throw new AppError("Your profile is not connected to a curriculum", 400);
   }
 
   // 6. Verify that the curriculum course exists
   // and belongs to the student's curriculum.
-  const curriculumCourse =
-    await prisma.curriculumCourse.findFirst({
-      where: {
-        id: curriculumCourseId,
-        curriculumId: profile.curriculumId,
-      },
-      select: {
-        id: true,
-        course: {
-          select: {
-            id: true,
-            title: true,
-          },
+  const curriculumCourse = await prisma.curriculumCourse.findFirst({
+    where: {
+      id: curriculumCourseId,
+      curriculumId: profile.curriculumId,
+    },
+    select: {
+      id: true,
+      course: {
+        select: {
+          id: true,
+          title: true,
         },
       },
-    });
+    },
+  });
 
   if (!curriculumCourse) {
-    throw new AppError(
-      "This course is not part of your curriculum",
-      403
-    );
+    throw new AppError("This course is not part of your curriculum", 403);
   }
-
-
-
 
   // ───────────────────────────────────────────────────────────────────────────
   // 7. Save PDF
@@ -155,7 +134,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
       data: {
         curriculumCourse: {
           connect: {
-            id: curriculumCourse.id,
+            id: curriculumCourseId,
           },
         },
 
@@ -188,7 +167,6 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
       },
     });
   } catch (error) {
-
     throw error;
   }
 
@@ -198,12 +176,9 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     fileName: pdf.title,
     fileSize: pdf.fileSize,
     uploadDate: pdf.createdAt,
-    curriculumCourseId:
-      pdf.curriculumCourse.id,
-    courseId:
-      pdf.curriculumCourse.course.id,
-    courseName:
-      pdf.curriculumCourse.course.title,
+    curriculumCourseId: pdf.curriculumCourse.id,
+    courseId: pdf.curriculumCourse.course.id,
+    courseName: pdf.curriculumCourse.course.title,
     progress: pdf.progress,
   };
 }
@@ -214,10 +189,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
 
 export async function getStudentPDFs(studentId) {
   if (!studentId) {
-    throw new AppError(
-      "Student account is required",
-      400
-    );
+    throw new AppError("Student account is required", 400);
   }
 
   // Never return fileData when listing PDFs.
@@ -257,19 +229,15 @@ export async function getStudentPDFs(studentId) {
   const grouped = {};
 
   for (const pdf of pdfs) {
-    const curriculumCourseId =
-      pdf.curriculumCourse.id;
+    const curriculumCourseId = pdf.curriculumCourse.id;
 
     if (!grouped[curriculumCourseId]) {
       grouped[curriculumCourseId] = {
-        curriculumCourseId:
-          pdf.curriculumCourse.id,
+        curriculumCourseId: pdf.curriculumCourse.id,
 
-        courseId:
-          pdf.curriculumCourse.course.id,
+        courseId: pdf.curriculumCourse.course.id,
 
-        courseName:
-          pdf.curriculumCourse.course.title,
+        courseName: pdf.curriculumCourse.course.title,
 
         pdfs: [],
       };
@@ -291,22 +259,13 @@ export async function getStudentPDFs(studentId) {
 // GET PDF FILE
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function getPDFFile(
-  studentId,
-  pdfId
-) {
+export async function getPDFFile(studentId, pdfId) {
   if (!studentId) {
-    throw new AppError(
-      "Student account is required",
-      400
-    );
+    throw new AppError("Student account is required", 400);
   }
 
   if (!pdfId) {
-    throw new AppError(
-      "PDF ID is required",
-      400
-    );
+    throw new AppError("PDF ID is required", 400);
   }
 
   const pdf = await prisma.courseMaterial.findFirst({
@@ -324,17 +283,11 @@ export async function getPDFFile(
   });
 
   if (!pdf) {
-    throw new AppError(
-      "PDF file not found",
-      404
-    );
+    throw new AppError("PDF file not found", 404);
   }
 
   if (!pdf.fileData) {
-    throw new AppError(
-      "PDF content is not available",
-      404
-    );
+    throw new AppError("PDF content is not available", 404);
   }
 
   return {
@@ -348,23 +301,13 @@ export async function getPDFFile(
 // UPDATE PDF READING PROGRESS
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function updateReadProgress(
-  studentId,
-  pdfId,
-  progressPercentage
-) {
+export async function updateReadProgress(studentId, pdfId, progressPercentage) {
   if (!studentId) {
-    throw new AppError(
-      "Student account is required",
-      400
-    );
+    throw new AppError("Student account is required", 400);
   }
 
   if (!pdfId) {
-    throw new AppError(
-      "PDF ID is required",
-      400
-    );
+    throw new AppError("PDF ID is required", 400);
   }
 
   // Validate progress
@@ -374,54 +317,43 @@ export async function updateReadProgress(
     progressPercentage < 0 ||
     progressPercentage > 100
   ) {
-    throw new AppError(
-      "Progress must be between 0 and 100",
-      400
-    );
+    throw new AppError("Progress must be between 0 and 100", 400);
   }
 
   // Verify ownership
-  const pdf =
-    await prisma.courseMaterial.findFirst({
-      where: {
-        id: pdfId,
-        uploadedBy: studentId,
-        status: "READY",
-      },
+  const pdf = await prisma.courseMaterial.findFirst({
+    where: {
+      id: pdfId,
+      uploadedBy: studentId,
+      status: "READY",
+    },
 
-      select: {
-        id: true,
-        progress: true,
-      },
-    });
+    select: {
+      id: true,
+      progress: true,
+    },
+  });
 
   if (!pdf) {
-    throw new AppError(
-      "PDF file not found",
-      404
-    );
+    throw new AppError("PDF file not found", 404);
   }
 
   // Progress can only move forward
-  const newProgress = Math.max(
-    pdf.progress,
-    progressPercentage
-  );
+  const newProgress = Math.max(pdf.progress, progressPercentage);
 
-  const updated =
-    await prisma.courseMaterial.update({
-      where: {
-        id: pdfId,
-      },
+  const updated = await prisma.courseMaterial.update({
+    where: {
+      id: pdfId,
+    },
 
-      data: {
-        progress: newProgress,
-      },
+    data: {
+      progress: newProgress,
+    },
 
-      select: {
-        progress: true,
-      },
-    });
+    select: {
+      progress: true,
+    },
+  });
 
   return {
     progress: updated.progress,
@@ -432,43 +364,30 @@ export async function updateReadProgress(
 // DELETE PDF
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function deletePDF(
-  studentId,
-  pdfId
-) {
+export async function deletePDF(studentId, pdfId) {
   if (!studentId) {
-    throw new AppError(
-      "Student account is required",
-      400
-    );
+    throw new AppError("Student account is required", 400);
   }
 
   if (!pdfId) {
-    throw new AppError(
-      "PDF ID is required",
-      400
-    );
+    throw new AppError("PDF ID is required", 400);
   }
 
   // Verify ownership and make sure it hasn't already been deleted
-  const pdf =
-    await prisma.courseMaterial.findFirst({
-      where: {
-        id: pdfId,
-        uploadedBy: studentId,
-        status: "READY",
-      },
+  const pdf = await prisma.courseMaterial.findFirst({
+    where: {
+      id: pdfId,
+      uploadedBy: studentId,
+      status: "READY",
+    },
 
-      select: {
-        id: true,
-      },
-    });
+    select: {
+      id: true,
+    },
+  });
 
   if (!pdf) {
-    throw new AppError(
-      "PDF file not found or already deleted",
-      404
-    );
+    throw new AppError("PDF file not found or already deleted", 404);
   }
 
   // Soft delete:

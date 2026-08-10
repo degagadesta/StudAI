@@ -43,6 +43,13 @@ export async function getAnalytics(studentId) {
       console.error("Error counting events:", err.message);
     }
 
+    let courseProgress = [];
+    try {
+      courseProgress = await getCourseMaterialProgress(studentId);
+    } catch (err) {
+      console.error("Error getting course material progress:", err.message);
+    }
+
     // ── activity tracking ─────────────────────────────────────────────────────
     const now = new Date();
 
@@ -59,6 +66,7 @@ export async function getAnalytics(studentId) {
       enrolledCourses,
       totalPdfsUploaded,
       totalEvents,
+      courseProgress,
       activity: {
         daily: dailyActivity, // Array of 7 days with hours
         weekly: weeklyActivity, // Array of 4 weeks with days
@@ -72,6 +80,7 @@ export async function getAnalytics(studentId) {
       enrolledCourses: 0,
       totalPdfsUploaded: 0,
       totalEvents: 0,
+      courseProgress: [],
       activity: {
         daily: Array.from({ length: 7 }, (_, i) => {
           const date = new Date();
@@ -245,4 +254,46 @@ async function getMonthlyActivity(studentId, now) {
   }
 
   return monthly;
+}
+
+// ── Helper: Get course material progress list ────────────────────────────────
+async function getCourseMaterialProgress(studentId) {
+  const materials = await prisma.courseMaterial.findMany({
+    where: {
+      uploadedBy: studentId,
+      status: "READY",
+    },
+    select: {
+      id: true,
+      title: true,
+      progress: true,
+      createdAt: true,
+      curriculumCourse: {
+        select: {
+          id: true,
+          course: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return materials.map((m) => ({
+    id: m.id,
+    fileName: m.title,
+    uploadDate: m.createdAt,
+    progress: m.progress, // 0-100, drives the progress bar on the frontend
+    courseName: m.curriculumCourse?.course?.title ?? "Unknown course",
+    courseId: m.curriculumCourse?.course?.id ?? null,
+    // Workspace feature isn't built yet — frontend can disable/hide
+    // the "View" button while this is null.
+    workspaceUrl: null,
+  }));
 }

@@ -10,6 +10,7 @@ import examRoutes from "../modules/exam/exam.routes.js";
 import analyticsRoutes from "../modules/analytics/analytics.routes.js";
 import eventRoutes from "../modules/event/event.routes.js";
 import profileRoutes from "../modules/profile/profile.routes.js";
+import activityRoutes from "../modules/activity/activity.routes.js";
 import notificationRoutes from "../modules/notification/notification.routes.js";
 
 const router = Router();
@@ -25,5 +26,6 @@ router.use("/student/exams", examRoutes);
 router.use("/student/analytics", analyticsRoutes);
 router.use("/student/events", eventRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/activity", activityRoutes);
 
 export default router;

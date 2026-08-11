@@ -117,144 +117,265 @@ export async function getAnalytics(studentId) {
 
 // ── Helper: Get daily activity (hours per day for last 7 days) ───────────────
 async function getDailyActivity(studentId, now) {
-  const daily = [];
+  // Calculate date range for last 7 days
+  const endDate = new Date(now);
+  endDate.setHours(23, 59, 59, 999);
 
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(now.getDate() - i);
+  const startDate = new Date(now);
+  startDate.setDate(now.getDate() - 6);
+  startDate.setHours(0, 0, 0, 0);
 
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    let activeHours = 0;
-    try {
-      // Get all sessions for this day
-      const sessions = await prisma.activitySession.findMany({
-        where: {
-          studentId,
-          startedAt: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
+  try {
+    // Single query to get all sessions for the past 7 days
+    const sessions = await prisma.activitySession.findMany({
+      where: {
+        studentId,
+        startedAt: {
+          gte: startDate,
+          lte: endDate,
         },
-        select: {
-          duration: true,
-        },
+      },
+      select: {
+        startedAt: true,
+        duration: true,
+      },
+    });
+
+    // Group sessions by day and calculate hours
+    const dailyMap = new Map();
+
+    // Initialize all 7 days with 0 hours
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const dateKey = date.toISOString().split("T")[0];
+      dailyMap.set(dateKey, {
+        date: dateKey,
+        day: date.toLocaleDateString("en-US", { weekday: "short" }),
+        hours: 0,
       });
-
-      // Sum total duration and convert to hours
-      const totalSeconds = sessions.reduce((sum, s) => sum + s.duration, 0);
-      activeHours = parseFloat((totalSeconds / 3600).toFixed(2)); // Convert to hours with 2 decimals
-    } catch (err) {
-      console.error("Error calculating daily activity:", err.message);
     }
 
-    daily.push({
-      date: startOfDay.toISOString().split("T")[0],
-      day: startOfDay.toLocaleDateString("en-US", { weekday: "short" }),
-      hours: activeHours,
+    // Aggregate durations by day
+    sessions.forEach((session) => {
+      const dateKey = session.startedAt.toISOString().split("T")[0];
+      if (dailyMap.has(dateKey)) {
+        const current = dailyMap.get(dateKey);
+        current.hours += session.duration / 3600; // Convert seconds to hours
+      }
     });
-  }
 
-  return daily;
+    // Convert map to array and format hours
+    const daily = Array.from(dailyMap.values()).map((day) => ({
+      ...day,
+      hours: parseFloat(day.hours.toFixed(2)),
+    }));
+
+    return daily;
+  } catch (err) {
+    console.error("Error calculating daily activity:", err.message);
+    // Return empty array with 0 hours for all days
+    const daily = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(now.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      daily.push({
+        date: date.toISOString().split("T")[0],
+        day: date.toLocaleDateString("en-US", { weekday: "short" }),
+        hours: 0,
+      });
+    }
+    return daily;
+  }
 }
 
 // ── Helper: Get weekly activity (days per week for last 4 weeks) ─────────────
 async function getWeeklyActivity(studentId, now) {
-  const weekly = [];
+  // Calculate date range for last 4 weeks (28 days)
+  const endDate = new Date(now);
+  endDate.setHours(23, 59, 59, 999);
 
-  for (let i = 3; i >= 0; i--) {
-    const endOfWeek = new Date(now);
-    endOfWeek.setDate(now.getDate() - i * 7);
-    endOfWeek.setHours(23, 59, 59, 999);
+  const startDate = new Date(now);
+  startDate.setDate(now.getDate() - 27); // 4 weeks = 28 days, so -27 for inclusive
+  startDate.setHours(0, 0, 0, 0);
 
-    const startOfWeek = new Date(endOfWeek);
-    startOfWeek.setDate(endOfWeek.getDate() - 6);
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    // Get all sessions for this week
-    let uniqueDays = 0;
-    try {
-      const sessions = await prisma.activitySession.findMany({
-        where: {
-          studentId,
-          startedAt: {
-            gte: startOfWeek,
-            lte: endOfWeek,
-          },
+  try {
+    // Single query to get all sessions for the past 4 weeks
+    const sessions = await prisma.activitySession.findMany({
+      where: {
+        studentId,
+        startedAt: {
+          gte: startDate,
+          lte: endDate,
         },
-        select: { startedAt: true },
-      });
+      },
+      select: {
+        startedAt: true,
+      },
+    });
 
-      // Count unique days (how many days user was active)
-      uniqueDays = new Set(
-        sessions.map((session) => session.startedAt.toISOString().split("T")[0])
-      ).size;
-    } catch (err) {
-      console.error("Error getting weekly activity:", err.message);
+    // Create weekly buckets
+    const weekly = [];
+    const weeklyDays = [];
+
+    for (let i = 3; i >= 0; i--) {
+      const endOfWeek = new Date(now);
+      endOfWeek.setDate(now.getDate() - i * 7);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      const startOfWeek = new Date(endOfWeek);
+      startOfWeek.setDate(endOfWeek.getDate() - 6);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      weeklyDays.push({
+        startOfWeek,
+        endOfWeek,
+        weekStart: startOfWeek.toISOString().split("T")[0],
+        weekEnd: endOfWeek.toISOString().split("T")[0],
+        weekLabel: `Week ${4 - i}`,
+        uniqueDays: new Set(),
+      });
     }
 
-    weekly.push({
-      weekStart: startOfWeek.toISOString().split("T")[0],
-      weekEnd: endOfWeek.toISOString().split("T")[0],
-      weekLabel: `Week ${4 - i}`,
-      days: uniqueDays,
-    });
-  }
+    // Distribute sessions into weekly buckets
+    sessions.forEach((session) => {
+      const sessionTime = session.startedAt.getTime();
+      const dateKey = session.startedAt.toISOString().split("T")[0];
 
-  return weekly;
+      for (const week of weeklyDays) {
+        if (
+          sessionTime >= week.startOfWeek.getTime() &&
+          sessionTime <= week.endOfWeek.getTime()
+        ) {
+          week.uniqueDays.add(dateKey);
+          break;
+        }
+      }
+    });
+
+    // Convert to final format
+    return weeklyDays.map((week) => ({
+      weekStart: week.weekStart,
+      weekEnd: week.weekEnd,
+      weekLabel: week.weekLabel,
+      days: week.uniqueDays.size,
+    }));
+  } catch (err) {
+    console.error("Error getting weekly activity:", err.message);
+    // Return empty weeks
+    const weekly = [];
+    for (let i = 3; i >= 0; i--) {
+      const endOfWeek = new Date(now);
+      endOfWeek.setDate(now.getDate() - i * 7);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      const startOfWeek = new Date(endOfWeek);
+      startOfWeek.setDate(endOfWeek.getDate() - 6);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      weekly.push({
+        weekStart: startOfWeek.toISOString().split("T")[0],
+        weekEnd: endOfWeek.toISOString().split("T")[0],
+        weekLabel: `Week ${4 - i}`,
+        days: 0,
+      });
+    }
+    return weekly;
+  }
 }
 
 // ── Helper: Get monthly activity (days per month for last 12 months) ─────────
 async function getMonthlyActivity(studentId, now) {
-  const monthly = [];
+  // Calculate date range for last 12 months
+  const endDate = new Date(now);
+  endDate.setHours(23, 59, 59, 999);
 
-  for (let i = 11; i >= 0; i--) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  startDate.setHours(0, 0, 0, 0);
 
-    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    endOfMonth.setHours(23, 59, 59, 999);
-
-    // Get all sessions for this month
-    let uniqueDays = 0;
-    try {
-      const sessions = await prisma.activitySession.findMany({
-        where: {
-          studentId,
-          startedAt: {
-            gte: startOfMonth,
-            lte: endOfMonth,
-          },
+  try {
+    // Single query to get all sessions for the past 12 months
+    const sessions = await prisma.activitySession.findMany({
+      where: {
+        studentId,
+        startedAt: {
+          gte: startDate,
+          lte: endDate,
         },
-        select: { startedAt: true },
-      });
+      },
+      select: {
+        startedAt: true,
+      },
+    });
 
-      // Count unique days
-      uniqueDays = new Set(
-        sessions.map((session) => session.startedAt.toISOString().split("T")[0])
-      ).size;
-    } catch (err) {
-      console.error("Error getting monthly activity:", err.message);
+    // Create monthly buckets
+    const monthlyBuckets = [];
+
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      endOfMonth.setHours(23, 59, 59, 999);
+
+      monthlyBuckets.push({
+        startOfMonth,
+        endOfMonth,
+        month: startOfMonth.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        }),
+        year: startOfMonth.getFullYear(),
+        monthNumber: startOfMonth.getMonth() + 1,
+        uniqueDays: new Set(),
+      });
     }
 
-    monthly.push({
-      month: startOfMonth.toLocaleDateString("en-US", {
-        month: "short",
-        year: "numeric",
-      }), // Jan 2024
-      year: startOfMonth.getFullYear(),
-      monthNumber: startOfMonth.getMonth() + 1,
-      days: uniqueDays,
-    });
-  }
+    // Distribute sessions into monthly buckets
+    sessions.forEach((session) => {
+      const sessionTime = session.startedAt.getTime();
+      const dateKey = session.startedAt.toISOString().split("T")[0];
 
-  return monthly;
+      for (const bucket of monthlyBuckets) {
+        if (
+          sessionTime >= bucket.startOfMonth.getTime() &&
+          sessionTime <= bucket.endOfMonth.getTime()
+        ) {
+          bucket.uniqueDays.add(dateKey);
+          break;
+        }
+      }
+    });
+
+    // Convert to final format
+    return monthlyBuckets.map((bucket) => ({
+      month: bucket.month,
+      year: bucket.year,
+      monthNumber: bucket.monthNumber,
+      days: bucket.uniqueDays.size,
+    }));
+  } catch (err) {
+    console.error("Error getting monthly activity:", err.message);
+    // Return empty months
+    const monthly = [];
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+      monthly.push({
+        month: startOfMonth.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        }),
+        year: startOfMonth.getFullYear(),
+        monthNumber: startOfMonth.getMonth() + 1,
+        days: 0,
+      });
+    }
+    return monthly;
+  }
 }
 
 // ── Helper: Get course material progress list ────────────────────────────────

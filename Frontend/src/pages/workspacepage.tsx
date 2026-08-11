@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import WorkspaceTopbar from "../components/Workspace/Workspacetopbar";
-import WorkspaceSidebar, {
-  type WorkspaceTab,
-} from "../components/Workspace/Workspacesidebar";
+// import WorkspaceTopbar from "../components/Workspace/Workspacetopbar";
+// import WorkspaceSidebar, {
+//   type WorkspaceTab,
+// } from "../components/Workspace/Workspacesidebar";
 import PdfViewerPage from "./PdfViewerPage";
 import SettingsModal, { type TabType } from "./SettingsModal";
 

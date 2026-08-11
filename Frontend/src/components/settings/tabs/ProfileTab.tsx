@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { Loader2, LogOut, Trash2, Edit, Check } from "lucide-react";
-import type { AcademicProfile } from "../../../api/Coursesapi";
+// import updateAcademicProfile, type { AcademicProfile } from "../../../api/Coursesapi";
+import {
+  updateAcademicProfile,
+  type AcademicProfile,
+} from "../../../api/Coursesapi";
 
 interface ProfileTabProps {
   isLoading: boolean;
@@ -8,8 +12,13 @@ interface ProfileTabProps {
   errorMessage: string | null;
   onLogout: () => void;
   onRequestDelete: () => void;
-  onSaveProfile?: (updatedProfile: AcademicProfile) => Promise<void> | void;
   onEdit?: () => void;
+  onUpdateProfile?: (updates: {
+    firstName: string;
+    lastName: string;
+    currentYear: number;
+    currentSemester: number;
+  }) => Promise<void>;
 }
 
 export default function ProfileTab({
@@ -18,23 +27,39 @@ export default function ProfileTab({
   errorMessage,
   onLogout,
   onRequestDelete,
-  onSaveProfile,
   onEdit,
+  onUpdateProfile,
 }: ProfileTabProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState<AcademicProfile>({
-    fullName: "",
-    university: "",
-    department: "",
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<{
+    firstName: string;
+    lastName: string;
+    year: number;
+    semester: number;
+  }>({
+    firstName: "",
+    lastName: "",
     year: 1,
     semester: 1,
   });
 
   // Sync local form state with incoming profile prop
   useEffect(() => {
+    console.log('[ProfileTab] Profile changed:', profile);
     if (profile) {
-      setFormData(profile);
+      // Parse firstName and lastName from fullName if available
+      const names = profile.fullName?.split(" ") || [];
+      const firstName = profile.firstName || names[0] || "";
+      const lastName = profile.lastName || names.slice(1).join(" ") || "";
+      
+      setFormData({
+        firstName,
+        lastName,
+        year: profile.year || profile.currentYear || 1,
+        semester: profile.semester || profile.currentSemester || 1,
+      });
     }
   }, [profile]);
 
@@ -44,34 +69,67 @@ export default function ProfileTab({
     }
     if (isEditing && profile) {
       // Revert edits if cancelling
-      setFormData(profile);
+      const names = profile.fullName?.split(" ") || [];
+      const firstName = profile.firstName || names[0] || "";
+      const lastName = profile.lastName || names.slice(1).join(" ") || "";
+      
+      setFormData({
+        firstName,
+        lastName,
+        year: profile.year || profile.currentYear || 1,
+        semester: profile.semester || profile.currentSemester || 1,
+      });
     }
     setIsEditing((prev) => !prev);
+    setSaveError(null);
   };
 
   const handleChange = (
-    field: keyof AcademicProfile,
+    field: keyof typeof formData,
     value: string | number,
   ) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+    setSaveError(null);
   };
 
   const handleSave = async () => {
-    if (onSaveProfile) {
-      try {
-        setIsSaving(true);
-        await onSaveProfile(formData);
-        setIsEditing(false); // Only exit edit mode on successful save
-      } catch (error) {
-        console.error("Failed to save profile:", error);
-      } finally {
-        setIsSaving(false);
+    try {
+      setIsSaving(true);
+      setSaveError(null);
+
+      // Call parent's onUpdateProfile which will handle the update and refresh
+      if (onUpdateProfile) {
+        await onUpdateProfile({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          currentYear: formData.year,
+          currentSemester: formData.semester,
+        });
+      } else {
+        // Fallback if no parent handler (shouldn't happen but safety net)
+        const result = await updateAcademicProfile({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          currentYear: formData.year,
+          currentSemester: formData.semester,
+        });
+        
+        if (result.warning) {
+          alert(result.warning);
+        }
       }
-    } else {
+
       setIsEditing(false);
+      console.log("Profile updated successfully");
+    } catch (error: any) {
+      console.error("Failed to update profile:", error);
+      const errorMsg = error?.response?.data?.message || error.message || "Failed to update profile. Please try again.";
+      setSaveError(errorMsg);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -115,20 +173,16 @@ export default function ProfileTab({
             >
               {/* Editable Fields */}
               <EditInputRow
-                label="Full Name"
-                value={formData.fullName}
-                onChange={(val) => handleChange("fullName", val)}
+                label="First Name"
+                value={formData.firstName}
+                onChange={(val) => handleChange("firstName", val)}
               />
               <EditInputRow
-                label="University"
-                value={formData.university}
-                onChange={(val) => handleChange("university", val)}
+                label="Last Name"
+                value={formData.lastName}
+                onChange={(val) => handleChange("lastName", val)}
               />
-              <EditInputRow
-                label="Department"
-                value={formData.department}
-                onChange={(val) => handleChange("department", val)}
-              />
+
               <div className="grid grid-cols-2 gap-3">
                 <EditInputRow
                   label="Year"
@@ -175,18 +229,25 @@ export default function ProfileTab({
                   Cancel
                 </button>
               </div>
+              
+              {/* Error Message */}
+              {saveError && (
+                <div className="p-3 bg-[#FDF2F2] border border-[#E5C3C3] rounded-xl text-xs text-[#8A3A3A]">
+                  {saveError}
+                </div>
+              )}
             </form>
           ) : (
             <>
               {/* Read-Only Display */}
-              <InfoRow label="Full Name" value={profile.fullName} />
+              <InfoRow label="Full Name" value={profile.fullName || `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || '—'} />
               <InfoRow label="University" value={profile.university} />
               <InfoRow label="Department" value={profile.department} />
               <div className="grid grid-cols-2 gap-3">
-                <InfoRow label="Year" value={`Year ${profile.year}`} />
+                <InfoRow label="Year" value={`Year ${profile.year || profile.currentYear || 1}`} />
                 <InfoRow
                   label="Semester"
-                  value={`Semester ${profile.semester}`}
+                  value={`Semester ${profile.semester || profile.currentSemester || 1}`}
                 />
               </div>
             </>

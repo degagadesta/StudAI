@@ -1,12 +1,17 @@
 import { api } from "./client";
 
 export interface AcademicProfile {
-  fullName: string;
+  fullName?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
   university: string;
   department: string;
-  subscriptionPlan: "FREE" | "STANDARD" | "PRO";
+  subscriptionPlan?: "FREE" | "STANDARD" | "PRO";
   year: number;
   semester: number;
+  currentYear?: number;
+  currentSemester?: number;
 }
 
 export interface CoursePdf {
@@ -31,30 +36,51 @@ export interface Course {
 }
 
 export async function getAcademicProfile(): Promise<AcademicProfile> {
-  const res = await api.get<{ success: boolean; data: AcademicProfile }>(
+  const res = await api.get<{ 
+    success: boolean; 
+    data: {
+      fullName: string;
+      university: string;
+      department: string;
+      year: number;
+      semester: number;
+    }
+  }>(
     "/academic-profile",
   );
-  return res.data.data;
+  
+  console.log('[Coursesapi] getAcademicProfile response:', res.data);
+  
+  // Transform backend response to match frontend interface
+  return {
+    fullName: res.data.data.fullName,
+    university: res.data.data.university,
+    department: res.data.data.department,
+    year: res.data.data.year,
+    semester: res.data.data.semester,
+    currentYear: res.data.data.year,
+    currentSemester: res.data.data.semester,
+  };
 }
 
 export async function getCourses(searchQuery?: string): Promise<Course[]> {
   const params = searchQuery ? { search: searchQuery } : {};
   const res = await api.get<{ success: boolean; data: Course[] }>(
     "/student/courses",
-    { params }
+    { params },
   );
   // Ensure pdfs array exists and pdfCount is set
-  return res.data.data.map(course => ({
+  return res.data.data.map((course) => ({
     ...course,
     pdfs: course.pdfs || [],
-    pdfCount: course.pdfCount || (course.pdfs || []).length
+    pdfCount: course.pdfCount || (course.pdfs || []).length,
   }));
 }
 export async function getAllCourses(searchQuery?: string): Promise<Course[]> {
   const params = searchQuery ? { search: searchQuery } : {};
   const res = await api.get<{ success: boolean; data: Course[] }>(
     "/getAllNotes/student/courses",
-    { params }
+    { params },
   );
   return res.data.data;
 }
@@ -115,12 +141,43 @@ export async function createCourse(curriculumCourseId: string): Promise<void> {
   await addCourseSelection(curriculumCourseId);
 }
 
-export async function updateAcademicProfile(
-  profileData: Partial<AcademicProfile>,
-): Promise<AcademicProfile> {
-  const res = await api.put<{ success: boolean; data: AcademicProfile }>(
-    "/edit-profile",
-    profileData,
+export async function updateAcademicProfile(updates: {
+  firstName?: string;
+  lastName?: string;
+  currentYear?: number;
+  currentSemester?: number;
+}): Promise<{
+  profile: AcademicProfile;
+  warning?: string;
+}> {
+  const res = await api.patch<{ 
+    success: boolean; 
+    message: string;
+    data: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      currentYear?: number;
+      currentSemester?: number;
+      curriculumId?: string;
+      courseSelectionsCleared?: boolean;
+    }
+  }>(
+    "/academic-profile/profileUpdate",
+    updates,
   );
-  return res.data.data;
+  
+  // After update, fetch the full profile again to get all data
+  const updatedProfile = await getAcademicProfile();
+  
+  // Check if course selections were cleared
+  const warning = res.data.data.courseSelectionsCleared
+    ? "Year or semester changed. Your previous course selections have been cleared. Please select courses for your new academic period."
+    : undefined;
+  
+  return {
+    profile: updatedProfile,
+    warning,
+  };
 }

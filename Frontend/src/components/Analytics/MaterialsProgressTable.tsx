@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import type { MaterialProgressRow } from "../../api/AnalyticsApi";
 
 export default function MaterialsProgressTable({
-  rows,
+  rows = [],
   page,
   totalPages,
   onPageChange,

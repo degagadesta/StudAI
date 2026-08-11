@@ -160,6 +160,10 @@ export default function CoursesPage() {
 
       // Refresh enrolled list from server
       await fetchEnrolledCourses();
+      
+      // Refresh catalog to update isEnrolled status
+      const catalogData = await getAvailableCourses(searchQuery);
+      setDepartmentCatalog(catalogData || []);
 
       setSuccessMessage(`Successfully enrolled in "${catalogCourse.name}"!`);
       setTimeout(() => setSuccessMessage(null), 3500);

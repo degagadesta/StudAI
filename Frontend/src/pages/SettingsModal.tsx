@@ -5,6 +5,7 @@ import {
   getCourses,
   addCourseSelection,
   dropCourseSelection,
+  updateAcademicProfile,
   type AcademicProfile,
   type Course,
 } from "../api/Coursesapi";
@@ -66,12 +67,17 @@ export default function SettingsModal({
   }, [isOpen, activeTab]);
 
   const loadProfile = async () => {
+    console.log('[SettingsModal] Loading profile...');
     setIsLoadingProfile(true);
     setErrorMessage(null);
     try {
       const data = await getAcademicProfile();
+      console.log('[SettingsModal] Profile loaded:', data);
       setProfile(data);
-      setCurrentPlan(data.subscriptionPlan.toLowerCase() as SubscriptionTier);
+      // Set subscription plan if available in the profile
+      if (data.subscriptionPlan) {
+        setCurrentPlan(data.subscriptionPlan.toLowerCase() as SubscriptionTier);
+      }
     } catch (err: any) {
       console.error("Error loading academic profile:", err);
       setErrorMessage(
@@ -126,35 +132,61 @@ export default function SettingsModal({
   const handleUpdateProfile = async (updates: {
     firstName: string;
     lastName: string;
-  }) => {
-    await updateBasicInfo(updates);
-    await loadProfile(); // Refresh profile
-  };
-
-  const handleUpdateAcademic = async (updates: {
     currentYear: number;
     currentSemester: number;
   }) => {
-    const result = await updateAcademicInfo(updates);
-    await loadProfile(); // Refresh profile
-    await loadCourses(); // Refresh courses as they may have changed
+    try {
+      console.log('[SettingsModal] Updating profile with:', updates);
+      const result = await updateAcademicProfile(updates);
+      console.log('[SettingsModal] Update result:', result);
+      
+      await loadProfile(); // Refresh profile
+      
+      // Refresh courses if on course tab (they may have changed if year/semester changed)
+      if (activeTab === "course") {
+        await loadCourses();
+      }
 
-    // Show warning if course selections were cleared
-    if (result.warning) {
-      alert(result.warning);
+      // Show warning if course selections were cleared
+      if (result.warning) {
+        alert(result.warning);
+      }
+    } catch (error: any) {
+      console.error("Failed to update profile:", error);
+      throw error; // Re-throw to let ProfileTab handle the error
     }
   };
 
   const handleAddCourse = async (curriculumCourseId: string) => {
-    const result = await addCourseSelection(curriculumCourseId);
-    console.log("Course added:", result.message);
+    try {
+      const result = await addCourseSelection(curriculumCourseId);
+      console.log("Course added:", result.message);
+      // Refresh courses to show the newly added course
+      await loadCourses();
+    } catch (error: any) {
+      console.error("Failed to add course:", error);
+      const errorMsg = error?.response?.data?.message || "Failed to add course";
+      alert(errorMsg);
+      throw error; // Re-throw so AddCourseModal knows it failed
+    }
   };
 
   const handleRemoveCourse = async (curriculumCourseId: string) => {
-    const result = await dropCourseSelection(curriculumCourseId);
-    console.log("Course removed:", result.message);
-    if (result.warning) {
-      alert(result.warning);
+    try {
+      const result = await dropCourseSelection(curriculumCourseId);
+      console.log("Course removed:", result.message);
+      // Refresh courses to update the list
+      await loadCourses();
+      
+      // Show warning about deleted PDFs if any
+      if (result.data.deletedPDFs > 0) {
+        alert(`Course dropped successfully. ${result.data.deletedPDFs} PDF${result.data.deletedPDFs > 1 ? 's' : ''} deleted.`);
+      }
+    } catch (error: any) {
+      console.error("Failed to remove course:", error);
+      const errorMsg = error?.response?.data?.message || "Failed to remove course";
+      alert(errorMsg);
+      throw error; // Re-throw so CourseTab knows it failed
     }
   };
 
@@ -183,7 +215,6 @@ export default function SettingsModal({
                 onLogout={handleLogout}
                 onRequestDelete={() => setShowDeleteConfirm(true)}
                 onUpdateProfile={handleUpdateProfile}
-                onUpdateAcademic={handleUpdateAcademic}
               />
             )}
 

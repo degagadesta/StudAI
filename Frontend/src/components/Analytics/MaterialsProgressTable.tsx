@@ -3,6 +3,8 @@ import { Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { MaterialProgressRow } from "../../api/AnalyticsApi";
 
+const PAGE_SIZE = 10;
+
 export default function MaterialsProgressTable({
   rows = [],
   page,
@@ -45,7 +47,7 @@ export default function MaterialsProgressTable({
               {rows.map((row, i) => (
                 <tr key={row.id} className="border-t border-[#EFE8D4]">
                   <td className="py-2.5 text-muted font-mono text-xs">
-                    {(page - 1) * rows.length + i + 1}
+                    {(page - 1) * PAGE_SIZE + i + 1}
                   </td>
                   <td className="py-2.5 text-primary font-medium truncate max-w-[220px]">
                     {row.fileName}
@@ -86,11 +88,10 @@ export default function MaterialsProgressTable({
                 <button
                   key={p}
                   onClick={() => onPageChange(p)}
-                  className={`w-7 h-7 rounded-lg text-xs font-mono transition-colors ${
-                    p === page
-                      ? "bg-accent text-inverse"
-                      : "text-secondary hover:bg-surface-hover"
-                  }`}
+                  className={`w-7 h-7 rounded-lg text-xs font-mono transition-colors ${p === page
+                    ? "bg-accent text-inverse"
+                    : "text-secondary hover:bg-surface-hover"
+                    }`}
                 >
                   {p}
                 </button>

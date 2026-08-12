@@ -35,22 +35,22 @@ export interface Course {
   isEnrolled?: boolean; // only present on catalog results
 }
 
+
+
 export async function getAcademicProfile(): Promise<AcademicProfile> {
-  const res = await api.get<{ 
-    success: boolean; 
+  const res = await api.get<{
+    success: boolean;
     data: {
       fullName: string;
       university: string;
       department: string;
       year: number;
       semester: number;
-    }
-  }>(
-    "/academic-profile",
-  );
-  
-  console.log('[Coursesapi] getAcademicProfile response:', res.data);
-  
+    };
+  }>("/academic-profile");
+
+  console.log("[Coursesapi] getAcademicProfile response:", res.data);
+
   // Transform backend response to match frontend interface
   return {
     fullName: res.data.data.fullName,
@@ -150,8 +150,8 @@ export async function updateAcademicProfile(updates: {
   profile: AcademicProfile;
   warning?: string;
 }> {
-  const res = await api.patch<{ 
-    success: boolean; 
+  const res = await api.patch<{
+    success: boolean;
     message: string;
     data: {
       id: string;
@@ -162,20 +162,17 @@ export async function updateAcademicProfile(updates: {
       currentSemester?: number;
       curriculumId?: string;
       courseSelectionsCleared?: boolean;
-    }
-  }>(
-    "/academic-profile/profileUpdate",
-    updates,
-  );
-  
+    };
+  }>("/academic-profile/profileUpdate", updates);
+
   // After update, fetch the full profile again to get all data
   const updatedProfile = await getAcademicProfile();
-  
+
   // Check if course selections were cleared
   const warning = res.data.data.courseSelectionsCleared
     ? "Year or semester changed. Your previous course selections have been cleared. Please select courses for your new academic period."
     : undefined;
-  
+
   return {
     profile: updatedProfile,
     warning,

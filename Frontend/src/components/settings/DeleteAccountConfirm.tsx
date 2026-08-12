@@ -1,16 +1,33 @@
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, Loader2, Lock } from "lucide-react";
 
 interface DeleteAccountConfirmProps {
   isDeleting: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (password?: string) => void;
+  requirePassword?: boolean; // If true, show password input
 }
 
 export default function DeleteAccountConfirm({
   isDeleting,
   onCancel,
   onConfirm,
+  requirePassword = false,
 }: DeleteAccountConfirmProps) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConfirm = () => {
+    // Validate password if required
+    if (requirePassword && !password.trim()) {
+      setError("Password is required to delete your account");
+      return;
+    }
+
+    setError(null);
+    onConfirm(requirePassword ? password : undefined);
+  };
+
   return (
     <div className="absolute inset-0 bg-accent/60 backdrop-blur-xs flex items-center justify-center p-6 z-20">
       <div className="bg-surface border border-[#E5C3C3] p-6 rounded-2xl max-w-md w-full shadow-2xl text-center space-y-4 animate-in fade-in zoom-in duration-150">
@@ -26,20 +43,46 @@ export default function DeleteAccountConfirm({
           </p>
         </div>
 
+        {requirePassword && (
+          <div className="pt-2">
+            <div className="relative">
+              <Lock
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null);
+                }}
+                placeholder="Enter your password to confirm"
+                className="w-full pl-10 pr-4 py-2.5 bg-page border border-default rounded-xl text-sm text-primary placeholder:text-muted focus:outline-none focus:border-[#8A3A3A]"
+                disabled={isDeleting}
+                autoFocus
+              />
+            </div>
+            {error && (
+              <p className="text-xs text-[#8A3A3A] mt-2 text-left">{error}</p>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-center gap-3 pt-2">
           <button
             type="button"
             disabled={isDeleting}
             onClick={onCancel}
-            className="px-4 py-2 border border-default text-primary hover:bg-surface-hover text-xs font-medium rounded-xl transition-colors cursor-pointer"
+            className="px-4 py-2 border border-default text-primary hover:bg-surface-hover text-xs font-medium rounded-xl transition-colors cursor-pointer disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="button"
             disabled={isDeleting}
-            onClick={onConfirm}
-            className="px-4 py-2 bg-[#8A3A3A] hover:bg-[#722F2F] text-[#FFFDF7] text-xs font-medium rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+            onClick={handleConfirm}
+            className="px-4 py-2 bg-[#8A3A3A] hover:bg-[#722F2F] text-[#FFFDF7] text-xs font-medium rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
           >
             {isDeleting && <Loader2 size={14} className="animate-spin" />}
             Confirm Delete

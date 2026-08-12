@@ -9,7 +9,7 @@ import {
   type AcademicProfile,
   type Course,
 } from "../api/Coursesapi";
-// import { updateBasicInfo, updateAcademicInfo } from "../api/studentApi";
+import { deleteAccount } from "../api/authApi";
 import SettingsSidebar from "../components/settings/SettingsSidebar";
 import DeleteAccountConfirm from "../components/settings/DeleteAccountConfirm";
 import ProfileTab from "../components/settings/tabs/ProfileTab";
@@ -43,6 +43,8 @@ export default function SettingsModal({
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [requirePassword, setRequirePassword] = useState(false);
 
   // Plan
   const [currentPlan, setCurrentPlan] = useState<SubscriptionTier>("free");
@@ -78,6 +80,12 @@ export default function SettingsModal({
       if (data.subscriptionPlan) {
         setCurrentPlan(data.subscriptionPlan.toLowerCase() as SubscriptionTier);
       }
+      
+      // Determine if password is required for account deletion
+      // If user has Google sign-in only, password is not required
+      // This would need to be part of the profile response from backend
+      // For now, we'll assume password is required unless specified otherwise
+      setRequirePassword(true);
     } catch (err: any) {
       console.error("Error loading academic profile:", err);
       setErrorMessage(
@@ -116,16 +124,31 @@ export default function SettingsModal({
     }
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (password?: string) => {
     setIsDeleting(true);
+    setDeleteError(null);
+    
     try {
-      if (onDeleteAccount) await onDeleteAccount();
+      await deleteAccount(password);
+      
+      // Account deleted successfully
+      // Close modal and redirect to login
       onClose();
-    } catch (error) {
+      
+      // Clear any remaining local storage
+      localStorage.clear();
+      
+      // Redirect to login page
+      window.location.href = "/login";
+    } catch (error: any) {
       console.error("Failed to delete account:", error);
+      const errorMsg = error?.response?.data?.message || 
+                      error?.response?.data?.error ||
+                      "Failed to delete account. Please try again.";
+      setDeleteError(errorMsg);
+      alert(errorMsg);
     } finally {
       setIsDeleting(false);
-      setShowDeleteConfirm(false);
     }
   };
 
@@ -254,7 +277,11 @@ export default function SettingsModal({
         {showDeleteConfirm && (
           <DeleteAccountConfirm
             isDeleting={isDeleting}
-            onCancel={() => setShowDeleteConfirm(false)}
+            requirePassword={requirePassword}
+            onCancel={() => {
+              setShowDeleteConfirm(false);
+              setDeleteError(null);
+            }}
             onConfirm={handleConfirmDelete}
           />
         )}

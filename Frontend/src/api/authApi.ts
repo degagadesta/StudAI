@@ -341,6 +341,37 @@ export async function checkProfile(): Promise<{ hasProfile: boolean }> {
 }
 
 /**
+ * Delete user account permanently
+ * Requires password for non-Google users
+ * Backend will clear tokens and delete all user data
+ */
+export async function deleteAccount(password?: string): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  try {
+    const res = await api.delete<{
+      success: boolean;
+      message: string;
+    }>("/auth/account", {
+      data: {
+        password,
+        confirmDelete: true,
+      },
+    });
+
+    // Clear tokens after successful deletion
+    clearTokens();
+
+    return res.data;
+  } catch (error) {
+    // Clear tokens even if deletion fails (for security)
+    clearTokens();
+    throw error;
+  }
+}
+
+/**
  * Pulls a user-safe message out of an error or axios error
  */
 export function getApiErrorMessage(

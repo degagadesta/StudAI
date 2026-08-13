@@ -117,13 +117,35 @@ export async function getAnalytics(studentId) {
 
 // ── Helper: Get daily activity (hours per day for last 7 days) ───────────────
 async function getDailyActivity(studentId, now) {
-  // Calculate date range for last 7 days
+  // All date arithmetic done in UTC so keys match session.startedAt.toISOString()
   const endDate = new Date(now);
-  endDate.setHours(23, 59, 59, 999);
+  endDate.setUTCHours(23, 59, 59, 999);
 
   const startDate = new Date(now);
-  startDate.setDate(now.getDate() - 6);
-  startDate.setHours(0, 0, 0, 0);
+  startDate.setUTCDate(now.getUTCDate() - 6);
+  startDate.setUTCHours(0, 0, 0, 0);
+
+  // Reusable UTC day-name formatter
+  const dayFormatter = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    timeZone: "UTC",
+  });
+
+  // Build 7-day map using UTC date strings as keys
+  function buildDailyMap() {
+    const map = new Map();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now);
+      date.setUTCDate(now.getUTCDate() - i);
+      const dateKey = date.toISOString().split("T")[0]; // pure UTC date
+      map.set(dateKey, {
+        date: dateKey,
+        day: dayFormatter.format(date),
+        hours: 0,
+      });
+    }
+    return map;
+  }
 
   try {
     // Only closed sessions have a fully accurate duration
@@ -136,21 +158,9 @@ async function getDailyActivity(studentId, now) {
       select: { startedAt: true, duration: true },
     });
 
-    // Initialize all 7 days with 0 hours
-    const dailyMap = new Map();
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(now.getDate() - i);
-      date.setHours(0, 0, 0, 0);
-      const dateKey = date.toISOString().split("T")[0];
-      dailyMap.set(dateKey, {
-        date: dateKey,
-        day: date.toLocaleDateString("en-US", { weekday: "short" }),
-        hours: 0,
-      });
-    }
+    const dailyMap = buildDailyMap();
 
-    // Sum closed session durations by day
+    // Sum closed session durations — startedAt.toISOString() is UTC, matches map keys
     sessions.forEach((session) => {
       const dateKey = session.startedAt.toISOString().split("T")[0];
       if (dailyMap.has(dateKey)) {
@@ -158,8 +168,7 @@ async function getDailyActivity(studentId, now) {
       }
     });
 
-    // Add the currently active session's running duration to today
-    // The heartbeat keeps `duration` fresh, so this is at most 2 min behind
+    // Add active session's running duration to today (UTC date)
     const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
     const activeSession = await prisma.activitySession.findFirst({
       where: {
@@ -171,7 +180,7 @@ async function getDailyActivity(studentId, now) {
     });
 
     if (activeSession) {
-      const todayKey = now.toISOString().split("T")[0];
+      const todayKey = now.toISOString().split("T")[0]; // UTC date — matches map key
       if (dailyMap.has(todayKey)) {
         dailyMap.get(todayKey).hours += activeSession.duration / 3600;
       }
@@ -183,15 +192,13 @@ async function getDailyActivity(studentId, now) {
     }));
   } catch (err) {
     console.error("Error calculating daily activity:", err.message);
-    // Return empty array with 0 hours for all days
     const daily = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now);
-      date.setDate(now.getDate() - i);
-      date.setHours(0, 0, 0, 0);
+      date.setUTCDate(now.getUTCDate() - i);
       daily.push({
         date: date.toISOString().split("T")[0],
-        day: date.toLocaleDateString("en-US", { weekday: "short" }),
+        day: dayFormatter.format(date),
         hours: 0,
       });
     }

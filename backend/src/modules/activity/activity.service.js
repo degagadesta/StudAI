@@ -83,17 +83,21 @@ export async function updateSessionActivity(sessionId) {
         throw new AppError("Session expired due to inactivity", 410);
     }
 
-    // Update lastActiveAt
+    // Update lastActiveAt AND running duration so analytics always has a fresh value
+    const duration = calculateSessionDuration(session.startedAt, now, now);
+
     const updated = await prisma.activitySession.update({
         where: { id: sessionId },
         data: {
             lastActiveAt: now,
+            duration,
         },
     });
 
     return {
         sessionId: updated.id,
         lastActiveAt: updated.lastActiveAt,
+        duration: updated.duration,
     };
 }
 

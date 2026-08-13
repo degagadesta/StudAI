@@ -28,7 +28,7 @@ export async function getAnalytics(studentId) {
     }
 
     const totalPdfsUploaded = await prisma.courseMaterial.count({
-      where: { uploadedBy: studentId, status: "READY" },
+      where: { uploadedBy: studentId }, // all uploads including deleted
     });
 
     // ── total events saved ────────────────────────────────────────────────────
@@ -126,25 +126,18 @@ async function getDailyActivity(studentId, now) {
   startDate.setHours(0, 0, 0, 0);
 
   try {
-    // Single query to get all sessions for the past 7 days
+    // Only closed sessions have a fully accurate duration
     const sessions = await prisma.activitySession.findMany({
       where: {
         studentId,
-        startedAt: {
-          gte: startDate,
-          lte: endDate,
-        },
+        startedAt: { gte: startDate, lte: endDate },
+        endedAt: { not: null },
       },
-      select: {
-        startedAt: true,
-        duration: true,
-      },
+      select: { startedAt: true, duration: true },
     });
 
-    // Group sessions by day and calculate hours
-    const dailyMap = new Map();
-
     // Initialize all 7 days with 0 hours
+    const dailyMap = new Map();
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(now.getDate() - i);
@@ -157,22 +150,37 @@ async function getDailyActivity(studentId, now) {
       });
     }
 
-    // Aggregate durations by day
+    // Sum closed session durations by day
     sessions.forEach((session) => {
       const dateKey = session.startedAt.toISOString().split("T")[0];
       if (dailyMap.has(dateKey)) {
-        const current = dailyMap.get(dateKey);
-        current.hours += session.duration / 3600; // Convert seconds to hours
+        dailyMap.get(dateKey).hours += session.duration / 3600;
       }
     });
 
-    // Convert map to array and format hours
-    const daily = Array.from(dailyMap.values()).map((day) => ({
+    // Add the currently active session's running duration to today
+    // The heartbeat keeps `duration` fresh, so this is at most 2 min behind
+    const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+    const activeSession = await prisma.activitySession.findFirst({
+      where: {
+        studentId,
+        endedAt: null,
+        lastActiveAt: { gte: new Date(now.getTime() - SESSION_TIMEOUT_MS) },
+      },
+      select: { startedAt: true, duration: true },
+    });
+
+    if (activeSession) {
+      const todayKey = now.toISOString().split("T")[0];
+      if (dailyMap.has(todayKey)) {
+        dailyMap.get(todayKey).hours += activeSession.duration / 3600;
+      }
+    }
+
+    return Array.from(dailyMap.values()).map((day) => ({
       ...day,
       hours: parseFloat(day.hours.toFixed(2)),
     }));
-
-    return daily;
   } catch (err) {
     console.error("Error calculating daily activity:", err.message);
     // Return empty array with 0 hours for all days
@@ -202,24 +210,16 @@ async function getWeeklyActivity(studentId, now) {
   startDate.setHours(0, 0, 0, 0);
 
   try {
-    // Single query to get all sessions for the past 4 weeks
+    // ActivitySession: one session per login — count distinct days per week
     const sessions = await prisma.activitySession.findMany({
       where: {
         studentId,
-        startedAt: {
-          gte: startDate,
-          lte: endDate,
-        },
+        startedAt: { gte: startDate, lte: endDate },
       },
-      select: {
-        startedAt: true,
-      },
+      select: { startedAt: true },
     });
 
-    // Create weekly buckets
-    const weekly = [];
     const weeklyDays = [];
-
     for (let i = 3; i >= 0; i--) {
       const endOfWeek = new Date(now);
       endOfWeek.setDate(now.getDate() - i * 7);
@@ -239,23 +239,18 @@ async function getWeeklyActivity(studentId, now) {
       });
     }
 
-    // Distribute sessions into weekly buckets
+    // Each unique date a session started = one active day in that week
     sessions.forEach((session) => {
       const sessionTime = session.startedAt.getTime();
       const dateKey = session.startedAt.toISOString().split("T")[0];
-
       for (const week of weeklyDays) {
-        if (
-          sessionTime >= week.startOfWeek.getTime() &&
-          sessionTime <= week.endOfWeek.getTime()
-        ) {
+        if (sessionTime >= week.startOfWeek.getTime() && sessionTime <= week.endOfWeek.getTime()) {
           week.uniqueDays.add(dateKey);
           break;
         }
       }
     });
 
-    // Convert to final format
     return weeklyDays.map((week) => ({
       weekStart: week.weekStart,
       weekEnd: week.weekEnd,
@@ -296,23 +291,16 @@ async function getMonthlyActivity(studentId, now) {
   startDate.setHours(0, 0, 0, 0);
 
   try {
-    // Single query to get all sessions for the past 12 months
+    // ActivitySession: one session per login — count distinct days per month
     const sessions = await prisma.activitySession.findMany({
       where: {
         studentId,
-        startedAt: {
-          gte: startDate,
-          lte: endDate,
-        },
+        startedAt: { gte: startDate, lte: endDate },
       },
-      select: {
-        startedAt: true,
-      },
+      select: { startedAt: true },
     });
 
-    // Create monthly buckets
     const monthlyBuckets = [];
-
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -324,33 +312,25 @@ async function getMonthlyActivity(studentId, now) {
       monthlyBuckets.push({
         startOfMonth,
         endOfMonth,
-        month: startOfMonth.toLocaleDateString("en-US", {
-          month: "short",
-          year: "numeric",
-        }),
+        month: startOfMonth.toLocaleDateString("en-US", { month: "short", year: "numeric" }),
         year: startOfMonth.getFullYear(),
         monthNumber: startOfMonth.getMonth() + 1,
         uniqueDays: new Set(),
       });
     }
 
-    // Distribute sessions into monthly buckets
+    // Each unique date a session started = one active day in that month
     sessions.forEach((session) => {
       const sessionTime = session.startedAt.getTime();
       const dateKey = session.startedAt.toISOString().split("T")[0];
-
       for (const bucket of monthlyBuckets) {
-        if (
-          sessionTime >= bucket.startOfMonth.getTime() &&
-          sessionTime <= bucket.endOfMonth.getTime()
-        ) {
+        if (sessionTime >= bucket.startOfMonth.getTime() && sessionTime <= bucket.endOfMonth.getTime()) {
           bucket.uniqueDays.add(dateKey);
           break;
         }
       }
     });
 
-    // Convert to final format
     return monthlyBuckets.map((bucket) => ({
       month: bucket.month,
       year: bucket.year,

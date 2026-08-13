@@ -79,7 +79,29 @@ model CurriculumCourse {
 
 enum subscriptionPlan {
   FREE
+  STANDARD
   PRO
+}
+
+enum UsageFeature {
+  SUMMARY
+  FLASHCARDS
+  CHAT_MESSAGE
+}
+
+model UsageLog {
+  id          String       @id @default(uuid())
+  student     Student      @relation(fields: [studentId], references: [id])
+  studentId   String
+  feature     UsageFeature
+  materialId  String?
+  model       String?
+  inputTokens Int?
+  outputTokens Int?
+  totalTokens Int?
+  createdAt   DateTime     @default(now())
+
+  @@index([studentId, feature, createdAt])
 }
 
 model Student {
@@ -113,6 +135,8 @@ model Student {
   activityLogs          ActivityLog[]
   activitySessions      ActivitySession[]
   subscriptionPlan      subscriptionPlan  @default(FREE)
+
+  UsageLog UsageLog[]
 }
 
 model StudentProfile {
@@ -180,8 +204,12 @@ model MaterialChunk {
   materialId String
   content    String
   page       Int?
+  chunkIndex Int            @default(0)  // stable ordering, for neighbor expansion
+  tokenCount Int?                        // computed once at processing time
+  embedding  Float[]
 
   @@index([materialId])
+  @@index([materialId, chunkIndex])
 }
 
 // ---------- Notes ----------

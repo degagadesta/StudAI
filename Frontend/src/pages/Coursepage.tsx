@@ -1,5 +1,5 @@
 import { useState, useEffect, type MouseEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   X,
   BookOpen,
@@ -22,6 +22,7 @@ import { getMaterials, type Material } from "../api/Materialsapi";
 import { getApiErrorMessage } from "../api/authApi";
 
 export default function CoursesPage() {
+  const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +59,17 @@ export default function CoursesPage() {
   useEffect(() => {
     fetchEnrolledCourses();
   }, []);
+
+  // Handle navigation from search results
+  useEffect(() => {
+    const state = location.state as { selectedCourse?: Course };
+    if (state?.selectedCourse) {
+      // Auto-select the course from search results
+      handleSelectCourse(state.selectedCourse);
+      // Clear the state so it doesn't persist on page refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Open modal — actual catalog fetch happens in the debounced effect below
   const handleOpenAddModal = () => {

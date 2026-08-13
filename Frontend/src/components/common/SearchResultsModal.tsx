@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { X, BookOpen, FileText, Loader2, Search as SearchIcon } from "lucide-react";
 import { getCourses, type Course } from "../../api/Coursesapi";
 import { getMaterials, type Material } from "../../api/Materialsapi";
@@ -10,6 +10,7 @@ interface SearchResultsModalProps {
 }
 
 export default function SearchResultsModal({ query, onClose }: SearchResultsModalProps) {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +51,12 @@ export default function SearchResultsModal({ query, onClose }: SearchResultsModa
     const timer = setTimeout(searchData, 300); // Debounce
     return () => clearTimeout(timer);
   }, [query]);
+
+  const handleCourseClick = (course: Course) => {
+    onClose();
+    // Navigate to courses page with the selected course in state
+    navigate("/app/courses", { state: { selectedCourse: course } });
+  };
 
   const hasResults = courses.length > 0 || materials.length > 0;
 
@@ -108,11 +115,11 @@ export default function SearchResultsModal({ query, onClose }: SearchResultsModa
                   </h4>
                   <div className="space-y-2">
                     {courses.map((course) => (
-                      <Link
+                      <button
                         key={course.id}
-                        to="/app/courses"
-                        onClick={onClose}
-                        className="flex items-center gap-3 p-3 bg-surface-hover border border-default rounded-xl hover:border-accent transition-colors group"
+                        type="button"
+                        onClick={() => handleCourseClick(course)}
+                        className="w-full flex items-center gap-3 p-3 bg-surface-hover border border-default rounded-xl hover:border-accent transition-colors group cursor-pointer text-left"
                       >
                         <div className="w-10 h-10 rounded-lg bg-elevated group-hover:bg-accent/10 flex items-center justify-center shrink-0 transition-colors">
                           <BookOpen size={18} className="text-accent" />
@@ -130,7 +137,7 @@ export default function SearchResultsModal({ query, onClose }: SearchResultsModa
                             )}
                           </div>
                         </div>
-                      </Link>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -146,7 +153,7 @@ export default function SearchResultsModal({ query, onClose }: SearchResultsModa
                     {materials.slice(0, 10).map((material) => (
                       <Link
                         key={material.id}
-                        to={`/app/workspace/${material.id}`}
+                        to={`/workspace/${material.id}`}
                         onClick={onClose}
                         className="flex items-center gap-3 p-3 bg-surface-hover border border-default rounded-xl hover:border-accent transition-colors group"
                       >

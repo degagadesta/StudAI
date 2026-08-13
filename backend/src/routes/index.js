@@ -12,8 +12,11 @@ import eventRoutes from "../modules/event/event.routes.js";
 import profileRoutes from "../modules/profile/profile.routes.js";
 import activityRoutes from "../modules/activity/activity.routes.js";
 import notificationRoutes from "../modules/notification/notification.routes.js";
+
 import highlightRoutes from "../modules/highlight/highlight.routes.js";
 import noteRoutes from "../modules/note/note.routes.js";
+import aiRoutes from "../modules/ai/ai.routes.js";
+import usageRoutes from "../modules/usage/usage.routes.js";
 
 const router = Router();
 router.use("/student/onboarding", onboardingRoutes);
@@ -31,5 +34,7 @@ router.use("/notifications", notificationRoutes);
 router.use("/activity", activityRoutes);
 router.use("/student", highlightRoutes);
 router.use("/student", noteRoutes);
+router.use("/student/ai", aiRoutes);
+router.use("/student/usage", usageRoutes);
 
 export default router;

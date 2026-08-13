@@ -17,6 +17,7 @@ import {
   validateResetPassword,
   validateRefreshToken,
 } from "./auth.validation.js";
+import { startOrResumeSession } from "../activity/activity.service.js";
 
 const googleClient = new OAuth2Client(env.googleClientId);
 
@@ -212,9 +213,13 @@ export async function login({ email, password }) {
     },
   });
 
+  // Create or resume an activity session so daily hours tracking starts immediately
+  const session = await startOrResumeSession(student.id);
+
   return {
     accessToken,
     refreshToken, // Return refreshToken to be set as cookie
+    sessionId: session.sessionId, // Frontend uses this for heartbeat calls
     student: {
       id: student.id,
       firstName: student.firstName,
@@ -329,9 +334,13 @@ export async function googleSignIn(idToken) {
     },
   });
 
+  // Create or resume an activity session — same as email/password login
+  const session = await startOrResumeSession(student.id);
+
   return {
     accessToken,
     refreshToken,
+    sessionId: session.sessionId,
     student: {
       id: student.id,
       firstName: student.firstName,

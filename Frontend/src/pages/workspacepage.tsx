@@ -5,6 +5,7 @@ import WorkspaceSidebar, {
   type WorkspaceTab,
 } from "../components/Workspace/Workspacesidebar";
 import PdfViewerPage from "./PdfViewerPage";
+import FloatingAIChat from "../components/AIChat/FloatingAIchat";
 import SettingsModal, { type TabType } from "./SettingsModal";
 
 export default function WorkspacePage() {
@@ -21,7 +22,7 @@ export default function WorkspacePage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#FDFBF7] overflow-hidden">
+    <div className="relative flex flex-col h-screen bg-[#FDFBF7] overflow-hidden">
       {/* 1. Topbar */}
       <WorkspaceTopbar
         onOpenSettings={(tab) => handleOpenSettings(tab)}
@@ -50,7 +51,10 @@ export default function WorkspacePage() {
         </div>
       </div>
 
-      {/* 3. Settings Modal */}
+      {/* 3. Floating AI Chat Overlay */}
+      <FloatingAIChat />
+
+      {/* 4. Settings Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
         initialTab={settingsTab}

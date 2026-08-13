@@ -134,6 +134,8 @@ model Student {
   upcomingEvents        UpcomingEvent[]
   activityLogs          ActivityLog[]
   activitySessions      ActivitySession[]
+  pdfHighlights         PdfHighlight[]
+  pdfNotes              PdfNote[]
   subscriptionPlan      subscriptionPlan  @default(FREE)
 
   UsageLog UsageLog[]
@@ -193,6 +195,8 @@ model CourseMaterial {
 
   chunks     MaterialChunk[]
   flashcards Flashcard[]
+  highlights PdfHighlight[]
+  notes      PdfNote[]
 
   @@index([curriculumCourseId])
   @@index([uploadedBy])
@@ -467,4 +471,59 @@ model ActivitySession {
 
   @@index([studentId, startedAt])
   @@index([studentId, lastActiveAt])
+}
+
+// ---------- PDF Highlights ----------
+
+model PdfHighlight {
+  id         String   @id @default(uuid())
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId  String
+  material   CourseMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  materialId String
+
+  // Location data for react-pdf text selection
+  pageNumber  Int
+  textContent String   @db.Text // The actual highlighted text
+
+  // Position anchoring (JSON for flexibility with react-pdf)
+  // Stores: { startOffset, endOffset, boundingRect, textDivIndices, pageHeight, pageWidth }
+  position Json
+
+  // Visual properties
+  color String @default("yellow") // yellow, green, blue, pink, orange
+
+  // Optional student note
+  note String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes for fast queries
+  @@index([studentId, materialId])
+  @@index([materialId])
+  @@index([studentId])
+}
+
+// ---------- PDF Notes ----------
+
+model PdfNote {
+  id         String   @id @default(uuid())
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId  String
+  material   CourseMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  materialId String
+
+  // Free-form note content
+  content String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One note per student per material
+  @@unique([studentId, materialId])
+  
+  // Composite index for fast queries
+  @@index([studentId, materialId])
+  @@index([materialId])
 }

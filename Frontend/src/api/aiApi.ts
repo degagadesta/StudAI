@@ -19,11 +19,16 @@ export async function askQuestion(
   materialId: string,
   question: string,
 ) {
-  const res = await api.post(`/student/ai/chat/ask`, {
-    curriculumCourseId,
-    materialId,
-    question,
-  });
+  // AI requests can take longer, use 60 second timeout
+  const res = await api.post(
+    `/student/ai/chat/ask`,
+    {
+      curriculumCourseId,
+      materialId,
+      question,
+    },
+    { timeout: 60000 }, // 60 seconds for AI generation
+  );
   return res.data.data as { sessionId: string; answer: string };
 }
 

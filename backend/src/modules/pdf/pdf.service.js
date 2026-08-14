@@ -5,6 +5,8 @@ import {
   canUploadMore,
 } from "../../lib/subscriptionLimits.js";
 
+import { processMaterial } from "../ai/materialProcessing.service.js"
+
 // ─────────────────────────────────────────────────────────────────────────────
 // UPLOAD PDF
 // ─────────────────────────────────────────────────────────────────────────────
@@ -132,37 +134,23 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
   try {
     pdf = await prisma.courseMaterial.create({
       data: {
-        curriculumCourse: {
-          connect: {
-            id: curriculumCourseId,
-          },
-        },
-
+        curriculumCourse: { connect: { id: curriculumCourseId } },
         title: file.originalname,
         fileData: file.buffer,
         fileSize: file.size,
         uploadedBy: studentId,
-        status: "READY",
+        // no `status` here — let the schema default (QUEUED) apply.
+        // it becomes READY only once processing actually finishes.
       },
-
       select: {
         id: true,
         title: true,
         fileSize: true,
         createdAt: true,
         progress: true,
-
+        status: true,
         curriculumCourse: {
-          select: {
-            id: true,
-
-            course: {
-              select: {
-                id: true,
-                title: true,
-              },
-            },
-          },
+          select: { id: true, course: { select: { id: true, title: true } } },
         },
       },
     });
@@ -170,12 +158,21 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     throw error;
   }
 
+  // Fire-and-forget: don't make the student wait on the request for
+  // extraction + embedding to finish. processMaterial handles its own
+  // status transitions (EXTRACTING → ANALYZING → READY/FAILED) and
+  // swallows/logs its own errors so it can never crash the upload response.
+  processMaterial(pdf.id).catch((err) => {
+    console.error(`[processMaterial] failed for material ${pdf.id}:`, err);
+  });
+
   // 8. Return metadata only
   return {
     id: pdf.id,
     fileName: pdf.title,
     fileSize: pdf.fileSize,
     uploadDate: pdf.createdAt,
+    status: pdf.status, // frontend needs this to know it's not chat-ready yet
     curriculumCourseId: pdf.curriculumCourse.id,
     courseId: pdf.curriculumCourse.course.id,
     courseName: pdf.curriculumCourse.course.title,

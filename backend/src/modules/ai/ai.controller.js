@@ -40,3 +40,14 @@ export const generateExam = asyncHandler(async (req, res) => {
   );
   res.status(201).json({ success: true, data: result });
 });
+
+export const explainTopic = asyncHandler(async (req, res) => {
+  const { materialId, curriculumCourseId, selectedText } = req.body;
+  const result = await aiService.explainTopic(
+    req.studentId,
+    materialId,
+    curriculumCourseId,
+    selectedText,
+  );
+  res.status(200).json({ success: true, data: result });
+});

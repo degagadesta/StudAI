@@ -11,6 +11,7 @@ const LIMIT_KEY_MAP = {
   SUMMARY: "SUMMARY",
   FLASHCARDS: "FLASHCARDS",
   CHAT_MESSAGE: "CHAT_MESSAGES",
+  EXPLAIN_TOPIC: "EXPLAIN_TOPIC",
 };
 
 export async function assertWithinLimit(studentId, plan, feature) {
@@ -48,7 +49,7 @@ export async function recordUsage(studentId, feature, details = {}) {
 
 export async function getUsageSummary(studentId, plan) {
   const periodStart = billingPeriodStart();
-  const [summary, flashcards, chat] = await Promise.all([
+  const [summary, flashcards, chat, explainTopic] = await Promise.all([
     prisma.usageLog.count({
       where: { studentId, feature: "SUMMARY", createdAt: { gte: periodStart } },
     }),
@@ -66,6 +67,13 @@ export async function getUsageSummary(studentId, plan) {
         createdAt: { gte: periodStart },
       },
     }),
+    prisma.usageLog.count({
+      where: {
+        studentId,
+        feature: "EXPLAIN_TOPIC",
+        createdAt: { gte: periodStart },
+      },
+    }),
   ]);
 
   const limits = PLAN_LIMITS[plan];
@@ -74,5 +82,6 @@ export async function getUsageSummary(studentId, plan) {
     summary: { used: summary, limit: limits.SUMMARY },
     flashcards: { used: flashcards, limit: limits.FLASHCARDS },
     chatMessages: { used: chat, limit: limits.CHAT_MESSAGES },
+    explainTopic: { used: explainTopic, limit: limits.EXPLAIN_TOPIC },
   };
 }

@@ -22,6 +22,7 @@ type TabType = "profile" | "plan" | "course" | "theme";
 
 interface SettingsModalProps {
   isOpen: boolean;
+  initialTab?: TabType;
   onClose: () => void;
   onLogout?: () => void;
   onDeleteAccount?: () => void;
@@ -29,11 +30,19 @@ interface SettingsModalProps {
 
 export default function SettingsModal({
   isOpen,
+  initialTab,
   onClose,
   onLogout,
   onDeleteAccount,
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("profile");
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab || "profile");
+
+  // Update active tab when initialTab prop changes
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Profile
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);

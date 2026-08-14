@@ -2,6 +2,8 @@ import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { generateStructured } from "../../lib/geminiClient.js";
 import { Type } from "@google/genai";
+import { PLAN_LIMITS } from "../../config/planLimits.js";
+import {getRecentHistory} from "../ai/chatHistory.service.js"
 
 import { retrieveRelevantChunks } from "./retrieval.service.js";
 
@@ -163,7 +165,16 @@ export async function askAboutMaterial(
     materialId,
     question,
     limits.CHAT_CONTEXT_TOKENS,
-  );
+  ).catch((err) => {
+    // If chunks are missing or not processed, provide helpful error
+    if (err.message?.includes("without embeddings")) {
+      throw new AppError(
+        "This material is still being prepared for AI chat. Please try again in a few moments.",
+        400,
+      );
+    }
+    throw err;
+  });
 
   let session = await prisma.chatSession.findFirst({
     where: { studentId, curriculumCourseId },
@@ -245,4 +256,114 @@ ${question}
   });
 
   return { sessionId: session.id, answer };
+}
+
+export async function explainTopic(
+  studentId,
+  materialId,
+  curriculumCourseId,
+  selectedText,
+) {
+  // Validate selectedText
+  if (!selectedText || typeof selectedText !== "string") {
+    throw new AppError("Selected text is required", 400);
+  }
+
+  const trimmedText = selectedText.trim();
+  if (trimmedText.length === 0) {
+    throw new AppError("Selected text cannot be empty", 400);
+  }
+
+  // Enforce maximum length (2000 characters)
+  const MAX_SELECTED_TEXT_LENGTH = 2000;
+  if (trimmedText.length > MAX_SELECTED_TEXT_LENGTH) {
+    throw new AppError(
+      `Selected text is too long. Maximum ${MAX_SELECTED_TEXT_LENGTH} characters allowed`,
+      400,
+    );
+  }
+
+  // Get student and check subscription plan
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { subscriptionPlan: true },
+  });
+
+  if (!student) {
+    throw new AppError("Student not found", 404);
+  }
+
+  const plan = student.subscriptionPlan;
+
+  // Check usage limits
+  await assertWithinLimit(studentId, plan, "EXPLAIN_TOPIC");
+
+  // Verify material exists and student has access
+  const material = await prisma.courseMaterial.findUnique({
+    where: { id: materialId },
+    select: {
+      id: true,
+      uploadedBy: true,
+      curriculumCourseId: true,
+      status: true,
+    },
+  });
+
+  if (!material) {
+    throw new AppError("Material not found", 404);
+  }
+
+  if (material.uploadedBy !== studentId) {
+    throw new AppError("You don't have access to this material", 403);
+  }
+
+  if (material.curriculumCourseId !== curriculumCourseId) {
+    throw new AppError("Material does not belong to the specified course", 400);
+  }
+
+  // Create prompt for Gemini - ONLY send the selected text
+  const prompt = `
+You are a patient tutor helping a university student understand their course material.
+
+The student has selected the following text from their study material and wants you to explain it:
+
+"""
+${trimmedText}
+"""
+
+Please provide a clear and simple explanation that:
+1. Explains the main concept or idea in the selected text
+2. Defines any difficult or technical terms
+3. Provides a short, relevant example when it helps understanding
+4. Uses language appropriate for a university student
+
+Keep your explanation concise and focused. Base your explanation ONLY on what is written in the selected text - do not add information from outside sources or make assumptions beyond what is stated.
+
+If the selected text is unclear or incomplete, mention that and explain what you can based on what's provided.
+`;
+
+  // Get plan limits for max output tokens
+  const limits = PLAN_LIMITS[plan];
+  const maxOutputTokens = limits.EXPLAIN_MAX_OUTPUT_TOKENS;
+
+  // Call Gemini API
+  const { generateText } = await import("../../lib/geminiClient.js");
+  const { text: explanation, usageMetadata } = await generateText({
+    prompt,
+    maxOutputTokens,
+  });
+
+  // Record usage with actual token counts from Gemini
+  await recordUsage(studentId, "EXPLAIN_TOPIC", {
+    materialId,
+    model: "gemini-2.5-flash",
+    inputTokens: usageMetadata?.promptTokenCount ?? null,
+    outputTokens: usageMetadata?.candidatesTokenCount ?? null,
+    totalTokens: usageMetadata?.totalTokenCount ?? null,
+  });
+
+  return {
+    explanation,
+    selectedText: trimmedText,
+  };
 }

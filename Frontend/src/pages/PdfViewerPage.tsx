@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -31,9 +31,30 @@ export default function PdfViewerPage() {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [furthestPage, setFurthestPage] = useState(1);
 
+  // Zoom and Resizing states
+  const [scale, setScale] = useState<number>(1.0);
+  const [containerWidth, setContainerWidth] = useState<number>(640);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const hasRestoredStartingPage = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Observer to adjust PDF page width dynamically as container changes
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const availableWidth = entry.contentRect.width - 48; // padding offset
+        if (availableWidth > 0) {
+          setContainerWidth(availableWidth);
+        }
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // 1. Fetch material details
   useEffect(() => {
@@ -178,7 +199,14 @@ export default function PdfViewerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Zoom helper handlers
+  const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.15, 2.5));
+  const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.15, 0.5));
+  const handleZoomReset = () => setScale(1.0);
+
   const percent = numPages ? Math.round((furthestPage / numPages) * 100) : 0;
+  // Calculate rendered PDF width based on container width & zoom scale
+  const calculatedWidth = Math.max(300, Math.min(containerWidth * scale, 1400));
 
   if (isLoading || isPdfLoading) {
     return (
@@ -197,28 +225,56 @@ export default function PdfViewerPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col w-full">
-      {/* Header Bar */}
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-sm text-secondary hover:text-primary transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Back
-        </button>
-
-        <div className="text-center">
-          <p className="text-sm font-medium text-primary">
-            {material.fileName}
-          </p>
-          <p className="text-xs text-muted">{material.courseName}</p>
+    <div className="w-full h-full flex flex-col">
+      {/* Centered Header Bar + Zoom Controls */}
+      <div className="grid grid-cols-3 items-center mb-4 flex-shrink-0">
+        {/* Left Column: Zoom Controls */}
+        <div className="flex items-center gap-1.5 justify-start">
+          <div className="flex items-center bg-[#FFFDF7] border border-[#DCD2B4] rounded-lg p-0.5 shadow-sm">
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-md transition-colors"
+              title="Zoom Out"
+            >
+              <ZoomOut size={15} />
+            </button>
+            <span className="text-xs font-mono px-2 text-[#5B6156]">
+              {Math.round(scale * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-md transition-colors"
+              title="Zoom In"
+            >
+              <ZoomIn size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomReset}
+              className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-md transition-colors border-l border-[#DCD2B4]"
+              title="Reset Zoom"
+            >
+              <RotateCcw size={14} />
+            </button>
+          </div>
         </div>
 
-        <span className="text-xs font-mono text-secondary w-20 text-right">
-          {percent}% read
-        </span>
+        {/* Center Column: Material & Course Title */}
+        <div className="text-center min-w-0">
+          <p className="text-sm font-medium text-primary truncate">
+            {material.fileName}
+          </p>
+          <p className="text-xs text-muted truncate">{material.courseName}</p>
+        </div>
+
+        {/* Right Column: Reading Progress Indicator */}
+        <div className="flex justify-end">
+          <span className="text-xs font-mono text-secondary text-right">
+            {percent}% read
+          </span>
+        </div>
       </div>
 
       {/* Progress Bar */}
@@ -230,55 +286,55 @@ export default function PdfViewerPage() {
       </div>
 
       {/* Scrollable Container with Explicit Height */}
-      <div
+      {/* <div
         ref={containerRef}
-        className="h-[calc(100vh-180px)] w-full overflow-y-auto bg-surface border border-default rounded-2xl p-6 scroll-smooth"
-      >
-        {pdfUrl && (
-          <Document
-            file={pdfUrl}
-            onLoadSuccess={onDocumentLoad}
-            loading={
-              <div className="flex justify-center py-24">
-                <Loader2 size={24} className="text-accent animate-spin" />
-              </div>
-            }
-            error={
-              <div className="flex justify-center py-24">
-                <p className="text-sm text-error">Could not render this PDF.</p>
-              </div>
-            }
-            className="flex flex-col items-center gap-6 w-full"
-          >
-            {numPages &&
-              Array.from(new Array(numPages), (_, index) => {
-                const pageNo = index + 1;
-                return (
-                  <div
-                    key={`page_${pageNo}`}
-                    id={`pdf-page-${pageNo}`}
-                    data-page-number={pageNo}
-                    /* Reserved min-height prevents 0px layout collapse */
-                    className="pdf-page-wrapper min-h-[880px] w-[640px] max-w-full bg-white shadow-md rounded-lg overflow-hidden flex justify-center items-center"
-                  >
-                    <Page
-                      pageNumber={pageNo}
-                      width={640}
-                      renderAnnotationLayer={false}
-                      renderTextLayer={true}
-                      loading={
-                        <div className="flex items-center gap-2 text-sm text-muted">
-                          <Loader2 size={16} className="animate-spin" />
-                          Loading Page {pageNo}...
-                        </div>
-                      }
-                    />
-                  </div>
-                );
-              })}
-          </Document>
-        )}
-      </div>
+        className="flex-1 w-full overflow-y-auto bg-surface border border-default rounded-2xl p-6 scroll-smooth"
+      > */}
+      {pdfUrl && (
+        <Document
+          file={pdfUrl}
+          onLoadSuccess={onDocumentLoad}
+          loading={
+            <div className="flex justify-center py-24">
+              <Loader2 size={24} className="text-accent animate-spin" />
+            </div>
+          }
+          error={
+            <div className="flex justify-center py-24">
+              <p className="text-sm text-error">Could not render this PDF.</p>
+            </div>
+          }
+          className="flex flex-col items-center gap-6 w-full"
+        >
+          {numPages &&
+            Array.from(new Array(numPages), (_, index) => {
+              const pageNo = index + 1;
+              return (
+                <div
+                  key={`page_${pageNo}`}
+                  id={`pdf-page-${pageNo}`}
+                  data-page-number={pageNo}
+                  style={{ width: `${calculatedWidth}px` }}
+                  className="pdf-page-wrapper min-h-[800px] max-w-full bg-white shadow-md rounded-lg overflow-hidden flex justify-center items-center transition-all duration-150"
+                >
+                  <Page
+                    pageNumber={pageNo}
+                    width={calculatedWidth}
+                    renderAnnotationLayer={false}
+                    renderTextLayer={true}
+                    loading={
+                      <div className="flex items-center gap-2 text-sm text-muted">
+                        <Loader2 size={16} className="animate-spin" />
+                        Loading Page {pageNo}...
+                      </div>
+                    }
+                  />
+                </div>
+              );
+            })}
+        </Document>
+      )}
     </div>
+    // </div>
   );
 }

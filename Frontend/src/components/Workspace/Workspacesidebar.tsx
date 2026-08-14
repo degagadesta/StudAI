@@ -295,7 +295,7 @@ export default function WorkspaceSidebar({
               {isLoadingMaterials ? (
                 <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-[#5B6156]/70">
                   <Loader2 size={13} className="animate-spin" />
-                  <span>Loading materials...</span>
+                  <span>Loading materials</span>
                 </div>
               ) : materials.length === 0 ? (
                 <p className="px-2 py-1 text-[11px] text-[#5B6156]/70 italic">

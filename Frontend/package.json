@@ -12,6 +12,13 @@
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
     "@tailwindcss/vite": "^4.3.3",
+    "@tiptap/extension-bullet-list": "^3.30.1",
+    "@tiptap/extension-list-item": "^3.30.1",
+    "@tiptap/extension-ordered-list": "^3.30.1",
+    "@tiptap/extension-placeholder": "^3.30.1",
+    "@tiptap/pm": "^3.30.1",
+    "@tiptap/react": "^3.30.1",
+    "@tiptap/starter-kit": "^3.30.1",
     "axios": "^1.19.0",
     "cookie-parser": "^1.4.7",
     "dompurify": "^3.4.13",

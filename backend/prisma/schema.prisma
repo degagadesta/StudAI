@@ -79,7 +79,29 @@ model CurriculumCourse {
 
 enum subscriptionPlan {
   FREE
+  STANDARD
   PRO
+}
+
+enum UsageFeature {
+  SUMMARY
+  FLASHCARDS
+  CHAT_MESSAGE
+}
+
+model UsageLog {
+  id          String       @id @default(uuid())
+  student     Student      @relation(fields: [studentId], references: [id])
+  studentId   String
+  feature     UsageFeature
+  materialId  String?
+  model       String?
+  inputTokens Int?
+  outputTokens Int?
+  totalTokens Int?
+  createdAt   DateTime     @default(now())
+
+  @@index([studentId, feature, createdAt])
 }
 
 model Student {
@@ -112,7 +134,11 @@ model Student {
   upcomingEvents        UpcomingEvent[]
   activityLogs          ActivityLog[]
   activitySessions      ActivitySession[]
+  pdfHighlights         PdfHighlight[]
+  pdfNotes              PdfNote[]
   subscriptionPlan      subscriptionPlan  @default(FREE)
+
+  UsageLog UsageLog[]
 }
 
 model StudentProfile {
@@ -169,6 +195,8 @@ model CourseMaterial {
 
   chunks     MaterialChunk[]
   flashcards Flashcard[]
+  highlights PdfHighlight[]
+  notes      PdfNote[]
 
   @@index([curriculumCourseId])
   @@index([uploadedBy])
@@ -180,8 +208,12 @@ model MaterialChunk {
   materialId String
   content    String
   page       Int?
+  chunkIndex Int            @default(0)  // stable ordering, for neighbor expansion
+  tokenCount Int?                        // computed once at processing time
+  embedding  Float[]
 
   @@index([materialId])
+  @@index([materialId, chunkIndex])
 }
 
 // ---------- Notes ----------
@@ -439,4 +471,59 @@ model ActivitySession {
 
   @@index([studentId, startedAt])
   @@index([studentId, lastActiveAt])
+}
+
+// ---------- PDF Highlights ----------
+
+model PdfHighlight {
+  id         String   @id @default(uuid())
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId  String
+  material   CourseMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  materialId String
+
+  // Location data for react-pdf text selection
+  pageNumber  Int
+  textContent String   @db.Text // The actual highlighted text
+
+  // Position anchoring (JSON for flexibility with react-pdf)
+  // Stores: { startOffset, endOffset, boundingRect, textDivIndices, pageHeight, pageWidth }
+  position Json
+
+  // Visual properties
+  color String @default("yellow") // yellow, green, blue, pink, orange
+
+  // Optional student note
+  note String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Composite indexes for fast queries
+  @@index([studentId, materialId])
+  @@index([materialId])
+  @@index([studentId])
+}
+
+// ---------- PDF Notes ----------
+
+model PdfNote {
+  id         String   @id @default(uuid())
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId  String
+  material   CourseMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  materialId String
+
+  // Free-form note content
+  content String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One note per student per material
+  @@unique([studentId, materialId])
+  
+  // Composite index for fast queries
+  @@index([studentId, materialId])
+  @@index([materialId])
 }

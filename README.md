@@ -6,7 +6,13 @@ StudAI is an AI-powered learning platform that helps Ethiopian university studen
 
 ## Problem
 
-Students struggle with scattered learning resources, limited access to previous exams, and generic AI tools that do not understand Ethiopian university curricula. StudAI provides a centralized, curriculum-based learning experience tailored to local universities.
+Students often struggle to find reliable and well-organized learning materials in one place.
+Previous exam papers are difficult to access, making exam preparation more challenging.
+Many students depend on scattered notes, PDFs, Telegram groups, and other disconnected resources.
+Generic AI tools often provide answers that are not aligned with Ethiopian university curricula.
+Students lack personalized learning support that matches their specific subjects and academic level.
+There is a need for a centralized platform that combines local curriculum, past exams, notes, quizzes, and AI-powered assistance.
+
 
 ## Main Features
 

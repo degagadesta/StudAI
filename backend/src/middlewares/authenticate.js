@@ -1,6 +1,7 @@
 import { verifyToken } from "../utils/jwt.js";
 import { AppError } from "../utils/AppError.js";
 import { prisma } from "../lib/prisma.js";
+import { studentCache } from "../lib/studentCache.js";
 
 export async function authenticate(req, res, next) {
   const header = req.headers.authorization;
@@ -21,7 +22,14 @@ export async function authenticate(req, res, next) {
     return next(new AppError("Invalid session. Please log in again", 401));
   }
 
-  // Step 3: confirm the account still exists in the database
+  // Step 3: Check cache first before hitting database
+  if (studentCache.has(payload.studentId)) {
+    // Cache hit - skip database query for performance
+    req.studentId = payload.studentId;
+    return next();
+  }
+
+  // Step 4: Cache miss - confirm the account still exists in the database
   // (handles deleted accounts — a valid JWT is not enough on its own)
   try {
     const student = await prisma.student.findUnique({
@@ -32,6 +40,9 @@ export async function authenticate(req, res, next) {
     if (!student) {
       return next(new AppError("Account not found. Please log in again", 401));
     }
+
+    // Cache the student for future requests (15 min TTL)
+    studentCache.set(payload.studentId);
   } catch {
     return next(new AppError("Unable to verify your session. Please try again", 500));
   }

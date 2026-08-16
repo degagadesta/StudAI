@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
+  url       = env("DATABASE_URL")
 }
 
 // ---------- Academic structure ----------
@@ -139,6 +140,11 @@ model Student {
   subscriptionPlan      subscriptionPlan  @default(FREE)
 
   UsageLog UsageLog[]
+
+  // Performance indexes for auth operations
+  @@index([email])
+  @@index([googleId])
+  @@index([refreshToken])
 }
 
 model StudentProfile {

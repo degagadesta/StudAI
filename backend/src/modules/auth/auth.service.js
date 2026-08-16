@@ -18,6 +18,7 @@ import {
   validateRefreshToken,
 } from "./auth.validation.js";
 import { startOrResumeSession } from "../activity/activity.service.js";
+import { studentCache } from "../../lib/studentCache.js";
 
 const googleClient = new OAuth2Client(env.googleClientId);
 
@@ -169,6 +170,9 @@ export async function verifyEmail(rawToken) {
     },
   });
 
+  // Cache student for fast subsequent auth checks
+  studentCache.set(student.id);
+
   // Return tokens and user info, plus onboarding status
   return {
     accessToken,
@@ -180,6 +184,7 @@ export async function verifyEmail(rawToken) {
       email: student.email,
     },
     hasProfile: !!student.profile, // true if onboarding complete, false otherwise
+    profile: student.profile, // Preloaded profile data
   };
 }
 
@@ -189,7 +194,19 @@ export async function login({ email, password }) {
   const student = await prisma.student.findUnique({
     where: { email: email.toLowerCase().trim() },
     include: {
-      profile: true, // Include profile to check if onboarding is complete
+      profile: {
+        include: {
+          curriculum: {
+            include: {
+              department: {
+                include: {
+                  university: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
   if (!student || !student.passwordHash)
@@ -213,6 +230,9 @@ export async function login({ email, password }) {
     },
   });
 
+  // Cache student for fast subsequent auth checks
+  studentCache.set(student.id);
+
   // Create or resume an activity session so daily hours tracking starts immediately
   const session = await startOrResumeSession(student.id);
 
@@ -226,6 +246,7 @@ export async function login({ email, password }) {
       email: student.email,
     },
     hasProfile: !!student.profile, // true if onboarding complete, false otherwise
+    profile: student.profile, // Preloaded profile data (saves 1 API call)
   };
 }
 
@@ -334,6 +355,9 @@ export async function googleSignIn(idToken) {
     },
   });
 
+  // Cache student for fast subsequent auth checks
+  studentCache.set(student.id);
+
   // Create or resume an activity session — same as email/password login
   const session = await startOrResumeSession(student.id);
 
@@ -347,6 +371,7 @@ export async function googleSignIn(idToken) {
       email: student.email,
     },
     hasProfile: !!student.profile, // Return onboarding status
+    profile: student.profile, // Preloaded profile data
   };
 }
 
@@ -390,6 +415,7 @@ export async function refreshAccessToken(refreshToken) {
 }
 
 export async function logout(studentId) {
+  // Invalidate refresh token in database
   await prisma.student.update({
     where: { id: studentId },
     data: {
@@ -397,6 +423,9 @@ export async function logout(studentId) {
       refreshTokenExpiresAt: null,
     },
   });
+
+  // Invalidate student cache to force DB check on next request
+  studentCache.delete(studentId);
 }
 
 export async function checkProfile(studentId) {
@@ -525,6 +554,9 @@ export async function deleteAccount(studentId, password) {
         where: { id: studentId },
       });
     });
+
+    // Invalidate student cache immediately
+    studentCache.delete(studentId);
 
     // Optional: Send goodbye email (outside transaction to avoid rollback if email fails)
     try {

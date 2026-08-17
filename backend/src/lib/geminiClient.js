@@ -1,10 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
+import * as localEmbeddings from "./localEmbeddings.js";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const EMBEDDING_MODEL = "gemini-embedding-001";
-const EMBEDDING_DIMENSIONS = 768;
-const CHAT_MODEL = "gemini-3.6-flash"; // was "gemini-2.5-flash"
+// Keep Gemini for text generation only
+const CHAT_MODEL = "gemini-2.5-flash";
+
+// Use local embeddings instead of Gemini
+// Note: Changed from 768 (Gemini) to 384 (all-MiniLM-L6-v2) dimensions
+const EMBEDDING_DIMENSIONS = localEmbeddings.getEmbeddingDimensions();
 
 /** Forces a Gemini reply into JSON matching the given schema. */
 export async function generateStructured({
@@ -41,28 +45,32 @@ export async function generateText({
   return { text: response.text, usageMetadata: response.usageMetadata };
 }
 
-/** Embed a document chunk — used once, during PDF processing. */
+/** 
+ * Embed a document chunk — used once, during PDF processing.
+ * Now uses local all-MiniLM-L6-v2 model (384 dimensions) instead of Gemini.
+ */
 export async function embedChunk(text) {
-  const response = await ai.models.embedContent({
-    model: EMBEDDING_MODEL,
-    contents: text,
-    config: {
-      taskType: "RETRIEVAL_DOCUMENT",
-      outputDimensionality: EMBEDDING_DIMENSIONS,
-    },
-  });
-  return response.embeddings[0].values;
+  return await localEmbeddings.embedChunk(text);
 }
 
-/** Embed a student's question — used per chat message. */
+/** 
+ * Embed a student's question — used per chat message.
+ * Now uses local all-MiniLM-L6-v2 model (384 dimensions) instead of Gemini.
+ */
 export async function embedQuery(text) {
-  const response = await ai.models.embedContent({
-    model: EMBEDDING_MODEL,
-    contents: text,
-    config: {
-      taskType: "RETRIEVAL_QUERY",
-      outputDimensionality: EMBEDDING_DIMENSIONS,
-    },
-  });
-  return response.embeddings[0].values;
+  return await localEmbeddings.embedQuery(text);
+}
+
+/**
+ * Get embedding dimensions (for validation/logging).
+ */
+export function getEmbeddingDimensions() {
+  return EMBEDDING_DIMENSIONS;
+}
+
+/**
+ * Preload embedding model on server startup (optional).
+ */
+export async function preloadEmbeddingModel() {
+  return await localEmbeddings.preloadModel();
 }

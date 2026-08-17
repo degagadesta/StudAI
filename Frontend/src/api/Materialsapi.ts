@@ -10,6 +10,7 @@ export interface Material {
   uploadedAt: string; // ISO date string
   progress: number;
   fileUrl: string; // URL to the PDF file
+  status?: "QUEUED" | "EXTRACTING" | "ANALYZING" | "READY" | "FAILED"; // Material processing status
 }
 
 // Raw shape returned by GET /student/pdfs — grouped by curriculumCourseId,
@@ -38,7 +39,7 @@ export async function getMaterials(): Promise<Material[]> {
   const grouped = res.data.data;
 
   return Object.values(grouped).flatMap((group) =>
-    group.pdfs.map((pdf) => ({
+    group.pdfs.map((pdf: any) => ({
       id: pdf.id,
       fileName: pdf.fileName,
       courseName: group.courseName,
@@ -48,6 +49,7 @@ export async function getMaterials(): Promise<Material[]> {
       uploadedAt: pdf.uploadDate,
       progress: pdf.progress,
       fileUrl: `/student/pdfs/${pdf.id}/file`,
+      status: pdf.status, // Include status
     })),
   );
 }

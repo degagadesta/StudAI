@@ -189,11 +189,11 @@ export async function getStudentPDFs(studentId) {
     throw new AppError("Student account is required", 400);
   }
 
-  // Never return fileData when listing PDFs.
+  // Return ALL materials except DELETED (including QUEUED, EXTRACTING, ANALYZING, READY, FAILED)
   const pdfs = await prisma.courseMaterial.findMany({
     where: {
       uploadedBy: studentId,
-      status: "READY",
+      status: { not: "DELETED" }, // Show all except deleted
     },
 
     select: {
@@ -202,6 +202,7 @@ export async function getStudentPDFs(studentId) {
       fileSize: true,
       createdAt: true,
       progress: true,
+      status: true, // IMPORTANT: Include status so frontend knows if it's ready
 
       curriculumCourse: {
         select: {
@@ -246,6 +247,7 @@ export async function getStudentPDFs(studentId) {
       fileSize: pdf.fileSize,
       uploadDate: pdf.createdAt,
       progress: pdf.progress,
+      status: pdf.status, // Include status for frontend
     });
   }
 
@@ -269,18 +271,34 @@ export async function getPDFFile(studentId, pdfId) {
     where: {
       id: pdfId,
       uploadedBy: studentId,
-      status: "READY",
+      status: { not: "DELETED" }, // Allow all non-deleted statuses
     },
 
     select: {
       title: true,
       fileData: true,
       progress: true,
+      status: true,
     },
   });
 
   if (!pdf) {
     throw new AppError("PDF file not found", 404);
+  }
+
+  // Check if material is still being processed
+  if (pdf.status !== "READY") {
+    const statusMessages = {
+      QUEUED: "This material is queued for processing. Please wait a moment and try again.",
+      EXTRACTING: "This material is being extracted. This usually takes 10-30 seconds.",
+      ANALYZING: "This material is being analyzed and prepared for AI chat. Almost done!",
+      FAILED: "This material failed to process. Please try uploading it again.",
+    };
+
+    throw new AppError(
+      statusMessages[pdf.status] || "This material is not ready yet",
+      400
+    );
   }
 
   if (!pdf.fileData) {

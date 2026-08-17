@@ -22,18 +22,27 @@ function estimateTokens(text) {
 /**
  * RAG retrieval: rank by relevance, drop anything below threshold,
  * pull in immediate neighbors for context continuity, then pack into budget.
+ * 
+ * Now uses local embeddings (384 dimensions) instead of Gemini.
  */
 export async function retrieveRelevantChunks(
   materialId,
   question,
   chunkTokenBudget,
 ) {
+  console.log(`[RAG] Retrieving relevant chunks for material: ${materialId}`);
+  
   const chunks = await prisma.materialChunk.findMany({
     where: { materialId },
     orderBy: { chunkIndex: "asc" },
   });
 
-  if (chunks.length === 0) return [];
+  if (chunks.length === 0) {
+    console.log(`[RAG] No chunks found for material ${materialId}`);
+    return [];
+  }
+
+  console.log(`[RAG] Found ${chunks.length} chunks`);
 
   const missingEmbeddings = chunks.some(
     (c) => !c.embedding || c.embedding.length === 0,
@@ -46,7 +55,10 @@ export async function retrieveRelevantChunks(
     );
   }
 
+  console.log(`[RAG] Generating query embedding...`);
   const questionEmbedding = await embedQuery(question);
+  console.log(`[RAG] Query embedding generated (${questionEmbedding.length} dimensions)`);
+
   const byIndex = new Map(chunks.map((c) => [c.chunkIndex, c]));
 
   const ranked = chunks
@@ -56,6 +68,10 @@ export async function retrieveRelevantChunks(
     }))
     .filter((r) => r.score >= MIN_RELEVANCE_SCORE)
     .sort((a, b) => b.score - a.score);
+
+  console.log(
+    `[RAG] Found ${ranked.length} relevant chunks above threshold ${MIN_RELEVANCE_SCORE}`
+  );
 
   if (ranked.length === 0) return []; // caller decides how to respond to "nothing relevant found"
 
@@ -82,5 +98,13 @@ export async function retrieveRelevantChunks(
     if (after) tryAdd(after);
   }
 
-  return [...selected.values()].sort((a, b) => a.chunkIndex - b.chunkIndex);
+  const finalChunks = [...selected.values()].sort(
+    (a, b) => a.chunkIndex - b.chunkIndex
+  );
+
+  console.log(
+    `[RAG] Selected ${finalChunks.length} chunks (including neighbors) using ${tokensUsed} tokens`
+  );
+
+  return finalChunks;
 }

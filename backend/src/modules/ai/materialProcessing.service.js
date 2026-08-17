@@ -1,6 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
-import { embedChunk } from "../../lib/geminiClient.js";
 
 
 const CHUNK_CHAR_SIZE = 1200;   // rough target size per chunk
@@ -24,7 +23,7 @@ export async function processMaterial(materialId) {
 
     const pages = await extractTextPerPage(material.fileData);
 
-    const rawChunks = chunkPages(pages); // [{ content, page, chunkIndex }]
+    const rawChunks = chunkPages(pages); // [{ content, age, chunkIndex }]
 
     if (rawChunks.length === 0) {
       throw new Error("No extractable text found in PDF");
@@ -108,14 +107,30 @@ function chunkPages(pages) {
 async function embedChunks(rawChunks) {
   const { embedChunk } = await import("../../lib/geminiClient.js");
 
+  console.log(`[MaterialProcessing] Embedding ${rawChunks.length} chunks...`);
+  const startTime = Date.now();
+
   const results = [];
+  let embeddedCount = 0;
+
   for (const chunk of rawChunks) {
     const embedding = await embedChunk(chunk.content);
+    embeddedCount++;
+
     results.push({
       ...chunk,
       embedding,
       tokenCount: Math.ceil(chunk.content.length / 4), // rough estimate
     });
+
+    // Log progress every 10 chunks
+    if (embeddedCount % 10 === 0) {
+      console.log(`[MaterialProcessing] Embedded ${embeddedCount}/${rawChunks.length} chunks`);
+    }
   }
+
+  const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+  console.log(`[MaterialProcessing] Embedded ${embeddedCount} chunks in ${totalTime}s`);
+
   return results;
 }

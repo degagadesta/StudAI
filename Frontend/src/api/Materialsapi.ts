@@ -10,6 +10,7 @@ export interface Material {
   uploadedAt: string; // ISO date string
   progress: number;
   fileUrl: string; // URL to the PDF file
+  status: "QUEUED" | "EXTRACTING" | "ANALYZING" | "READY" | "FAILED" | "DELETED";
 }
 
 // Raw shape returned by GET /student/pdfs — grouped by curriculumCourseId,
@@ -25,6 +26,7 @@ interface GroupedMaterialsResponse {
       fileSize: number;
       uploadDate: string;
       progress: number;
+      status: "QUEUED" | "EXTRACTING" | "ANALYZING" | "READY" | "FAILED" | "DELETED";
     }[];
   };
 }
@@ -47,6 +49,7 @@ export async function getMaterials(): Promise<Material[]> {
       fileSize: pdf.fileSize,
       uploadedAt: pdf.uploadDate,
       progress: pdf.progress,
+      status: pdf.status,
       fileUrl: `/student/pdfs/${pdf.id}/file`,
     })),
   );
@@ -82,6 +85,7 @@ export async function uploadMaterial(
       courseId: string;
       courseName: string;
       progress: number;
+      status: "QUEUED" | "EXTRACTING" | "ANALYZING" | "READY" | "FAILED";
     };
   }>("/student/pdfs", formData, {
     headers: { "Content-Type": "multipart/form-data" },
@@ -101,7 +105,8 @@ export async function uploadMaterial(
     fileSize: d.fileSize,
     uploadedAt: d.uploadDate,
     progress: d.progress,
-    fileUrl: `/student/pdfs/${d.id}/file`, // Add this line
+    status: d.status,
+    fileUrl: `/student/pdfs/${d.id}/file`,
   };
 }
 

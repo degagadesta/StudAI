@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { embedQuery } from "../../lib/geminiClient.js";
 
-const MIN_RELEVANCE_SCORE = 0.55; // tune this once you have real question/chunk data
+const MIN_RELEVANCE_SCORE = 0.1; // tune this once you have real question/chunk data
 
 function cosineSimilarity(a, b) {
   let dot = 0,
@@ -33,31 +33,60 @@ export async function retrieveRelevantChunks(
     orderBy: { chunkIndex: "asc" },
   });
 
-  if (chunks.length === 0) return [];
+  console.log(`[RAG] Retrieved ${chunks.length} chunks for material ${materialId}`);
+
+  if (chunks.length === 0) {
+    console.log(`[RAG] No chunks found for material ${materialId}`);
+    return [];
+  }
 
   const missingEmbeddings = chunks.some(
     (c) => !c.embedding || c.embedding.length === 0,
   );
   if (missingEmbeddings) {
-    // Should not normally happen if processChunksForMaterial ran at upload —
-    // this is a safety net, not the primary path.
+    console.error(`[RAG] Material ${materialId} has chunks without embeddings`);
     throw new Error(
       `Material ${materialId} has chunks without embeddings — processing may have failed`,
     );
   }
 
+  console.log(`[RAG] Embedding query: "${question.substring(0, 50)}..."`);
   const questionEmbedding = await embedQuery(question);
+  console.log(`[RAG] Query embedding generated (${questionEmbedding.length}D)`);
+  console.log(
+    `[RAG] Stored embedding dimensions: ${chunks[0].embedding?.length}D`
+  );
+
   const byIndex = new Map(chunks.map((c) => [c.chunkIndex, c]));
 
-  const ranked = chunks
+  const scored = chunks
     .map((chunk) => ({
       chunk,
       score: cosineSimilarity(questionEmbedding, chunk.embedding),
     }))
-    .filter((r) => r.score >= MIN_RELEVANCE_SCORE)
     .sort((a, b) => b.score - a.score);
 
-  if (ranked.length === 0) return []; // caller decides how to respond to "nothing relevant found"
+  console.log(
+    `[RAG] Top scores: ${scored
+      .map(
+        (r) =>
+          `chunk ${r.chunk.chunkIndex} = ${r.score.toFixed(4)}`
+      )
+      .join(", ")}`
+  );
+
+const ranked = scored.filter(
+  (r) => r.score >= MIN_RELEVANCE_SCORE
+);
+
+console.log(
+  `[RAG] Found ${ranked.length}/${chunks.length} chunks above threshold (${MIN_RELEVANCE_SCORE})`
+);
+
+  if (ranked.length === 0) {
+    console.log(`[RAG] No chunks met relevance threshold`);
+    return [];
+  }
 
   const selected = new Map(); // chunkIndex -> chunk, avoids duplicates
   let tokensUsed = 0;
@@ -82,5 +111,8 @@ export async function retrieveRelevantChunks(
     if (after) tryAdd(after);
   }
 
-  return [...selected.values()].sort((a, b) => a.chunkIndex - b.chunkIndex);
+  const result = [...selected.values()].sort((a, b) => a.chunkIndex - b.chunkIndex);
+  console.log(`[RAG] Returning ${result.length} chunks (${tokensUsed} tokens)`);
+  
+  return result;
 }

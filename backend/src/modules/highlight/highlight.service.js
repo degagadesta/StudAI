@@ -39,7 +39,7 @@ export async function createHighlight(studentId, materialId, data) {
     await verifyMaterialAccess(studentId, materialId);
 
     // Create the highlight
-    const highlight = await prisma.pdfHighlight.create({
+    const highlight = await prisma.PdfHighlight.create({
         data: {
             studentId,
             materialId,
@@ -62,7 +62,7 @@ export async function getHighlights(studentId, materialId) {
     await verifyMaterialAccess(studentId, materialId);
 
     // Fetch highlights for this student and material
-    const highlights = await prisma.pdfHighlight.findMany({
+    const highlights = await prisma.PdfHighlight.findMany({
         where: {
             studentId,
             materialId,
@@ -81,7 +81,7 @@ export async function getHighlights(studentId, materialId) {
  */
 export async function updateHighlight(studentId, highlightId, data) {
     // Verify the highlight belongs to this student
-    const highlight = await prisma.pdfHighlight.findFirst({
+    const highlight = await prisma.PdfHighlight.findFirst({
         where: {
             id: highlightId,
             studentId,
@@ -93,7 +93,7 @@ export async function updateHighlight(studentId, highlightId, data) {
     }
 
     // Update only allowed fields
-    const updated = await prisma.pdfHighlight.update({
+    const updated = await prisma.PdfHighlight.update({
         where: { id: highlightId },
         data: {
             color: data.color !== undefined ? data.color : highlight.color,
@@ -110,7 +110,7 @@ export async function updateHighlight(studentId, highlightId, data) {
  */
 export async function deleteHighlight(studentId, highlightId) {
     // Verify the highlight belongs to this student
-    const highlight = await prisma.pdfHighlight.findFirst({
+    const highlight = await prisma.PdfHighlight.findFirst({
         where: {
             id: highlightId,
             studentId,
@@ -122,7 +122,7 @@ export async function deleteHighlight(studentId, highlightId) {
     }
 
     // Delete the highlight
-    await prisma.pdfHighlight.delete({
+    await prisma.PdfHighlight.delete({
         where: { id: highlightId },
     });
 
@@ -133,7 +133,7 @@ export async function deleteHighlight(studentId, highlightId) {
  * Get a single highlight by ID (with ownership verification)
  */
 export async function getHighlightById(studentId, highlightId) {
-    const highlight = await prisma.pdfHighlight.findFirst({
+    const highlight = await prisma.PdfHighlight.findFirst({
         where: {
             id: highlightId,
             studentId,
@@ -151,7 +151,7 @@ export async function getHighlightById(studentId, highlightId) {
  * Get highlight count for a material (optional - for analytics)
  */
 export async function getHighlightCount(studentId, materialId) {
-    const count = await prisma.pdfHighlight.count({
+    const count = await prisma.PdfHighlight.count({
         where: {
             studentId,
             materialId,

@@ -8,11 +8,11 @@ const { Pool } = pkg;
 const pool = new Pool({
   connectionString: env.databaseUrl,
   ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 30000, // 30 seconds
+  connectionTimeoutMillis: 15000, // 30 seconds
   idleTimeoutMillis: 30000,
   query_timeout: 30000,
   statement_timeout: 30000,
-  max: 20, // Maximum number of connections
+  max: 10, // Maximum number of connections
   idleTimeoutMillis: 60000, // 1 minute
 });
 

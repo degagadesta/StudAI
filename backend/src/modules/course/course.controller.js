@@ -27,6 +27,8 @@ export const getCourses = async (req, res, next) => {
   }
 };
 
+
+
 export const getAvailableCourses = asyncHandler(async (req, res) => {
   const searchQuery = req.query.search || null;
   const filters = {

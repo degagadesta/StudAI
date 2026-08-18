@@ -292,3 +292,27 @@
     box-shadow: var(--shadow-lg);
   }
 }
+
+/* ============================================
+   PDF VIEWER - TEXT SELECTION FIX
+   ============================================ */
+
+/* Prevent text layer from interfering with selection */
+.react-pdf__Page__textContent {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* Ensure text layer spans maintain selection */
+.react-pdf__Page__textContent span {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+
+/* Highlight selection color in PDF viewer */
+.pdf-page-wrapper ::selection {
+  background-color: rgba(126, 217, 87, 0.4);
+  color: inherit;
+}

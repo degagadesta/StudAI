@@ -253,36 +253,91 @@ export default function CoursesPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {materials.map((m) => (
-                <Link
-                  key={m.id}
-                  to={`/workspace/${m.id}`}
-                  className="group relative p-5 bg-surface border border-default rounded-xl hover:border-accent transition-colors cursor-pointer block"
-                >
-                  <div className="flex items-start gap-3 mb-4 pr-6">
-                    <div className="w-9 h-9 rounded-lg bg-elevated flex items-center justify-center shrink-0">
-                      <FileText size={17} className="text-accent" />
+              {materials.map((m) => {
+                const isProcessing = m.status !== "READY";
+                const isFailed = m.status === "FAILED";
+                
+                return (
+                  <Link
+                    key={m.id}
+                    to={isProcessing ? "#" : `/workspace/${m.id}`}
+                    onClick={(e) => {
+                      if (isProcessing) {
+                        e.preventDefault();
+                      }
+                    }}
+                    className={`group relative p-5 bg-surface border border-default rounded-xl transition-colors block ${
+                      isProcessing
+                        ? "cursor-not-allowed opacity-75"
+                        : "hover:border-accent cursor-pointer"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3 mb-4 pr-6">
+                      <div className="w-9 h-9 rounded-lg bg-elevated flex items-center justify-center shrink-0">
+                        {isProcessing ? (
+                          <Loader2
+                            size={17}
+                            className="text-accent animate-spin"
+                          />
+                        ) : (
+                          <FileText size={17} className="text-accent" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`text-sm font-medium text-primary truncate ${
+                            !isProcessing && "group-hover:underline"
+                          }`}
+                        >
+                          {m.fileName}
+                        </p>
+                        <p className="text-xs text-muted">{m.courseName}</p>
+                        
+                        {/* Processing Status Badge */}
+                        {isProcessing && (
+                          <div className="mt-1.5">
+                            {m.status === "QUEUED" && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded">
+                                Queued
+                              </span>
+                            )}
+                            {m.status === "EXTRACTING" && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-yellow-50 text-yellow-700 rounded">
+                                Extracting...
+                              </span>
+                            )}
+                            {m.status === "ANALYZING" && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 rounded">
+                                Analyzing...
+                              </span>
+                            )}
+                            {m.status === "FAILED" && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-50 text-red-700 rounded">
+                                Failed
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-primary truncate group-hover:underline">
-                        {m.fileName}
-                      </p>
-                      <p className="text-xs text-muted">{m.courseName}</p>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center justify-between text-xs text-secondary mb-1.5">
-                    <span>Progress</span>
-                    <span>{m.progress}%</span>
-                  </div>
-                  <div className="h-1.5 bg-[#DCD2B4] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-accent-secondary transition-all"
-                      style={{ width: `${m.progress}%` }}
-                    />
-                  </div>
-                </Link>
-              ))}
+                    {!isFailed && (
+                      <>
+                        <div className="flex items-center justify-between text-xs text-secondary mb-1.5">
+                          <span>Progress</span>
+                          <span>{m.progress}%</span>
+                        </div>
+                        <div className="h-1.5 bg-[#DCD2B4] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-accent-secondary transition-all"
+                            style={{ width: `${m.progress}%` }}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

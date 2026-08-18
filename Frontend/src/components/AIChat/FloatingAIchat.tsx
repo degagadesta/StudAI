@@ -34,6 +34,8 @@ interface FloatingAIChatProps {
   courseName?: string;
   activePdfName?: string;
   onSendMessage?: (message: string) => Promise<string> | Promise<void>;
+  initialQuestion?: string;
+  onQuestionSent?: () => void;
 }
 
 const DEFAULT_PROMPTS = [
@@ -69,6 +71,8 @@ export default function FloatingAIChat({
   courseName,
   activePdfName,
   onSendMessage,
+  initialQuestion,
+  onQuestionSent,
 }: FloatingAIChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeView, setActiveView] = useState<"chat" | "history">("chat");
@@ -124,6 +128,22 @@ export default function FloatingAIChat({
       setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [isOpen, activeView, messages, isGenerating]);
+
+  // Handle initial question from text selection (Ask AI feature)
+  useEffect(() => {
+    if (initialQuestion && initialQuestion.trim()) {
+      // Open the chat window
+      setIsOpen(true);
+      setActiveView("chat");
+      // Send the question automatically
+      handleSend(initialQuestion);
+      // Notify parent that question was sent
+      if (onQuestionSent) {
+        onQuestionSent();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuestion]);
 
   // --- DRAG HANDLERS ---
   const handlePointerMove = useCallback(

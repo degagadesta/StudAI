@@ -8,6 +8,7 @@ import { assertWithinLimit, recordUsage } from "../usage/usage.service.js";
 import { PLAN_LIMITS } from "../../config/planLimits.js";
 
 // ---------- Shared helper ----------
+// ai.service.js
 async function getMaterialWithAccess(materialId, studentId) {
   const material = await prisma.courseMaterial.findUnique({ where: { id: materialId } });
 
@@ -24,6 +25,7 @@ async function getMaterialWithAccess(materialId, studentId) {
 
   return material;
 }
+
 // ---------- In-process de-dup lock ----------
 // Prevents two concurrent requests (double-click, two tabs) from both
 // paying for a full Gemini generation for the same key. This only

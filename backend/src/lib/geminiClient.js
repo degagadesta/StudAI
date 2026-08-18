@@ -11,10 +11,10 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 // get the lite tier.
 export const MODELS = {
   CHAT: "gemini-3.5-flash",
-  SUMMARY_SINGLE: "gemini-3.5-flash",
+  SUMMARY_SINGLE: "gemini-3.1-flash-lite",
   SUMMARY_MAP: "gemini-3.1-flash-lite",
   SUMMARY_REDUCE: "gemini-3.5-flash",
-  FLASHCARDS: "gemini-3.5-flash",
+  FLASHCARDS: "gemini-3.1-flash-lite",
   EXPLAIN: "gemini-3.1-flash-lite",
 };
 

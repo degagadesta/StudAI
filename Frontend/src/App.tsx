@@ -12,6 +12,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { OnboardingRoute } from "./components/OnboardingRoute";
 
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -53,58 +54,58 @@ export default function App() {
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <ThemeProvider>
         <BrowserRouter>
-          <ProfileProvider>
-            <AuthProvider>
-              <Routes>
-                {/* Public Authentication Routes */}
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route path="/workspace/:id" element={<WorkspacePage />} />
+          <AuthProvider>
+            <Routes>
+              {/* Landing Page Route */}
+              <Route path="/" element={<LandingPage />} />
 
-                {/* Protected Onboarding Flow - Uses OnboardingRoute instead of ProtectedRoute */}
-                <Route
-                  path="/onboarding"
-                  element={
-                    <OnboardingRoute>
-                      <OnboardingPage />
-                    </OnboardingRoute>
-                  }
-                />
+              {/* Public Authentication Routes */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/workspace/:id" element={<WorkspacePage />} />
 
-                {/* Redirect /dashboard legacy route to /app/analytics */}
-                <Route
-                  path="/dashboard"
-                  element={<Navigate to="/app/analytics" replace />}
-                />
+              {/* Protected Onboarding Flow - Uses OnboardingRoute instead of ProtectedRoute */}
+              <Route
+                path="/onboarding"
+                element={
+                  <OnboardingRoute>
+                    <OnboardingPage />
+                  </OnboardingRoute>
+                }
+              />
 
-                {/* Main Application Layout */}
-                <Route
-                  path="/app"
-                  element={
-                    <ProtectedRoute>
-                      <DashboardLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<Navigate to="analytics" replace />} />
-                  <Route path="start-studying" element={<StartStudyingPage />} />
-                  <Route path="analytics" element={<AnalyticsPage />} />
-                  <Route path="courses" element={<CoursesPage />} />
-                  <Route path="schedule" element={<SchedulePage />} />
-                  <Route path="profile" element={<ProfilePage />} />
-                  <Route path="notifications" element={<NotificationsPage />} />
-                  <Route path="settings" element={<SettingsModalWrapper />} />
-                </Route>
+              {/* Redirect /dashboard legacy route to /app/analytics */}
+              <Route
+                path="/dashboard"
+                element={<Navigate to="/app/analytics" replace />}
+              />
 
-                {/* Root & Catch-all Fallbacks */}
-                <Route path="/" element={<Navigate to="/login" replace />} />
-                <Route path="*" element={<Navigate to="/login" replace />} />
-              </Routes>
-            </AuthProvider>
-          </ProfileProvider>
+              {/* Main Application Layout */}
+              <Route
+                path="/app"
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="analytics" replace />} />
+                <Route path="start-studying" element={<StartStudyingPage />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="courses" element={<CoursesPage />} />
+                <Route path="schedule" element={<SchedulePage />} />
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="settings" element={<SettingsModalWrapper />} />
+              </Route>
+
+              {/* Root & Catch-all Fallbacks */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>
     </GoogleOAuthProvider>

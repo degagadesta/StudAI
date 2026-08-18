@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { X, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import WorkspaceTopbar from "../components/Workspace/Workspacetopbar";
 import WorkspaceSidebar, {
   type WorkspaceTab,
@@ -11,11 +13,18 @@ import NotesPanel from "./NotesPanel";
 import SettingsModal, { type TabType } from "./SettingsModal";
 import FloatingAIChat from "../components/AIChat/FloatingAIchat";
 import AIChatPanel from "../components/AIChat/AIChatPanel";
+import FloatingAIChat from "../components/AIChat/FloatingAIchat";
+import SummaryPanel from "../components/Workspace/SummaryPanel";
+import FlashcardsPanel from "../components/Workspace/FlashcardsPanel";
+import SettingsModal, { type TabType } from "./SettingsModal";
+import { getMaterials, type Material } from "../api/Materialsapi";
+import { askQuestion } from "../api/aiApi";
 
 export default function WorkspacePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("chat");
+  const [material, setMaterial] = useState<Material | null>(null);
 
   // --- Panel Visibility States ---
   const [showNotes, setShowNotes] = useState<boolean>(false);
@@ -44,6 +53,21 @@ export default function WorkspacePage() {
   const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.15, 2.5));
   const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.15, 0.5));
   const handleZoomReset = () => setScale(1.0);
+  // Load material details
+  useEffect(() => {
+    if (!id) return;
+    
+    getMaterials()
+      .then((materials) => {
+        const found = materials.find((m) => m.id === id);
+        if (found) {
+          setMaterial(found);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load material:", err);
+      });
+  }, [id]);
 
   const handleOpenSettings = (tab?: string) => {
     setSettingsTab((tab as TabType) || "profile");
@@ -111,6 +135,24 @@ export default function WorkspacePage() {
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isResizingNotes, isResizingChat, resizeNotes, resizeChat]);
+  // Handle AI Chat messages - connect to backend
+  const handleAIChatSend = async (message: string): Promise<string> => {
+    if (!material) {
+      return "Please open a PDF first to chat about it.";
+    }
+
+    try {
+      const result = await askQuestion(
+        material.curriculumCourseId,
+        material.id,
+        message,
+      );
+      return result.answer;
+    } catch (error: any) {
+      console.error("AI chat error:", error);
+      throw error;
+    }
+  };
 
   return (
     <div className="relative flex flex-col h-screen bg-[#FDFBF7] overflow-hidden select-none">
@@ -222,6 +264,38 @@ export default function WorkspacePage() {
                 </div>
               )}
             </div>
+          <div className="w-96 flex flex-col bg-[#FFFDF7] overflow-y-auto">
+            {activeTab === "upload" && (
+              <div className="p-6">Upload Content</div>
+            )}
+            {activeTab === "chat" && (
+              <div className="h-full flex items-center justify-center p-6 text-center">
+                <div>
+                  <p className="text-sm text-secondary mb-2">
+                    Click the floating "Ask AI" button
+                  </p>
+                  <p className="text-xs text-secondary">
+                    to start chatting about this material
+                  </p>
+                </div>
+              </div>
+            )}
+            {activeTab === "exams" && <div className="p-6">Previous Exams Viewer</div>}
+            {activeTab === "quiz" && (
+              <div className="p-6">Quiz Generator & Practice</div>
+            )}
+            {activeTab === "flashcards" && material && (
+              <FlashcardsPanel
+                materialId={material.id}
+                materialName={material.fileName}
+              />
+            )}
+            {activeTab === "notes" && (
+              <SummaryPanel
+                materialId={material?.id || ""}
+                materialName={material?.fileName}
+              />
+            )}
           </div>
 
           {/* SECTION 2: Notes Panel */}
@@ -303,6 +377,12 @@ export default function WorkspacePage() {
 
       {/* Floating AI Chat Button & Popover Modal */}
       <FloatingAIChat />
+      {/* 3. Floating AI Chat Overlay */}
+      <FloatingAIChat
+        courseName={material?.courseName}
+        activePdfName={material?.fileName}
+        onSendMessage={handleAIChatSend}
+      />
 
       {/* Settings Modal */}
       <SettingsModal

@@ -2,7 +2,65 @@ import React, { useState, useRef, useCallback } from "react";
 import { Sparkles, X, GripVertical } from "lucide-react";
 import AIChatPanel from "./AIChatPanel";
 
-export default function FloatingAIChat() {
+
+export interface Message {
+  id: string;
+  sender: "user" | "ai";
+  text: string;
+  timestamp: Date;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  timestamp: Date;
+  messages: Message[];
+}
+
+interface FloatingAIChatProps {
+  courseName?: string;
+  activePdfName?: string;
+  onSendMessage?: (message: string) => Promise<string> | Promise<void>;
+  initialQuestion?: string;
+  onQuestionSent?: () => void;
+}
+
+const DEFAULT_PROMPTS = [
+  "Summarize key points from this material",
+  "Explain difficult concepts step-by-step",
+  "Generate 5 quiz questions for revision",
+];
+
+// Initial mock chat history for demonstration
+const INITIAL_HISTORY: ChatSession[] = [
+  {
+    id: "session-1",
+    title: "Key concepts in Chapter 2",
+    timestamp: new Date(Date.now() - 3600000 * 24), // 1 day ago
+    messages: [
+      {
+        id: "m1",
+        sender: "user",
+        text: "Can you explain key concepts in Chapter 2?",
+        timestamp: new Date(Date.now() - 3600000 * 24),
+      },
+      {
+        id: "m2",
+        sender: "ai",
+        text: "Chapter 2 covers core system architecture principles, including separation of concerns, modularity, and layered design patterns.",
+        timestamp: new Date(Date.now() - 3600000 * 24),
+      },
+    ],
+  },
+];
+
+export default function FloatingAIChat({
+  courseName,
+  activePdfName,
+  onSendMessage,
+  initialQuestion,
+  onQuestionSent,
+}: FloatingAIChatProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Position state for the button container (bottom-right origin)
@@ -29,7 +87,24 @@ export default function FloatingAIChat() {
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
-  // Handle Dragging
+
+  // Handle initial question from text selection (Ask AI feature)
+  useEffect(() => {
+    if (initialQuestion && initialQuestion.trim()) {
+      // Open the chat window
+      setIsOpen(true);
+      setActiveView("chat");
+      // Send the question automatically
+      handleSend(initialQuestion);
+      // Notify parent that question was sent
+      if (onQuestionSent) {
+        onQuestionSent();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuestion]);
+
+  // --- DRAG HANDLERS ---
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!isDragging) return;

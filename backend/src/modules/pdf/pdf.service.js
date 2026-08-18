@@ -4,6 +4,7 @@ import {
   SUBSCRIPTION_LIMITS,
   canUploadMore,
 } from "../../lib/subscriptionLimits.js";
+import { processMaterialAsync } from "../ai/materialProcessing.service.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UPLOAD PDF
@@ -142,7 +143,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
         fileData: file.buffer,
         fileSize: file.size,
         uploadedBy: studentId,
-        status: "READY",
+        status: "QUEUED", // Changed from READY - will be updated by processing
       },
 
       select: {
@@ -151,6 +152,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
         fileSize: true,
         createdAt: true,
         progress: true,
+        status: true,
 
         curriculumCourse: {
           select: {
@@ -170,7 +172,11 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     throw error;
   }
 
-  // 8. Return metadata only
+  // 8. Start background processing (non-blocking)
+  console.log(`[Upload] Starting background processing for material ${pdf.id}`);
+  processMaterialAsync(pdf.id);
+
+  // 9. Return metadata only
   return {
     id: pdf.id,
     fileName: pdf.title,
@@ -180,6 +186,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     courseId: pdf.curriculumCourse.course.id,
     courseName: pdf.curriculumCourse.course.title,
     progress: pdf.progress,
+    status: pdf.status,
   };
 }
 
@@ -192,11 +199,13 @@ export async function getStudentPDFs(studentId) {
     throw new AppError("Student account is required", 400);
   }
 
-  // Never return fileData when listing PDFs.
+  // Return all materials (including processing ones), but never include fileData
   const pdfs = await prisma.courseMaterial.findMany({
     where: {
       uploadedBy: studentId,
-      status: "READY",
+      status: {
+        not: "DELETED", // Exclude deleted materials
+      },
     },
 
     select: {
@@ -205,6 +214,7 @@ export async function getStudentPDFs(studentId) {
       fileSize: true,
       createdAt: true,
       progress: true,
+      status: true, // Include status so frontend can show processing state
 
       curriculumCourse: {
         select: {
@@ -249,6 +259,7 @@ export async function getStudentPDFs(studentId) {
       fileSize: pdf.fileSize,
       uploadDate: pdf.createdAt,
       progress: pdf.progress,
+      status: pdf.status,
     });
   }
 

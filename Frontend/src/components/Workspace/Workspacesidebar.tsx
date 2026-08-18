@@ -125,10 +125,25 @@ export default function WorkspaceSidebar({
     setIsUploadOpen((prev) => !prev);
   };
 
+  // Click handler specifically for Notes navigation button
+  const handleNotesTabClick = () => {
+    if (currentTab === "Notes") {
+      setIsNotesOpen((prev) => !prev);
+    } else {
+      handleTabClick("Notes");
+      setIsNotesOpen(true);
+    }
+  };
+
   // Programmatically handle selection and navigation for main Upload button
   const handleUploadTabClick = () => {
-    handleTabClick("upload");
-    navigate("/app/start-studying");
+    if (currentTab === "upload") {
+      setIsUploadOpen((prev) => !prev);
+    } else {
+      handleTabClick("upload");
+      setIsUploadOpen(true);
+      // navigate("/app/start-studying");
+    }
   };
 
   // Programmatically handle selection and navigation
@@ -219,7 +234,7 @@ export default function WorkspaceSidebar({
             icon={Notebook}
             isActive={currentTab === "Notes"}
             isExpanded={isExpanded}
-            onClick={() => handleTabClick("Notes")}
+            onClick={handleNotesTabClick}
             hasDropdown
             isOpen={isNotesOpen}
             onToggleDropdown={toggleNotesSubMenu}

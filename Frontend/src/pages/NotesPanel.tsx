@@ -10,7 +10,7 @@ import { TextAlign } from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Extension } from "@tiptap/core";
 
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, X } from "lucide-react";
 
 import EditorToolbar from "../components/Workspace/Editortool";
 import { getMaterialNotes, saveMaterialNotes } from "../api/Materialsapi";

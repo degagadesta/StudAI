@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+// components/PdfViewerPage.tsx
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useParams } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
-import { ArrowLeft, Loader2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -14,66 +15,124 @@ import {
 import { getApiErrorMessage } from "../api/authApi";
 import { api } from "../api/client";
 
+// Set worker source via reliable unpkg CDN matching installed pdfjs version
 pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 const SAVE_DEBOUNCE_MS = 800;
 
-export default function PdfViewerPage() {
+interface PdfViewerPageProps {
+  scale?: number;
+  onMetaLoaded?: (meta: { fileName: string; courseName: string }) => void;
+  onProgressChange?: (percent: number) => void;
+}
+
+export default function PdfViewerPage({
+  scale = 1.0,
+  onMetaLoaded,
+  onProgressChange,
+}: PdfViewerPageProps) {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
 
   const [material, setMaterial] = useState<Material | null>(null);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPdfLoading, setIsPdfLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [numPages, setNumPages] = useState<number | null>(null);
   const [furthestPage, setFurthestPage] = useState(1);
 
-  // Zoom and Resizing states
-  const [scale, setScale] = useState<number>(1.0);
+  // Container width state
   const [containerWidth, setContainerWidth] = useState<number>(640);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const hasRestoredStartingPage = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Observer to adjust PDF page width dynamically as container changes
+  // Preserve latest prop references to prevent unnecessary re-fetches
+  const onMetaLoadedRef = useRef(onMetaLoaded);
+  const onProgressChangeRef = useRef(onProgressChange);
+
+  useEffect(() => {
+    onMetaLoadedRef.current = onMetaLoaded;
+    onProgressChangeRef.current = onProgressChange;
+  }, [onMetaLoaded, onProgressChange]);
+
+  // Memoize Document source payload safely
+  const fileSource = useMemo(() => {
+    if (!pdfData) return null;
+    return { data: pdfData };
+  }, [pdfData]);
+
+  // Memoize worker options
+  const documentOptions = useMemo(
+    () => ({
+      cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+      cMapPacked: true,
+      standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/standard_fonts/`,
+    }),
+    [],
+  );
+
+  // Resizing container observer with debounce
   useEffect(() => {
     if (!containerRef.current) return;
 
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const availableWidth = entry.contentRect.width - 48; // padding offset
+        const availableWidth = entry.contentRect.width - 48;
         if (availableWidth > 0) {
-          setContainerWidth(availableWidth);
+          if (timeoutId) clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            setContainerWidth(availableWidth);
+          }, 200);
         }
       }
     });
 
     observer.observe(containerRef.current);
-    return () => observer.disconnect();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      observer.disconnect();
+    };
   }, []);
 
-  // 1. Fetch material details
+  // 1. Fetch material details & PDF binary together
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
+    setIsLoading(true);
+    setError(null);
 
     getMaterials()
-      .then((materials) => {
+      .then(async (materials) => {
         if (cancelled) return;
         const found = materials.find((m) => m.id === id);
         if (found) {
           setMaterial(found);
+          onMetaLoadedRef.current?.({
+            fileName: found.fileName,
+            courseName: found.courseName,
+          });
+
+          // Fetch PDF binary
+          const res = await api.get(`/student/pdfs/${found.id}/file`, {
+            responseType: "arraybuffer",
+          });
+
+          if (!cancelled) {
+            setPdfData(new Uint8Array(res.data));
+          }
         } else {
           setError("Material not found.");
         }
       })
       .catch((err) => {
-        if (!cancelled)
+        if (!cancelled) {
           setError(getApiErrorMessage(err, "Could not load this material."));
+        }
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -84,50 +143,14 @@ export default function PdfViewerPage() {
     };
   }, [id]);
 
-  // 2. Fetch PDF binary blob
-  useEffect(() => {
-    if (!material) return;
-
-    let cancelled = false;
-    let createdObjectUrl = "";
-    setIsPdfLoading(true);
-
-    api
-      .get(`/student/pdfs/${material.id}/file`, {
-        responseType: "arraybuffer",
-      })
-      .then((res) => {
-        if (!cancelled) {
-          const blob = new Blob([res.data], { type: "application/pdf" });
-          createdObjectUrl = URL.createObjectURL(blob);
-          setPdfUrl(createdObjectUrl);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(getApiErrorMessage(err, "Failed to download PDF file."));
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsPdfLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-      if (createdObjectUrl) {
-        URL.revokeObjectURL(createdObjectUrl);
-      }
-    };
-  }, [material]);
-
-  // 3. Document initial load handler
+  // 2. Document initial load handler
   const onDocumentLoad = ({ numPages: total }: { numPages: number }): void => {
     setNumPages(total);
 
     if (!hasRestoredStartingPage.current && material) {
       const startingPage = Math.max(
         1,
-        Math.round((material.progress / 100) * total),
+        Math.round(((material.progress || 0) / 100) * total),
       );
       setFurthestPage(startingPage);
       hasRestoredStartingPage.current = true;
@@ -141,7 +164,7 @@ export default function PdfViewerPage() {
     }
   };
 
-  // 4. Track reading progress via IntersectionObserver
+  // 3. Track reading progress via IntersectionObserver
   useEffect(() => {
     if (!numPages || !containerRef.current) return;
 
@@ -170,7 +193,13 @@ export default function PdfViewerPage() {
     return () => observer.disconnect();
   }, [numPages]);
 
-  // 5. Debounce backend progress saves
+  // Notify parent of reading percentage changes
+  useEffect(() => {
+    const percent = numPages ? Math.round((furthestPage / numPages) * 100) : 0;
+    onProgressChangeRef.current?.(percent);
+  }, [furthestPage, numPages]);
+
+  // 4. Debounce backend progress saves
   const saveProgress = useCallback(
     (page: number, total: number) => {
       if (!id) return;
@@ -192,116 +221,46 @@ export default function PdfViewerPage() {
     };
   }, [furthestPage, numPages, saveProgress]);
 
-  useEffect(() => {
-    return () => {
-      if (numPages) saveProgress(furthestPage, numPages);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Zoom helper handlers
-  const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.15, 2.5));
-  const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.15, 0.5));
-  const handleZoomReset = () => setScale(1.0);
-
-  const percent = numPages ? Math.round((furthestPage / numPages) * 100) : 0;
-  // Calculate rendered PDF width based on container width & zoom scale
   const calculatedWidth = Math.max(300, Math.min(containerWidth * scale, 1400));
 
-  if (isLoading || isPdfLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full py-24">
-        <Loader2 size={24} className="text-accent animate-spin" />
+        <Loader2 size={24} className="text-[#253D31] animate-spin" />
       </div>
     );
   }
 
   if (error || !material) {
     return (
-      <div className="max-w-2xl mx-auto flex items-center gap-2 text-sm text-error bg-error/10 border border-error rounded-lg px-3.5 py-2.5">
+      <div className="max-w-2xl mx-auto flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5">
         {error ?? "Material not found."}
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* Centered Header Bar + Zoom Controls */}
-      <div className="grid grid-cols-3 items-center mb-4 flex-shrink-0">
-        {/* Left Column: Zoom Controls */}
-        <div className="flex items-center gap-1.5 justify-start">
-          <div className="flex items-center bg-[#FFFDF7] border border-[#DCD2B4] rounded-lg p-0.5 shadow-sm">
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-md transition-colors"
-              title="Zoom Out"
-            >
-              <ZoomOut size={15} />
-            </button>
-            <span className="text-xs font-mono px-2 text-[#5B6156]">
-              {Math.round(scale * 100)}%
-            </span>
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-md transition-colors"
-              title="Zoom In"
-            >
-              <ZoomIn size={15} />
-            </button>
-            <button
-              type="button"
-              onClick={handleZoomReset}
-              className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-md transition-colors border-l border-[#DCD2B4]"
-              title="Reset Zoom"
-            >
-              <RotateCcw size={14} />
-            </button>
-          </div>
-        </div>
-
-        {/* Center Column: Material & Course Title */}
-        <div className="text-center min-w-0">
-          <p className="text-sm font-medium text-primary truncate">
-            {material.fileName}
-          </p>
-          <p className="text-xs text-muted truncate">{material.courseName}</p>
-        </div>
-
-        {/* Right Column: Reading Progress Indicator */}
-        <div className="flex justify-end">
-          <span className="text-xs font-mono text-secondary text-right">
-            {percent}% read
-          </span>
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="h-1.5 bg-[#DCD2B4] rounded-full overflow-hidden mb-4 flex-shrink-0">
-        <div
-          className="h-full bg-accent-secondary transition-all duration-300"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-
-      {/* Scrollable Container with Explicit Height */}
-      {/* <div
-        ref={containerRef}
-        className="flex-1 w-full overflow-y-auto bg-surface border border-default rounded-2xl p-6 scroll-smooth"
-      > */}
-      {pdfUrl && (
+    <div
+      ref={containerRef}
+      className="w-full h-full flex flex-col items-center overflow-y-auto"
+    >
+      {fileSource ? (
         <Document
-          file={pdfUrl}
+          file={fileSource}
+          options={documentOptions}
           onLoadSuccess={onDocumentLoad}
+          onLoadError={(err) => {
+            console.error("PDF.js Load Error:", err);
+            setError("Failed to parse and render PDF document.");
+          }}
           loading={
             <div className="flex justify-center py-24">
-              <Loader2 size={24} className="text-accent animate-spin" />
+              <Loader2 size={24} className="text-[#253D31] animate-spin" />
             </div>
           }
           error={
             <div className="flex justify-center py-24">
-              <p className="text-sm text-error">Could not render this PDF.</p>
+              <p className="text-sm text-red-600">Could not render this PDF.</p>
             </div>
           }
           className="flex flex-col items-center gap-6 w-full"
@@ -315,7 +274,7 @@ export default function PdfViewerPage() {
                   id={`pdf-page-${pageNo}`}
                   data-page-number={pageNo}
                   style={{ width: `${calculatedWidth}px` }}
-                  className="pdf-page-wrapper min-h-[800px] max-w-full bg-white shadow-md rounded-lg overflow-hidden flex justify-center items-center transition-all duration-150"
+                  className="pdf-page-wrapper min-h-[400px] max-w-full bg-white shadow-md rounded-lg overflow-hidden flex justify-center items-center transition-all duration-150"
                 >
                   <Page
                     pageNumber={pageNo}
@@ -323,7 +282,7 @@ export default function PdfViewerPage() {
                     renderAnnotationLayer={false}
                     renderTextLayer={true}
                     loading={
-                      <div className="flex items-center gap-2 text-sm text-muted">
+                      <div className="flex items-center gap-2 text-sm text-[#5B6156] py-12">
                         <Loader2 size={16} className="animate-spin" />
                         Loading Page {pageNo}...
                       </div>
@@ -333,8 +292,11 @@ export default function PdfViewerPage() {
               );
             })}
         </Document>
+      ) : (
+        <div className="flex justify-center py-24 text-sm text-[#5B6156]">
+          No PDF data available.
+        </div>
       )}
     </div>
-    // </div>
   );
 }

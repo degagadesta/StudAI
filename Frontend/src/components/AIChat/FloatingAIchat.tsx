@@ -1,7 +1,6 @@
-import React, { useState, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Sparkles, X, GripVertical } from "lucide-react";
 import AIChatPanel from "./AIChatPanel";
-
 
 export interface Message {
   id: string;
@@ -25,39 +24,8 @@ interface FloatingAIChatProps {
   onQuestionSent?: () => void;
 }
 
-const DEFAULT_PROMPTS = [
-  "Summarize key points from this material",
-  "Explain difficult concepts step-by-step",
-  "Generate 5 quiz questions for revision",
-];
-
-// Initial mock chat history for demonstration
-const INITIAL_HISTORY: ChatSession[] = [
-  {
-    id: "session-1",
-    title: "Key concepts in Chapter 2",
-    timestamp: new Date(Date.now() - 3600000 * 24), // 1 day ago
-    messages: [
-      {
-        id: "m1",
-        sender: "user",
-        text: "Can you explain key concepts in Chapter 2?",
-        timestamp: new Date(Date.now() - 3600000 * 24),
-      },
-      {
-        id: "m2",
-        sender: "ai",
-        text: "Chapter 2 covers core system architecture principles, including separation of concerns, modularity, and layered design patterns.",
-        timestamp: new Date(Date.now() - 3600000 * 24),
-      },
-    ],
-  },
-];
-
 export default function FloatingAIChat({
-  courseName,
   activePdfName,
-  onSendMessage,
   initialQuestion,
   onQuestionSent,
 }: FloatingAIChatProps) {
@@ -86,23 +54,6 @@ export default function FloatingAIChat({
 
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
-
-
-  // Handle initial question from text selection (Ask AI feature)
-  useEffect(() => {
-    if (initialQuestion && initialQuestion.trim()) {
-      // Open the chat window
-      setIsOpen(true);
-      setActiveView("chat");
-      // Send the question automatically
-      handleSend(initialQuestion);
-      // Notify parent that question was sent
-      if (onQuestionSent) {
-        onQuestionSent();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuestion]);
 
   // --- DRAG HANDLERS ---
   const handlePointerMove = useCallback(
@@ -146,6 +97,16 @@ export default function FloatingAIChat({
     }
   };
 
+  // Open chat automatically when an initial question (e.g. "Ask AI") is received
+  useEffect(() => {
+    if (initialQuestion && initialQuestion.trim()) {
+      setIsOpen(true);
+      if (onQuestionSent) {
+        onQuestionSent();
+      }
+    }
+  }, [initialQuestion, onQuestionSent]);
+
   return (
     <div
       style={{
@@ -157,7 +118,11 @@ export default function FloatingAIChat({
       {/* Popover Chat Panel */}
       {isOpen && (
         <div className="mb-3 w-[380px] h-[520px] bg-[#FFFDF7] rounded-2xl shadow-2xl border border-[#DCD2B4] overflow-hidden flex flex-col">
-          <AIChatPanel onClose={() => setIsOpen(false)} />
+          <AIChatPanel
+            onClose={() => setIsOpen(false)}
+            activePdfName={activePdfName}
+            initialQuestion={initialQuestion}
+          />
         </div>
       )}
 

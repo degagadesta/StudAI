@@ -189,29 +189,29 @@ export default function AIChatPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#FFFDF7] font-sans">
+    <div className="flex flex-col h-full bg-surface font-sans border-l border-default">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#DCD2B4]/70 select-none">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-default select-none">
         <div className="flex items-center gap-2 min-w-0">
           {activeView === "history" ? (
             <button
               type="button"
               onClick={() => setActiveView("chat")}
-              className="p-1 hover:bg-[#F3EFE0] rounded-lg text-[#5B6156] hover:text-[#253D31] transition-colors cursor-pointer flex items-center gap-1 text-xs font-medium"
+              className="p-1 hover:bg-surface-hover rounded-lg text-secondary hover:text-primary transition-colors cursor-pointer flex items-center gap-1 text-xs font-medium"
             >
               <ChevronLeft size={16} />
               <span>Back</span>
             </button>
           ) : (
-            <div className="w-7 h-7 rounded-xl bg-[#253D31]/10 text-[#253D31] flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-xl bg-accent-light text-accent flex items-center justify-center shrink-0">
               <Sparkles size={16} />
             </div>
           )}
           <div className="truncate">
-            <h4 className="text-xs font-semibold text-[#253D31] truncate leading-tight">
+            <h4 className="text-xs font-semibold text-primary truncate leading-tight">
               {activeView === "history" ? "Chat History" : "StudAI Assistant"}
             </h4>
-            <p className="text-[10px] text-[#5B6156] truncate mt-0.5">
+            <p className="text-[10px] text-secondary truncate mt-0.5">
               {activeView === "history"
                 ? `${sessions.length} saved session${sessions.length === 1 ? "" : "s"}`
                 : activePdfName
@@ -229,8 +229,8 @@ export default function AIChatPanel({
             }
             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
               activeView === "history"
-                ? "bg-[#253D31]/10 text-[#253D31] font-semibold"
-                : "text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0]"
+                ? "bg-accent-light text-accent font-semibold"
+                : "text-secondary hover:text-primary hover:bg-surface-hover"
             }`}
             title="View History"
           >
@@ -241,7 +241,7 @@ export default function AIChatPanel({
             <button
               type="button"
               onClick={handleStartNewChat}
-              className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
               title="New Chat"
             >
               <Plus size={15} />
@@ -252,7 +252,7 @@ export default function AIChatPanel({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
               title="Close Panel"
             >
               <X size={16} />
@@ -267,7 +267,7 @@ export default function AIChatPanel({
           <button
             type="button"
             onClick={handleStartNewChat}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-[#253D31] text-white font-medium text-xs hover:opacity-90 transition-opacity cursor-pointer mb-3"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-2xl bg-accent text-inverse font-medium text-xs hover:bg-accent-hover transition-colors cursor-pointer mb-3 shadow-sm"
           >
             <Plus size={15} />
             <span>Start New Chat</span>
@@ -275,8 +275,8 @@ export default function AIChatPanel({
 
           {sessions.length === 0 ? (
             <div className="h-48 flex flex-col items-center justify-center text-center p-4">
-              <History size={24} className="text-[#5B6156]/60 mb-2" />
-              <p className="text-xs font-medium text-[#253D31]">
+              <History size={24} className="text-muted mb-2" />
+              <p className="text-xs font-medium text-primary">
                 No chat history yet
               </p>
             </div>
@@ -287,18 +287,18 @@ export default function AIChatPanel({
                 onClick={() => handleSelectSession(session)}
                 className={`group relative flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
                   currentSessionId === session.id
-                    ? "bg-[#253D31]/10 border-[#253D31]/40 text-[#253D31]"
-                    : "bg-white hover:bg-[#FDFBF7] border-[#DCD2B4]/60"
+                    ? "bg-accent-light border-accent text-accent font-medium"
+                    : "bg-surface hover:bg-surface-hover border-default text-primary"
                 }`}
               >
-                <div className="p-2 rounded-xl bg-[#F3EFE0] border border-[#DCD2B4]/60 text-[#253D31] shrink-0 mt-0.5">
+                <div className="p-2 rounded-xl bg-elevated border border-default text-accent shrink-0 mt-0.5">
                   <MessageSquare size={14} />
                 </div>
                 <div className="flex-1 min-w-0 pr-6">
-                  <h5 className="font-medium text-xs text-[#253D31] truncate leading-snug">
+                  <h5 className="font-medium text-xs text-primary truncate leading-snug">
                     {session.title}
                   </h5>
-                  <span className="text-[10px] text-[#5B6156] block mt-1">
+                  <span className="text-[10px] text-secondary block mt-1">
                     {session.timestamp.toLocaleDateString([], {
                       month: "short",
                       day: "numeric",
@@ -309,7 +309,7 @@ export default function AIChatPanel({
                 <button
                   type="button"
                   onClick={(e) => handleDeleteSession(e, session.id)}
-                  className="absolute right-2.5 top-2.5 p-1 text-[#5B6156]/60 hover:text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  className="absolute right-2.5 top-2.5 p-1 text-muted hover:text-error rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   title="Delete Session"
                 >
                   <Trash2 size={14} />
@@ -324,19 +324,19 @@ export default function AIChatPanel({
           <div className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center px-3 select-none">
-                <div className="w-11 h-11 rounded-2xl bg-[#253D31]/10 text-[#253D31] flex items-center justify-center mb-3">
+                <div className="w-11 h-11 rounded-2xl bg-accent-light text-accent flex items-center justify-center mb-3">
                   <Bot size={22} />
                 </div>
-                <h5 className="text-xs font-semibold text-[#253D31]">
+                <h5 className="text-xs font-semibold text-primary">
                   How can I assist your study session?
                 </h5>
-                <p className="text-[11px] text-[#5B6156] mt-1 max-w-[240px]">
+                <p className="text-[11px] text-secondary mt-1 max-w-[240px]">
                   Ask questions or request explanations directly from your
                   active course materials.
                 </p>
 
                 <div className="mt-5 w-full space-y-1.5 text-left">
-                  <p className="text-[10px] font-medium text-[#5B6156] uppercase tracking-wider pl-1">
+                  <p className="text-[10px] font-medium text-secondary uppercase tracking-wider pl-1">
                     Suggested prompts
                   </p>
                   {DEFAULT_PROMPTS.map((prompt, idx) => (
@@ -344,12 +344,12 @@ export default function AIChatPanel({
                       key={idx}
                       type="button"
                       onClick={() => handleSend(prompt)}
-                      className="w-full text-left text-[11px] p-2.5 rounded-xl border border-[#DCD2B4]/60 bg-white hover:bg-[#F3EFE0] text-[#253D31] transition-all cursor-pointer flex items-center justify-between group"
+                      className="w-full text-left text-[11px] p-2.5 rounded-xl border border-default bg-surface hover:bg-surface-hover text-primary transition-all cursor-pointer flex items-center justify-between group shadow-sm hover:border-accent"
                     >
                       <span className="truncate pr-2">{prompt}</span>
                       <Sparkles
                         size={12}
-                        className="text-[#5B6156] group-hover:text-[#253D31] shrink-0 transition-colors"
+                        className="text-muted group-hover:text-accent shrink-0 transition-colors"
                       />
                     </button>
                   ))}
@@ -366,8 +366,8 @@ export default function AIChatPanel({
                   <div
                     className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
                       msg.sender === "user"
-                        ? "bg-[#253D31] text-white"
-                        : "bg-[#F3EFE0] border border-[#DCD2B4] text-[#253D31]"
+                        ? "bg-accent text-inverse"
+                        : "bg-elevated border border-default text-accent"
                     }`}
                   >
                     {msg.sender === "user" ? (
@@ -380,16 +380,16 @@ export default function AIChatPanel({
                   <div
                     className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed ${
                       msg.sender === "user"
-                        ? "bg-[#253D31] text-white rounded-tr-xs"
-                        : "bg-[#F3EFE0] border border-[#DCD2B4]/60 text-[#253D31] rounded-tl-xs"
+                        ? "bg-accent text-inverse rounded-tr-xs shadow-sm"
+                        : "bg-elevated border border-default text-primary rounded-tl-xs shadow-sm"
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.text}</p>
                     <span
                       className={`text-[9px] block mt-1 ${
                         msg.sender === "user"
-                          ? "text-white/70 text-right"
-                          : "text-[#5B6156] text-left"
+                          ? "text-inverse/70 text-right"
+                          : "text-secondary text-left"
                       }`}
                     >
                       {new Date(msg.timestamp).toLocaleTimeString([], {
@@ -404,13 +404,13 @@ export default function AIChatPanel({
 
             {isGenerating && (
               <div className="flex gap-2.5">
-                <div className="w-6 h-6 rounded-lg bg-[#F3EFE0] border border-[#DCD2B4] text-[#253D31] flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-lg bg-elevated border border-default text-accent flex items-center justify-center shrink-0">
                   <Bot size={13} />
                 </div>
-                <div className="bg-[#F3EFE0] border border-[#DCD2B4]/60 rounded-2xl rounded-tl-xs px-3.5 py-2.5 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#5B6156] animate-bounce" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#5B6156] animate-bounce [animation-delay:0.2s]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#5B6156] animate-bounce [animation-delay:0.4s]" />
+                <div className="bg-elevated border border-default rounded-2xl rounded-tl-xs px-3.5 py-2.5 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce [animation-delay:0.2s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce [animation-delay:0.4s]" />
                 </div>
               </div>
             )}
@@ -418,13 +418,13 @@ export default function AIChatPanel({
           </div>
 
           {/* Input Footer */}
-          <div className="p-3 bg-[#FFFDF7] border-t border-[#DCD2B4]/70">
+          <div className="p-3 bg-surface border-t border-default">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="relative flex items-end gap-2 bg-[#F3EFE0]/60 border border-[#DCD2B4] rounded-2xl p-2 focus-within:border-[#253D31] transition-colors"
+              className="relative flex items-end gap-2 bg-elevated border border-default rounded-2xl p-2 focus-within:border-accent transition-colors"
             >
               <textarea
                 ref={inputRef}
@@ -433,15 +433,15 @@ export default function AIChatPanel({
                 onKeyDown={handleKeyDown}
                 placeholder="Ask AI about this workspace..."
                 rows={1}
-                className="w-full bg-transparent text-xs text-[#253D31] placeholder:text-[#5B6156] outline-none resize-none max-h-24 py-1 px-1"
+                className="w-full bg-transparent text-xs text-primary placeholder:text-muted outline-none resize-none max-h-24 py-1 px-1"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isGenerating}
-                className="p-2 rounded-xl bg-[#253D31] text-white hover:opacity-90 transition-opacity disabled:opacity-40 cursor-pointer shrink-0"
+                className="p-2 rounded-xl bg-accent text-inverse hover:bg-accent-hover transition-colors disabled:opacity-40 cursor-pointer shrink-0"
               >
                 {isGenerating ? (
-                  <Loader2 size={13} className="animate-spin" />
+                  <Loader2 size={13} className="animate-spin text-inverse" />
                 ) : (
                   <Send size={13} />
                 )}

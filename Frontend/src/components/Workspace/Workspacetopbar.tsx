@@ -31,13 +31,13 @@ export default function WorkspaceTopbar({
   };
 
   return (
-    <header className="h-14 w-full bg-[#FFFDF7] border-b border-[#DCD2B4] px-4 flex items-center justify-between shrink-0 select-none gap-4">
+    <header className="h-14 w-full bg-surface border-b border-default px-4 flex items-center justify-between shrink-0 select-none gap-4">
       {/* 1. Logo */}
       <Link to="/app/analytics" className="flex items-center gap-2.5">
-        <div className="w-8 h-8 bg-[#253D31] text-[#FFFDF7] rounded-lg flex items-center justify-center font-bold shadow-sm">
-          <BookOpen size={18} className="text-[#C7D3B9]" />
+        <div className="w-8 h-8 bg-accent text-inverse rounded-lg flex items-center justify-center font-bold shadow-sm">
+          <BookOpen size={18} />
         </div>
-        <span className="font-serif font-semibold text-[#253D31] text-lg tracking-tight hidden sm:inline">
+        <span className="font-serif font-semibold text-primary text-lg tracking-tight hidden sm:inline">
           StudAI
         </span>
       </Link>
@@ -51,7 +51,7 @@ export default function WorkspaceTopbar({
             onChange={handleChange}
             maxLength={SEARCH_MAX_LEN}
             placeholder="Search..."
-            className="w-90 pl-4 pr-11 py-2 text-sm bg-surface border border-default rounded-full outline-none placeholder:text-muted focus:border-accent focus:ring-4 focus:ring-accent/20"
+            className="w-90 pl-4 pr-11 py-2 text-sm bg-page text-primary border border-default rounded-full outline-none placeholder:text-muted focus:border-accent focus:ring-4 focus:ring-accent/20"
           />
           <span className="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-accent flex items-center justify-center">
             <Search size={14} className="text-inverse" />
@@ -64,13 +64,13 @@ export default function WorkspaceTopbar({
         {/* Extracted Study Timer */}
         <StudyTimer />
 
-        <div className="h-4 w-px bg-[#DCD2B4] hidden sm:block" />
+        <div className="h-4 w-px bg-default hidden sm:block" />
 
         {/* Share Button */}
         <button
           type="button"
           onClick={onOpenShare}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
           title="Share Workspace"
         >
           <Share2 size={15} />
@@ -81,9 +81,9 @@ export default function WorkspaceTopbar({
         <button
           type="button"
           onClick={handleUpgradeClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#253D31] text-[#FFFDF7] hover:bg-[#1C2E25] rounded-lg transition-colors shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-accent text-inverse hover:bg-accent-hover rounded-lg transition-colors shadow-sm cursor-pointer"
         >
-          <Sparkles size={14} className="text-[#C7D3B9]" />
+          <Sparkles size={14} className="text-inverse" />
           <span>Upgrade</span>
         </button>
 
@@ -91,7 +91,7 @@ export default function WorkspaceTopbar({
         <button
           type="button"
           onClick={() => onOpenSettings?.()}
-          className="p-2 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-lg transition-colors"
+          className="p-2 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
           title="Settings"
         >
           <Settings size={18} />

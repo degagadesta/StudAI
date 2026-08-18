@@ -10,7 +10,7 @@ import { TextAlign } from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Extension } from "@tiptap/core";
 
-import { Sparkles, Loader2, X } from "lucide-react";
+import { Sparkles, Loader2, X, Notebook } from "lucide-react";
 
 import EditorToolbar from "../components/Workspace/Editortool";
 import { getMaterialNotes, saveMaterialNotes } from "../api/Materialsapi";
@@ -69,14 +69,14 @@ export const FontSize = Extension.create({
 
 interface NotesPanelProps {
   materialId?: string;
-  // onAskAI?: (prompt: string) => void;
   onGenerateNotes?: () => Promise<string> | void;
+  onClose?: () => void;
 }
 
 export default function NotesPanel({
   materialId,
-  // onAskAI,
   onGenerateNotes,
+  onClose,
 }: NotesPanelProps) {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -98,7 +98,7 @@ export default function NotesPanel({
         types: ["heading", "paragraph"],
       }),
       Placeholder.configure({
-        placeholder: "Take your own notes here",
+        placeholder: "Take your own notes here...",
         emptyEditorClass: "is-editor-empty",
       }),
     ],
@@ -106,7 +106,7 @@ export default function NotesPanel({
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm max-w-none focus:outline-none min-h-[350px] p-4 text-[#253D31] font-sans leading-relaxed",
+          "prose prose-sm max-w-none focus:outline-none min-h-[350px] p-4 text-primary font-sans leading-relaxed dark:prose-invert",
       },
     },
     onUpdate: ({ editor }) => {
@@ -206,12 +206,33 @@ export default function NotesPanel({
   return (
     <div
       ref={containerRef}
-      className={`flex flex-col h-full bg-[#FFFDF7] ${
+      className={`flex flex-col h-full bg-surface ${
         isFullScreen
-          ? "fixed inset-0 z-50 p-8 bg-[#FFFDF7] overflow-y-auto"
-          : "relative"
+          ? "fixed inset-0 z-50 p-6 bg-surface overflow-y-auto"
+          : "relative p-3"
       }`}
     >
+      {/* Panel Top Header Bar with Close Button */}
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-default shrink-0 select-none">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-xl bg-accent-light text-accent flex items-center justify-center shrink-0">
+            <Notebook size={15} />
+          </div>
+          <h4 className="text-xs font-semibold text-primary">Study Notes</h4>
+        </div>
+
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
+            title="Close Notes"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
       {/* 1. Rich-Text Toolbar Component */}
       <EditorToolbar
         editor={editor}
@@ -221,18 +242,18 @@ export default function NotesPanel({
       />
 
       {/* 2. Text Editor Container with Generate Button */}
-      <div className="flex-1 overflow-y-auto mt-2 bg-[#FDFBF7] border border-[#DCD2B4] rounded-xl p-4 shadow-inner flex flex-col items-start gap-3">
+      <div className="flex-1 overflow-y-auto mt-2 bg-page border border-default rounded-xl p-3 shadow-inner flex flex-col items-start gap-3">
         {/* Generate Notes Pill Button */}
         <button
           type="button"
           onClick={handleGenerateClick}
           disabled={isGenerating}
-          className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#EAE4D0] hover:bg-[#E2DAC2] text-[#253D31] rounded-full text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-accent-light hover:bg-elevated text-accent border border-accent/20 rounded-full text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
         >
           {isGenerating ? (
-            <Loader2 size={13} className="animate-spin" />
+            <Loader2 size={13} className="animate-spin text-accent" />
           ) : (
-            <Sparkles size={13} className="text-[#253D31]" />
+            <Sparkles size={13} className="text-accent" />
           )}
           <span>{isGenerating ? "Generating..." : "Generate Notes"}</span>
         </button>
@@ -242,19 +263,7 @@ export default function NotesPanel({
           <EditorContent editor={editor} />
         </div>
       </div>
-
-      {/* 3. AI Summarize Button */}
-      {/* {onAskAI && (
-        <button
-          type="button"
-          onClick={() => onAskAI(editor.getText())}
-          disabled={!editor.getText().trim()}
-          className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 bg-[#253D31] text-[#FFFDF7] hover:bg-[#1d3027] rounded-xl text-xs font-medium transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-        >
-          <Sparkles size={14} className="text-[#DCD2B4]" />
-          Summarize Notes with AI
-        </button>
-      )} */}
     </div>
   );
 }
+

@@ -41,7 +41,7 @@ export default function SelectionPopover({
 
   return (
     <div
-      className="fixed z-50 bg-white border border-[#DCD2B4] rounded-xl shadow-lg p-2 flex flex-col gap-2"
+      className="fixed z-50 bg-surface border border-default rounded-xl shadow-xl p-2 flex flex-col gap-2"
       style={{ top: y, left: x, transform: "translate(-50%, -110%)" }}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
@@ -58,12 +58,12 @@ export default function SelectionPopover({
           />
         ))}
 
-        <div className="w-px h-4 bg-[#DCD2B4] mx-1" />
+        <div className="w-px h-4 bg-default mx-1" />
 
         <button
           type="button"
           onClick={() => setShowNoteInput((s) => !s)}
-          className="text-xs text-secondary hover:text-primary px-1"
+          className="text-xs text-secondary hover:text-primary px-1 font-medium transition-colors"
         >
           Note
         </button>
@@ -75,7 +75,7 @@ export default function SelectionPopover({
               onAskAI(selectedText);
               onClose();
             }}
-            className="flex items-center gap-1 text-xs text-accent hover:text-accent-secondary px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors"
+            className="flex items-center gap-1 text-xs text-accent hover:text-accent-secondary px-1.5 py-0.5 rounded-lg bg-accent-light hover:bg-elevated transition-colors font-medium"
             title="Ask AI about this text"
           >
             <Sparkles size={12} />
@@ -87,7 +87,7 @@ export default function SelectionPopover({
           <button
             type="button"
             onClick={onDelete}
-            className="text-error hover:opacity-70 px-1"
+            className="text-error hover:opacity-70 px-1 transition-opacity"
             aria-label="Delete highlight"
           >
             <Trash2 size={14} />
@@ -102,7 +102,7 @@ export default function SelectionPopover({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Add a note..."
-            className="flex-1 text-xs border border-[#DCD2B4] rounded-md px-2 py-1 outline-none"
+            className="flex-1 text-xs bg-elevated text-primary border border-default rounded-md px-2 py-1 outline-none placeholder:text-muted focus:border-accent"
             maxLength={1000}
           />
           <button
@@ -112,7 +112,7 @@ export default function SelectionPopover({
               setShowNoteInput(false);
               onClose();
             }}
-            className="text-accent-secondary"
+            className="text-accent hover:opacity-80 transition-opacity"
           >
             <Check size={16} />
           </button>

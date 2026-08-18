@@ -146,15 +146,15 @@ export interface MaterialNoteResponse {
 /**
  * Fetches saved notes for a specific PDF material.
  *
- * Endpoint: GET /student/pdfs/:id/notes
+ * Endpoint: GET /student/materials/:materialId/note
  */
 export async function getMaterialNotes(materialId: string): Promise<string> {
   const res = await api.get<{
     success: boolean;
     data: {
       content: string;
-    };
-  }>(`/student/pdfs/${materialId}/notes`);
+    } | null;
+  }>(`/student/materials/${materialId}/note`);
 
   return res.data.data?.content ?? "";
 }
@@ -162,7 +162,7 @@ export async function getMaterialNotes(materialId: string): Promise<string> {
 /**
  * Saves or updates study notes for a specific PDF material.
  *
- * Endpoint: PUT /student/pdfs/:id/notes
+ * Endpoint: PUT /student/materials/:materialId/note
  * Body: { content: string }
  */
 export async function saveMaterialNotes(
@@ -172,5 +172,5 @@ export async function saveMaterialNotes(
   await api.put<{
     success: boolean;
     message?: string;
-  }>(`/student/pdfs/${materialId}/notes`, { content });
+  }>(`/student/materials/${materialId}/note`, { content });
 }

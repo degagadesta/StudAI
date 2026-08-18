@@ -131,7 +131,7 @@ function PortalPopover({
     <div
       ref={popoverRef}
       style={{ top: `${coords.top}px`, left: `${coords.left}px` }}
-      className="fixed z-50 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl shadow-xl p-2 animate-in fade-in zoom-in-95 duration-100"
+      className="fixed z-50 bg-surface border border-default rounded-xl shadow-xl p-2 animate-in fade-in zoom-in-95 duration-100"
     >
       {children}
     </div>,
@@ -185,16 +185,16 @@ export default function EditorToolbar({
   const closePopover = () => setActivePopover(null);
 
   return (
-    <div className="flex items-center gap-1 bg-[#F9F8F3] border border-[#DCD2B4] rounded-xl p-1 overflow-x-auto no-scrollbar shrink-0 shadow-sm">
+    <div className="flex items-center gap-1 bg-surface border border-default rounded-xl p-1 overflow-x-auto no-scrollbar shrink-0 shadow-sm">
       {/* 1. Font Family Popover */}
       <button
         ref={fontRef}
         type="button"
         onClick={() => togglePopover("font")}
-        className="flex items-center gap-1 bg-transparent text-xs font-medium text-[#253D31] py-1 px-2 hover:bg-[#EFEAD8] rounded-md transition-colors"
+        className="flex items-center gap-1 bg-transparent text-xs font-medium text-primary py-1 px-2 hover:bg-surface-hover rounded-md transition-colors"
       >
         <span>{selectedFont}</span>
-        <ChevronDown size={12} className="text-[#5B6156]" />
+        <ChevronDown size={12} className="text-secondary" />
       </button>
 
       <PortalPopover
@@ -213,10 +213,10 @@ export default function EditorToolbar({
                 closePopover();
               }}
               style={{ fontFamily: font }}
-              className={`flex items-center justify-between text-left px-2.5 py-1.5 text-xs rounded-md transition-colors hover:bg-[#F3EFE0] ${
+              className={`flex items-center justify-between text-left px-2.5 py-1.5 text-xs rounded-md transition-colors hover:bg-surface-hover ${
                 selectedFont === font
-                  ? "font-bold text-[#253D31] bg-[#EAE4D0]"
-                  : "text-[#5B6156]"
+                  ? "font-bold text-accent bg-accent-light"
+                  : "text-secondary"
               }`}
             >
               <span>{font}</span>
@@ -231,10 +231,10 @@ export default function EditorToolbar({
         ref={sizeRef}
         type="button"
         onClick={() => togglePopover("size")}
-        className="flex items-center gap-1 bg-transparent text-xs font-medium text-[#253D31] py-1 px-2 hover:bg-[#EFEAD8] rounded-md transition-colors"
+        className="flex items-center gap-1 bg-transparent text-xs font-medium text-primary py-1 px-2 hover:bg-surface-hover rounded-md transition-colors"
       >
         <span>{parseInt(selectedSize)}</span>
-        <ChevronDown size={12} className="text-[#5B6156]" />
+        <ChevronDown size={12} className="text-secondary" />
       </button>
 
       <PortalPopover
@@ -256,10 +256,10 @@ export default function EditorToolbar({
                   .run();
                 closePopover();
               }}
-              className={`flex items-center justify-between px-2.5 py-1 text-xs rounded-md transition-colors hover:bg-[#F3EFE0] ${
+              className={`flex items-center justify-between px-2.5 py-1 text-xs rounded-md transition-colors hover:bg-surface-hover ${
                 selectedSize === size
-                  ? "font-bold text-[#253D31] bg-[#EAE4D0]"
-                  : "text-[#5B6156]"
+                  ? "font-bold text-accent bg-accent-light"
+                  : "text-secondary"
               }`}
             >
               <span>{parseInt(size)}</span>
@@ -275,10 +275,10 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`p-1.5 rounded-md hover:bg-[#EFEAD8] transition-colors ${
+        className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${
           editor.isActive("bold")
-            ? "bg-[#EAE4D0] text-[#253D31]"
-            : "text-[#5B6156]"
+            ? "bg-accent text-inverse font-bold"
+            : "text-secondary"
         }`}
         title="Bold"
       >
@@ -288,10 +288,10 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`p-1.5 rounded-md hover:bg-[#EFEAD8] transition-colors ${
+        className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${
           editor.isActive("italic")
-            ? "bg-[#EAE4D0] text-[#253D31]"
-            : "text-[#5B6156]"
+            ? "bg-accent text-inverse font-bold"
+            : "text-secondary"
         }`}
         title="Italic"
       >
@@ -301,10 +301,10 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleUnderline().run()}
-        className={`p-1.5 rounded-md hover:bg-[#EFEAD8] transition-colors ${
+        className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${
           editor.isActive("underline")
-            ? "bg-[#EAE4D0] text-[#253D31]"
-            : "text-[#5B6156]"
+            ? "bg-accent text-inverse font-bold"
+            : "text-secondary"
         }`}
         title="Underline"
       >
@@ -314,10 +314,10 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        className={`p-1.5 rounded-md hover:bg-[#EFEAD8] transition-colors ${
+        className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${
           editor.isActive("strike")
-            ? "bg-[#EAE4D0] text-[#253D31]"
-            : "text-[#5B6156]"
+            ? "bg-accent text-inverse font-bold"
+            : "text-secondary"
         }`}
         title="Strikethrough"
       >
@@ -329,7 +329,7 @@ export default function EditorToolbar({
         ref={textColorRef}
         type="button"
         onClick={() => togglePopover("textColor")}
-        className="flex items-center gap-1 p-1.5 rounded-md hover:bg-[#EFEAD8] text-[#5B6156] transition-colors"
+        className="flex items-center gap-1 p-1.5 rounded-md hover:bg-surface-hover text-secondary transition-colors"
         title="Text Color"
       >
         <Baseline size={15} />
@@ -342,7 +342,7 @@ export default function EditorToolbar({
         triggerRef={textColorRef}
       >
         <div className="flex flex-col gap-2">
-          <span className="text-[10px] font-semibold text-[#5B6156] uppercase px-1">
+          <span className="text-[10px] font-semibold text-secondary uppercase px-1">
             Text Color
           </span>
           <div className="grid grid-cols-4 gap-1.5">
@@ -354,7 +354,7 @@ export default function EditorToolbar({
                   editor.chain().focus().setColor(item.hex).run();
                   closePopover();
                 }}
-                className="w-6 h-6 rounded-md border border-black/10 hover:scale-110 transition-transform shadow-sm"
+                className="w-6 h-6 rounded-md border border-default hover:scale-110 transition-transform shadow-sm"
                 style={{ backgroundColor: item.hex }}
                 title={item.name}
               />
@@ -366,7 +366,7 @@ export default function EditorToolbar({
               editor.chain().focus().unsetColor().run();
               closePopover();
             }}
-            className="flex items-center gap-1.5 text-[11px] text-[#5B6156] hover:bg-[#F3EFE0] p-1 rounded-md transition-colors mt-1"
+            className="flex items-center gap-1.5 text-[11px] text-secondary hover:bg-surface-hover p-1 rounded-md transition-colors mt-1"
           >
             <RotateCcw size={12} />
             <span>Reset color</span>
@@ -379,7 +379,7 @@ export default function EditorToolbar({
         ref={highlightRef}
         type="button"
         onClick={() => togglePopover("highlight")}
-        className="flex items-center gap-1 p-1.5 rounded-md hover:bg-[#EFEAD8] text-[#5B6156] transition-colors"
+        className="flex items-center gap-1 p-1.5 rounded-md hover:bg-surface-hover text-secondary transition-colors"
         title="Highlight"
       >
         <Highlighter size={15} />
@@ -392,7 +392,7 @@ export default function EditorToolbar({
         triggerRef={highlightRef}
       >
         <div className="flex flex-col gap-2">
-          <span className="text-[10px] font-semibold text-[#5B6156] uppercase px-1">
+          <span className="text-[10px] font-semibold text-secondary uppercase px-1">
             Highlight Color
           </span>
           <div className="grid grid-cols-3 gap-1.5">
@@ -408,7 +408,7 @@ export default function EditorToolbar({
                     .run();
                   closePopover();
                 }}
-                className="w-6 h-6 rounded-md border border-black/10 hover:scale-110 transition-transform shadow-sm"
+                className="w-6 h-6 rounded-md border border-default hover:scale-110 transition-transform shadow-sm"
                 style={{ backgroundColor: item.hex }}
                 title={item.name}
               />
@@ -420,7 +420,7 @@ export default function EditorToolbar({
               editor.chain().focus().unsetHighlight().run();
               closePopover();
             }}
-            className="flex items-center gap-1.5 text-[11px] text-[#5B6156] hover:bg-[#F3EFE0] p-1 rounded-md transition-colors mt-1"
+            className="flex items-center gap-1.5 text-[11px] text-secondary hover:bg-surface-hover p-1 rounded-md transition-colors mt-1"
           >
             <RotateCcw size={12} />
             <span>Clear highlight</span>
@@ -434,10 +434,10 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().setTextAlign("left").run()}
-        className={`p-1.5 rounded-md hover:bg-[#EFEAD8] transition-colors ${
+        className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${
           editor.isActive({ textAlign: "left" })
-            ? "bg-[#EAE4D0] text-[#253D31]"
-            : "text-[#5B6156]"
+            ? "bg-accent text-inverse font-bold"
+            : "text-secondary"
         }`}
         title="Align Left"
       >
@@ -447,10 +447,10 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().setTextAlign("center").run()}
-        className={`p-1.5 rounded-md hover:bg-[#EFEAD8] transition-colors ${
+        className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${
           editor.isActive({ textAlign: "center" })
-            ? "bg-[#EAE4D0] text-[#253D31]"
-            : "text-[#5B6156]"
+            ? "bg-accent text-inverse font-bold"
+            : "text-secondary"
         }`}
         title="Align Center"
       >
@@ -460,10 +460,10 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().setTextAlign("right").run()}
-        className={`p-1.5 rounded-md hover:bg-[#EFEAD8] transition-colors ${
+        className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${
           editor.isActive({ textAlign: "right" })
-            ? "bg-[#EAE4D0] text-[#253D31]"
-            : "text-[#5B6156]"
+            ? "bg-accent text-inverse font-bold"
+            : "text-secondary"
         }`}
         title="Align Right"
       >
@@ -476,10 +476,10 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`p-1.5 rounded-md hover:bg-[#EFEAD8] transition-colors ${
+        className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${
           editor.isActive("orderedList")
-            ? "bg-[#EAE4D0] text-[#253D31]"
-            : "text-[#5B6156]"
+            ? "bg-accent text-inverse font-bold"
+            : "text-secondary"
         }`}
         title="Numbered List"
       >
@@ -489,10 +489,10 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`p-1.5 rounded-md hover:bg-[#EFEAD8] transition-colors ${
+        className={`p-1.5 rounded-md hover:bg-surface-hover transition-colors ${
           editor.isActive("bulletList")
-            ? "bg-[#EAE4D0] text-[#253D31]"
-            : "text-[#5B6156]"
+            ? "bg-accent text-inverse font-bold"
+            : "text-secondary"
         }`}
         title="Bullet List"
       >
@@ -506,7 +506,7 @@ export default function EditorToolbar({
         type="button"
         onClick={() => editor.chain().focus().undo().run()}
         disabled={!editor.can().undo()}
-        className="p-1.5 rounded-md text-[#5B6156] hover:bg-[#EFEAD8] transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+        className="p-1.5 rounded-md text-secondary hover:bg-surface-hover transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed"
         title="Undo"
       >
         <Undo size={15} />
@@ -516,7 +516,7 @@ export default function EditorToolbar({
         type="button"
         onClick={() => editor.chain().focus().redo().run()}
         disabled={!editor.can().redo()}
-        className="p-1.5 rounded-md text-[#5B6156] hover:bg-[#EFEAD8] transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+        className="p-1.5 rounded-md text-secondary hover:bg-surface-hover transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed"
         title="Redo"
       >
         <Redo size={15} />
@@ -529,11 +529,11 @@ export default function EditorToolbar({
         ref={insertRef}
         type="button"
         onClick={() => togglePopover("insert")}
-        className="flex items-center gap-1 bg-transparent text-xs font-medium text-[#253D31] py-1 px-2 hover:bg-[#EFEAD8] rounded-md transition-colors"
+        className="flex items-center gap-1 bg-transparent text-xs font-medium text-primary py-1 px-2 hover:bg-surface-hover rounded-md transition-colors"
       >
         <Plus size={14} />
         <span>Insert</span>
-        <ChevronDown size={12} className="text-[#5B6156]" />
+        <ChevronDown size={12} className="text-secondary" />
       </button>
 
       <PortalPopover
@@ -548,7 +548,7 @@ export default function EditorToolbar({
               editor.chain().focus().setHorizontalRule().run();
               closePopover();
             }}
-            className="flex items-center gap-2 text-left px-2.5 py-1.5 text-xs text-[#5B6156] hover:bg-[#F3EFE0] hover:text-[#253D31] rounded-md transition-colors"
+            className="flex items-center gap-2 text-left px-2.5 py-1.5 text-xs text-secondary hover:bg-surface-hover hover:text-primary rounded-md transition-colors"
           >
             <Minus size={14} />
             <span>Divider</span>
@@ -559,7 +559,7 @@ export default function EditorToolbar({
               editor.chain().focus().toggleBlockquote().run();
               closePopover();
             }}
-            className="flex items-center gap-2 text-left px-2.5 py-1.5 text-xs text-[#5B6156] hover:bg-[#F3EFE0] hover:text-[#253D31] rounded-md transition-colors"
+            className="flex items-center gap-2 text-left px-2.5 py-1.5 text-xs text-secondary hover:bg-surface-hover hover:text-primary rounded-md transition-colors"
           >
             <Quote size={14} />
             <span>Blockquote</span>
@@ -570,7 +570,7 @@ export default function EditorToolbar({
               editor.chain().focus().toggleCodeBlock().run();
               closePopover();
             }}
-            className="flex items-center gap-2 text-left px-2.5 py-1.5 text-xs text-[#5B6156] hover:bg-[#F3EFE0] hover:text-[#253D31] rounded-md transition-colors"
+            className="flex items-center gap-2 text-left px-2.5 py-1.5 text-xs text-secondary hover:bg-surface-hover hover:text-primary rounded-md transition-colors"
           >
             <Code size={14} />
             <span>Code Block</span>
@@ -584,7 +584,7 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => alert("Version history: Loading previous revisions...")}
-        className="p-1.5 rounded-md text-[#5B6156] hover:bg-[#EFEAD8] transition-colors"
+        className="p-1.5 rounded-md text-secondary hover:bg-surface-hover transition-colors"
         title="Version History"
       >
         <History size={15} />
@@ -593,7 +593,7 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={onPrint}
-        className="p-1.5 rounded-md text-[#5B6156] hover:bg-[#EFEAD8] transition-colors"
+        className="p-1.5 rounded-md text-secondary hover:bg-surface-hover transition-colors"
         title="Print Notes"
       >
         <Printer size={15} />
@@ -602,7 +602,7 @@ export default function EditorToolbar({
       <button
         type="button"
         onClick={() => setIsFullScreen(!isFullScreen)}
-        className="p-1.5 rounded-md text-[#5B6156] hover:bg-[#EFEAD8] transition-colors"
+        className="p-1.5 rounded-md text-secondary hover:bg-surface-hover transition-colors"
         title={isFullScreen ? "Exit Fullscreen" : "Fullscreen"}
       >
         {isFullScreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
@@ -612,5 +612,5 @@ export default function EditorToolbar({
 }
 
 function Divider() {
-  return <div className="h-4 w-[1px] bg-[#DCD2B4] mx-0.5 shrink-0" />;
+  return <div className="h-4 w-[1px] bg-[#DCD2B4] dark:bg-[#2A2E2A] mx-0.5 shrink-0" />;
 }

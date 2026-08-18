@@ -213,9 +213,10 @@ export default function PdfViewerPage({
     setNumPages(total);
 
     if (!hasRestoredStartingPage.current && material) {
-      const startingPage = Math.max(
-        1,
-        Math.round(((material.progress || 0) / 100) * total),
+      const savedProgress = Math.min(100, Math.max(0, material.progress || 0));
+      const startingPage = Math.min(
+        total,
+        Math.max(1, Math.round((savedProgress / 100) * total)),
       );
       setFurthestPage(startingPage);
       hasRestoredStartingPage.current = true;
@@ -238,7 +239,7 @@ export default function PdfViewerPage({
             const pageAttr = entry.target.getAttribute("data-page-number");
             if (pageAttr) {
               const visiblePage = parseInt(pageAttr, 10);
-              setFurthestPage((prev) => Math.max(prev, visiblePage));
+              setFurthestPage((prev) => Math.min(numPages, Math.max(prev, visiblePage)));
             }
           }
         });
@@ -255,14 +256,17 @@ export default function PdfViewerPage({
 
   // Update progress notifications and auto-save
   useEffect(() => {
-    const percent = numPages ? Math.round((furthestPage / numPages) * 100) : 0;
+    if (!numPages || numPages <= 0) return;
+    const validFurthest = Math.min(furthestPage, numPages);
+    const percent = Math.min(100, Math.max(0, Math.round((validFurthest / numPages) * 100)));
     onProgressChangeRef.current?.(percent);
   }, [furthestPage, numPages]);
 
   const saveProgress = useCallback(
     (page: number, total: number) => {
-      if (!id) return;
-      const percent = Math.round((page / total) * 100);
+      if (!id || !total || total <= 0) return;
+      const validPage = Math.min(page, total);
+      const percent = Math.min(100, Math.max(0, Math.round((validPage / total) * 100)));
       updateMaterialProgress(id, percent).catch(() => {});
     },
     [id],

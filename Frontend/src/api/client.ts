@@ -7,7 +7,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
  */
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "/api",
-  timeout: 10000, // fail fast rather than hang indefinitely on a dead backend
+  timeout: 120000, // fail fast rather than hang indefinitely on a dead backend
   withCredentials: true, // IMPORTANT: sends/receives httpOnly cookies (refresh token)
   headers: {
     "Content-Type": "application/json",

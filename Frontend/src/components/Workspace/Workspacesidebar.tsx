@@ -125,10 +125,25 @@ export default function WorkspaceSidebar({
     setIsUploadOpen((prev) => !prev);
   };
 
+  // Click handler specifically for Notes navigation button
+  const handleNotesTabClick = () => {
+    if (currentTab === "Notes") {
+      setIsNotesOpen((prev) => !prev);
+    } else {
+      handleTabClick("Notes");
+      setIsNotesOpen(true);
+    }
+  };
+
   // Programmatically handle selection and navigation for main Upload button
   const handleUploadTabClick = () => {
-    handleTabClick("upload");
-    navigate("/app/start-studying");
+    if (currentTab === "upload") {
+      setIsUploadOpen((prev) => !prev);
+    } else {
+      handleTabClick("upload");
+      setIsUploadOpen(true);
+      // navigate("/app/start-studying");
+    }
   };
 
   // Programmatically handle selection and navigation
@@ -219,6 +234,7 @@ export default function WorkspaceSidebar({
             icon={Notebook}
             isActive={currentTab === "notes"}
             isExpanded={isExpanded}
+
             onClick={() => handleTabClick("notes")}
             hasDropdown
             isOpen={isNotesOpen}
@@ -295,7 +311,7 @@ export default function WorkspaceSidebar({
               {isLoadingMaterials ? (
                 <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-[#5B6156]/70">
                   <Loader2 size={13} className="animate-spin" />
-                  <span>Loading materials...</span>
+                  <span>Loading materials</span>
                 </div>
               ) : materials.length === 0 ? (
                 <p className="px-2 py-1 text-[11px] text-[#5B6156]/70 italic">

@@ -132,3 +132,45 @@ export async function deleteMaterial(id: string): Promise<void> {
  * detail page needs single-material metadata, either add that route
  * on the backend or derive it from the already-fetched list.
  */
+/* ========================================================================
+   STUDY NOTES API ENDPOINTS
+   ======================================================================== */
+
+export interface MaterialNoteResponse {
+  id?: string;
+  pdfId: string;
+  content: string;
+  updatedAt?: string;
+}
+
+/**
+ * Fetches saved notes for a specific PDF material.
+ *
+ * Endpoint: GET /student/pdfs/:id/notes
+ */
+export async function getMaterialNotes(materialId: string): Promise<string> {
+  const res = await api.get<{
+    success: boolean;
+    data: {
+      content: string;
+    };
+  }>(`/student/pdfs/${materialId}/notes`);
+
+  return res.data.data?.content ?? "";
+}
+
+/**
+ * Saves or updates study notes for a specific PDF material.
+ *
+ * Endpoint: PUT /student/pdfs/:id/notes
+ * Body: { content: string }
+ */
+export async function saveMaterialNotes(
+  materialId: string,
+  content: string,
+): Promise<void> {
+  await api.put<{
+    success: boolean;
+    message?: string;
+  }>(`/student/pdfs/${materialId}/notes`, { content });
+}

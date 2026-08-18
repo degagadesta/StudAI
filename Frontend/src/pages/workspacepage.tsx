@@ -258,7 +258,7 @@ export default function WorkspacePage() {
                 {/* Right Column: Progress & Close Button */}
                 <div className="flex items-center gap-3 justify-end">
                   <span className="text-xs font-mono text-secondary">
-                    {readPercent}% read
+                    {Math.min(100, Math.max(0, readPercent))}% read
                   </span>
                   <button
                     type="button"
@@ -275,7 +275,7 @@ export default function WorkspacePage() {
               <div className="h-1 bg-elevated w-full overflow-hidden">
                 <div
                   className="h-full bg-accent transition-all duration-300"
-                  style={{ width: `${readPercent}%` }}
+                  style={{ width: `${Math.min(100, Math.max(0, readPercent))}%` }}
                 />
               </div>
             </div>

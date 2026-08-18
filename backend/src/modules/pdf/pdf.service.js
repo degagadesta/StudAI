@@ -4,8 +4,7 @@ import {
   SUBSCRIPTION_LIMITS,
   canUploadMore,
 } from "../../lib/subscriptionLimits.js";
-
-import { processMaterial } from "../ai/materialProcessing.service.js"
+import { processMaterialAsync } from "../ai/materialProcessing.service.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UPLOAD PDF
@@ -134,14 +133,19 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
   try {
     pdf = await prisma.courseMaterial.create({
       data: {
-        curriculumCourse: { connect: { id: curriculumCourseId } },
+        curriculumCourse: {
+          connect: {
+            id: curriculumCourseId,
+          },
+        },
+
         title: file.originalname,
         fileData: file.buffer,
         fileSize: file.size,
         uploadedBy: studentId,
-        // no `status` here — let the schema default (QUEUED) apply.
-        // it becomes READY only once processing actually finishes.
+        status: "QUEUED", // Changed from READY - will be updated by processing
       },
+
       select: {
         id: true,
         title: true,
@@ -149,8 +153,18 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
         createdAt: true,
         progress: true,
         status: true,
+
         curriculumCourse: {
-          select: { id: true, course: { select: { id: true, title: true } } },
+          select: {
+            id: true,
+
+            course: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
         },
       },
     });
@@ -158,25 +172,21 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     throw error;
   }
 
-  // Fire-and-forget: don't make the student wait on the request for
-  // extraction + embedding to finish. processMaterial handles its own
-  // status transitions (EXTRACTING → ANALYZING → READY/FAILED) and
-  // swallows/logs its own errors so it can never crash the upload response.
-  processMaterial(pdf.id).catch((err) => {
-    console.error(`[processMaterial] failed for material ${pdf.id}:`, err);
-  });
+  // 8. Start background processing (non-blocking)
+  console.log(`[Upload] Starting background processing for material ${pdf.id}`);
+  processMaterialAsync(pdf.id);
 
-  // 8. Return metadata only
+  // 9. Return metadata only
   return {
     id: pdf.id,
     fileName: pdf.title,
     fileSize: pdf.fileSize,
     uploadDate: pdf.createdAt,
-    status: pdf.status, // frontend needs this to know it's not chat-ready yet
     curriculumCourseId: pdf.curriculumCourse.id,
     courseId: pdf.curriculumCourse.course.id,
     courseName: pdf.curriculumCourse.course.title,
     progress: pdf.progress,
+    status: pdf.status,
   };
 }
 
@@ -189,11 +199,13 @@ export async function getStudentPDFs(studentId) {
     throw new AppError("Student account is required", 400);
   }
 
-  // Never return fileData when listing PDFs.
+  // Return all materials (including processing ones), but never include fileData
   const pdfs = await prisma.courseMaterial.findMany({
     where: {
       uploadedBy: studentId,
-      status: "READY",
+      status: {
+        not: "DELETED", // Exclude deleted materials
+      },
     },
 
     select: {
@@ -202,6 +214,7 @@ export async function getStudentPDFs(studentId) {
       fileSize: true,
       createdAt: true,
       progress: true,
+      status: true, // Include status so frontend can show processing state
 
       curriculumCourse: {
         select: {
@@ -246,6 +259,7 @@ export async function getStudentPDFs(studentId) {
       fileSize: pdf.fileSize,
       uploadDate: pdf.createdAt,
       progress: pdf.progress,
+      status: pdf.status,
     });
   }
 

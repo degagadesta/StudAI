@@ -1,16 +1,30 @@
 import { api } from "./client";
 
-export async function generateSummary(materialId: string) {
-  const res = await api.post(`/student/ai/materials/${materialId}/summary`);
-  return res.data.data as { summary: string };
+export async function generateSummary(
+  materialId: string,
+  forceRegenerate: boolean = false,
+) {
+  const res = await api.post(
+    `/student/ai/materials/${materialId}/summary`,
+    {},
+    { params: { forceRegenerate: forceRegenerate.toString() } },
+  );
+  return res.data.data as { summary: string; cached: boolean };
 }
 
-export async function generateFlashcards(materialId: string, count?: number) {
-  const res = await api.post(`/student/ai/materials/${materialId}/flashcards`, {
-    count,
-  });
+export async function generateFlashcards(
+  materialId: string,
+  count: number = 10,
+  forceRegenerate: boolean = false,
+) {
+  const res = await api.post(
+    `/student/ai/materials/${materialId}/flashcards`,
+    { count },
+    { params: { forceRegenerate: forceRegenerate.toString() } },
+  );
   return res.data.data as {
     flashcards: { id: string; question: string; answer: string }[];
+    cached: boolean;
   };
 }
 
@@ -30,6 +44,19 @@ export async function askQuestion(
     { timeout: 60000 }, // 60 seconds for AI generation
   );
   return res.data.data as { sessionId: string; answer: string };
+}
+
+export async function explainTopic(
+  materialId: string,
+  curriculumCourseId: string,
+  selectedText: string,
+) {
+  const res = await api.post(`/student/ai/explain-topic`, {
+    materialId,
+    curriculumCourseId,
+    selectedText,
+  });
+  return res.data.data as { explanation: string };
 }
 
 export async function generateExam(

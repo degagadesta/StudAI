@@ -18,7 +18,7 @@ import {
 import { getMaterials, type Material } from "../../api/Materialsapi";
 
 export type WorkspaceTab =
-  | "Notes"
+  | "notes"
   | "chat"
   | "exams"
   | "quiz"
@@ -139,7 +139,7 @@ export default function WorkspaceSidebar({
   };
 
   const handleNoteClick = (note: NoteItem) => {
-    handleTabClick("Notes");
+    handleTabClick("notes");
     onSelectNote?.(note);
   };
 
@@ -214,12 +214,12 @@ export default function WorkspaceSidebar({
         {/* 2. NOTES */}
         <div>
           <NavItem
-            id="Notes"
+            id="notes"
             label="Notes"
             icon={Notebook}
-            isActive={currentTab === "Notes"}
+            isActive={currentTab === "notes"}
             isExpanded={isExpanded}
-            onClick={() => handleTabClick("Notes")}
+            onClick={() => handleTabClick("notes")}
             hasDropdown
             isOpen={isNotesOpen}
             onToggleDropdown={toggleNotesSubMenu}

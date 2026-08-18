@@ -3,17 +3,24 @@ import * as aiService from "./ai.service.js";
 
 export const generateSummary = asyncHandler(async (req, res) => {
   const { materialId } = req.params;
-  const result = await aiService.generateSummary(materialId, req.studentId);
+  const { forceRegenerate } = req.query;
+  const result = await aiService.generateSummary(
+    materialId,
+    req.studentId,
+    forceRegenerate === "true",
+  );
   res.status(200).json({ success: true, data: result });
 });
 
 export const generateFlashcards = asyncHandler(async (req, res) => {
   const { materialId } = req.params;
   const { count } = req.body;
+  const { forceRegenerate } = req.query;
   const result = await aiService.generateFlashcards(
     materialId,
     req.studentId,
-    count,
+    count || 10,
+    forceRegenerate === "true",
   );
   res.status(201).json({ success: true, data: result });
 });

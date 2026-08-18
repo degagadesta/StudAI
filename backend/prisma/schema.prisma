@@ -238,6 +238,7 @@ model Flashcard {
   materialId String
   question   String
   answer     String
+  createdAt  DateTime          @default(now())
   reviews    FlashcardReview[]
 
   @@index([materialId])

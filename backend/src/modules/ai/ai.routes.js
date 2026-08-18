@@ -17,6 +17,7 @@ router.post(
   generateFlashcards,
 );
 router.post("/chat/ask", authenticate, askQuestion);
+router.post("/explain-topic", authenticate, explainTopic);
 router.post(
   "/courses/:curriculumCourseId/materials/:materialId/exam",
   authenticate,

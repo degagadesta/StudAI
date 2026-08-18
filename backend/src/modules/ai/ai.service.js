@@ -1,33 +1,66 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
-import { generateStructured } from "../../lib/geminiClient.js";
+import { generateStructured, generateText, MODELS } from "../../lib/geminiClient.js";
 import { Type } from "@google/genai";
-import { PLAN_LIMITS } from "../../config/planLimits.js";
-import {getRecentHistory} from "../ai/chatHistory.service.js"
-
 import { retrieveRelevantChunks } from "./retrieval.service.js";
-
+import { getRecentHistory } from "./chatHistory.service.js";
 import { assertWithinLimit, recordUsage } from "../usage/usage.service.js";
+import { PLAN_LIMITS } from "../../config/planLimits.js";
 
 // ---------- Shared helper ----------
-async function getMaterialWithChunks(materialId, studentId) {
-  const material = await prisma.courseMaterial.findUnique({
-    where: { id: materialId },
-    include: { chunks: { orderBy: { page: "asc" } } },
-  });
+async function getMaterialWithAccess(materialId, studentId) {
+  const material = await prisma.courseMaterial.findUnique({ where: { id: materialId } });
 
   if (!material) throw new AppError("Material not found", 404);
   if (material.uploadedBy !== studentId) {
     throw new AppError("You don't have access to this material", 403);
   }
-  if (material.chunks.length === 0) {
-    throw new AppError("This material hasn't finished processing yet", 400);
+  if (material.status === "FAILED") {
+    throw new AppError("This material failed to process. Try re-uploading it.", 400);
+  }
+  if (material.status !== "READY") {
+    throw new AppError("This material is still being processed", 400);
   }
 
   return material;
 }
+// ---------- In-process de-dup lock ----------
+// Prevents two concurrent requests (double-click, two tabs) from both
+// paying for a full Gemini generation for the same key. This only
+// dedupes within a single server process — if you run multiple
+// instances behind a load balancer, upgrade this to a Redis SETNX lock
+// before it matters.
+const inFlight = new Map();
 
-// ---------- 1. Summary only ----------
+async function dedupe(key, fn) {
+  if (inFlight.has(key)) {
+    console.log(`[AI] Joining in-flight request for ${key}`);
+    return inFlight.get(key);
+  }
+  const promise = fn().finally(() => inFlight.delete(key));
+  inFlight.set(key, promise);
+  return promise;
+}
+
+// ---------- Concurrency-limited map helper ----------
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const current = nextIndex++;
+      results[current] = await fn(items[current], current);
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+
+// ---------- SUMMARY GENERATION ----------
+
 const summarySchema = {
   type: Type.OBJECT,
   properties: {
@@ -36,7 +69,131 @@ const summarySchema = {
   required: ["summary"],
 };
 
-// ---------- 2. Flashcards only ----------
+const SUMMARY_SYSTEM = `You are a study assistant helping a university student review their course material. Base your output ONLY on the material given to you — never add outside information.`;
+
+const MAX_SINGLE_PASS_TOKENS = 30000; // ~7500 words
+const CHUNK_BATCH_SIZE = 5; // chunks summarized together per map-step call
+const MAP_CONCURRENCY = 4; // concurrent Gemini calls during map step — tune to your rate-limit tier
+
+export async function generateSummary(materialId, studentId, forceRegenerate = false) {
+  const material = await getMaterialWithAccess(materialId, studentId);
+
+  if (material.summary && !forceRegenerate) {
+    console.log(`[AI] Returning cached summary for material ${materialId}`);
+    return { summary: material.summary, cached: true };
+  }
+
+  return dedupe(`summary:${materialId}`, () => doGenerateSummary(materialId, studentId));
+}
+
+async function doGenerateSummary(materialId, studentId) {
+  console.log(`[AI] Generating new summary for material ${materialId}`);
+
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { subscriptionPlan: true },
+  });
+
+  await assertWithinLimit(studentId, student.subscriptionPlan, "SUMMARY");
+
+  const chunks = await prisma.materialChunk.findMany({
+    where: { materialId },
+    orderBy: { chunkIndex: "asc" },
+  });
+
+  if (chunks.length === 0) {
+    throw new AppError("This material has no content to summarize", 400);
+  }
+
+  let summary;
+  const totalText = chunks.map((c) => c.content).join("\n\n");
+  const estimatedTokens = Math.ceil(totalText.length / 4);
+
+  if (estimatedTokens <= MAX_SINGLE_PASS_TOKENS) {
+    console.log(`[AI] Single-pass summary (${estimatedTokens} tokens)`);
+
+    const prompt = `COURSE MATERIAL:
+"""
+${totalText}
+"""
+
+Write a clear, well-organized summary of this material. Cover every major topic, use short paragraphs or bullet points where it helps readability, and keep it concise enough to review in a few minutes.`;
+
+    const result = await generateStructured({
+      prompt,
+      schema: summarySchema,
+      model: MODELS.SUMMARY_SINGLE,
+      system: SUMMARY_SYSTEM,
+    });
+
+    summary = result.data.summary;
+  } else {
+    console.log(`[AI] Map-reduce summary (${estimatedTokens} tokens, ${chunks.length} chunks)`);
+
+    const batches = [];
+    for (let i = 0; i < chunks.length; i += CHUNK_BATCH_SIZE) {
+      batches.push(chunks.slice(i, i + CHUNK_BATCH_SIZE));
+    }
+
+    // Map step, fired with bounded concurrency instead of one-at-a-time —
+    // this is the main latency win for long documents.
+    const chunkSummaries = await mapWithConcurrency(batches, MAP_CONCURRENCY, async (batch) => {
+      const batchText = batch.map((c) => c.content).join("\n\n");
+      const chunkPrompt = `Summarize these course material sections concisely, preserving key facts and concepts:
+
+"""
+${batchText}
+"""
+
+Summary:`;
+
+      const chunkResult = await generateText({
+        prompt: chunkPrompt,
+        model: MODELS.SUMMARY_MAP,
+        maxOutputTokens: 500,
+      });
+
+      return chunkResult.text;
+    });
+
+    console.log(`[AI] Map step complete (${chunkSummaries.length} batch summaries)`);
+
+    const combinedText = chunkSummaries.join("\n\n");
+    const finalPrompt = `SECTION SUMMARIES:
+"""
+${combinedText}
+"""
+
+Create a cohesive, well-organized final summary that:
+- Covers all major topics from the sections
+- Uses clear paragraphs or bullet points
+- Is concise enough to review in a few minutes
+- Flows naturally as a single document`;
+
+    const finalResult = await generateStructured({
+      prompt: finalPrompt,
+      schema: summarySchema,
+      model: MODELS.SUMMARY_REDUCE,
+      system: SUMMARY_SYSTEM,
+    });
+
+    summary = finalResult.data.summary;
+  }
+
+  await prisma.courseMaterial.update({
+    where: { id: materialId },
+    data: { summary },
+  });
+
+  await recordUsage(studentId, "SUMMARY", { materialId });
+
+  console.log(`[AI] Summary generated and cached (${summary.length} chars)`);
+
+  return { summary, cached: false };
+}
+
+// ---------- FLASHCARD GENERATION ----------
+
 const flashcardsSchema = {
   type: Type.OBJECT,
   properties: {
@@ -55,91 +212,119 @@ const flashcardsSchema = {
   required: ["flashcards"],
 };
 
-export async function generateSummary(materialId, studentId) {
+const FLASHCARDS_SYSTEM = `You are creating active-recall flashcards for a university student. Every question must be answerable using ONLY the material given to you.`;
+
+export async function generateFlashcards(materialId, studentId, count = 10, forceRegenerate = false) {
+  const material = await getMaterialWithAccess(materialId, studentId);
+
+  const existingFlashcards = await prisma.flashcard.findMany({
+    where: { materialId },
+    select: { id: true, question: true, answer: true },
+  });
+
+  // Cache hit only if we actually have the requested count cached —
+  // otherwise a caller asking for 20 silently got back 10 before.
+  if (existingFlashcards.length === count && !forceRegenerate) {
+    console.log(`[AI] Returning ${existingFlashcards.length} cached flashcards for material ${materialId}`);
+    return { flashcards: existingFlashcards, cached: true };
+  }
+
+  return dedupe(`flashcards:${materialId}:${count}`, () =>
+    doGenerateFlashcards(material, materialId, studentId, count, forceRegenerate, existingFlashcards),
+  );
+}
+
+async function doGenerateFlashcards(material, materialId, studentId, count, forceRegenerate, existingFlashcards) {
+  console.log(`[AI] Generating ${count} new flashcards for material ${materialId}`);
+
   const student = await prisma.student.findUnique({
     where: { id: studentId },
     select: { subscriptionPlan: true },
   });
 
-  await assertWithinLimit(
-    studentId,
-    student.subscriptionPlan,
-    "SUMMARY",
-    "SUMMARY",
-  );
+  await assertWithinLimit(studentId, student.subscriptionPlan, "FLASHCARDS");
 
-  const material = await getMaterialWithChunks(materialId, studentId);
-  const noteText = material.chunks.map((c) => c.content).join("\n\n");
+  let contentBasis;
+  if (material.summary) {
+    console.log(`[AI] Using cached summary as basis for flashcards`);
+    contentBasis = material.summary;
+  } else {
+    console.log(`[AI] No summary available, using chunks directly`);
+    const chunks = await prisma.materialChunk.findMany({
+      where: { materialId },
+      orderBy: { chunkIndex: "asc" },
+      take: 20,
+    });
 
-  const prompt = `
-You are creating active-recall flashcards for a university student studying these notes.
+    if (chunks.length === 0) {
+      throw new AppError("This material has no content", 400);
+    }
 
-NOTES:
+    contentBasis = chunks.map((c) => c.content).join("\n\n");
+
+    const MAX_CHARS = 30000;
+    if (contentBasis.length > MAX_CHARS) {
+      console.log(`[AI] Content too long (${contentBasis.length} chars), truncating to ${MAX_CHARS}`);
+      contentBasis = contentBasis.substring(0, MAX_CHARS);
+    }
+  }
+
+  const prompt = `COURSE MATERIAL:
 """
-${noteText}
+${contentBasis}
 """
 
-Create exactly ${count} flashcards that test the key facts, definitions, and
-concepts in these notes. Rules:
-- Each question must be answerable using ONLY the notes above.
-- Keep answers short and precise (1-3 sentences) — flashcards are for quick recall, not essays.
-- Avoid duplicate or overlapping questions.
-- Cover a spread of topics from across the notes, not just the beginning.
-`;
+Create exactly ${count} flashcards that test the key facts, definitions, and concepts. Rules:
+- Each question must be answerable using ONLY the material above
+- Keep answers short and precise (1-3 sentences) — flashcards are for quick recall
+- Avoid duplicate or overlapping questions
+- Cover a spread of topics from across the material
+- Format: clear question, concise answer`;
 
-  const result = await generateStructured({ prompt, schema: summarySchema });
+  try {
+    const result = await generateStructured({
+      prompt,
+      schema: flashcardsSchema,
+      model: MODELS.FLASHCARDS,
+      system: FLASHCARDS_SYSTEM,
+    });
 
-  await prisma.courseMaterial.update({
-    where: { id: materialId },
-    data: { summary: result.summary },
-  });
+    const flashcards = result.data.flashcards.slice(0, count);
 
-  await recordUsage(studentId, "SUMMARY");
+    if (existingFlashcards.length > 0) {
+      await prisma.flashcard.deleteMany({ where: { materialId } });
+    }
 
-  return { summary: result.summary };
+    await prisma.flashcard.createMany({
+      data: flashcards.map((fc) => ({
+        materialId,
+        question: fc.question,
+        answer: fc.answer,
+      })),
+    });
+
+    const createdFlashcards = await prisma.flashcard.findMany({
+      where: { materialId },
+      select: { id: true, question: true, answer: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    await recordUsage(studentId, "FLASHCARDS", { materialId, count: flashcards.length });
+
+    console.log(`[AI] Generated and cached ${createdFlashcards.length} flashcards`);
+
+    return { flashcards: createdFlashcards, cached: false };
+  } catch (error) {
+    console.error(`[AI] Flashcard generation failed:`, error);
+    throw new AppError(`Failed to generate flashcards: ${error.message}`, 500);
+  }
 }
 
-export async function generateFlashcards(materialId, studentId, count = 10) {
-  const student = await prisma.student.findUnique({
-    where: { id: studentId },
-    select: { subscriptionPlan: true },
-  });
+// ---------- CHAT / RAG ----------
 
-  await assertWithinLimit(
-    studentId,
-    student.subscriptionPlan,
-    "FLASHCARDS",
-    "FLASHCARDS",
-  );
+const CHAT_SYSTEM = `You are a patient tutor helping a student understand their course material. Answer using only the material given to you. If it's not enough to answer, say so honestly. Keep answers clear and concise.`;
 
-  const material = await getMaterialWithChunks(materialId, studentId);
-  const prompt = `
-You are a study assistant helping a university student review their course notes.
-
-NOTES:
-"""
-${noteText}
-"""
-
-Write a clear, well-organized summary of these notes. Cover every major topic,
-use short paragraphs or bullet points where it helps readability, and keep it
-concise enough to review in a few minutes — this is a study aid, not a rewrite
-of the original text.
-
-Base the summary ONLY on the notes above — do not add outside information.
-`;
-
-  await recordUsage(studentId, "FLASHCARDS");
-
-  return { flashcards };
-}
-
-export async function askAboutMaterial(
-  studentId,
-  curriculumCourseId,
-  materialId,
-  question,
-) {
+export async function askAboutMaterial(studentId, curriculumCourseId, materialId, question) {
   const student = await prisma.student.findUnique({
     where: { id: studentId },
     select: { subscriptionPlan: true },
@@ -147,26 +332,17 @@ export async function askAboutMaterial(
   const plan = student.subscriptionPlan;
   const limits = PLAN_LIMITS[plan];
 
-  await assertWithinLimit(studentId, plan, "CHAT_MESSAGE", "CHAT_MESSAGES");
+  await assertWithinLimit(studentId, plan, "CHAT_MESSAGE");
 
-  const material = await prisma.courseMaterial.findUnique({
-    where: { id: materialId },
-  });
-  if (!material) throw new AppError("Material not found", 404);
+  const material = await getMaterialWithAccess(materialId, studentId);
 
-  if (material.status !== "READY") {
-    throw new AppError(
-      "This material is still being prepared for AI chat. Please try again shortly.",
-      400,
-    );
-  }
+  console.log(`[AI] Chat question for material ${materialId}: "${question.substring(0, 50)}..."`);
 
   const relevantChunks = await retrieveRelevantChunks(
     materialId,
     question,
-    limits.CHAT_CONTEXT_TOKENS,
+    limits?.CHAT_CONTEXT_TOKENS || 4000,
   ).catch((err) => {
-    // If chunks are missing or not processed, provide helpful error
     if (err.message?.includes("without embeddings")) {
       throw new AppError(
         "This material is still being prepared for AI chat. Please try again in a few moments.",
@@ -180,67 +356,57 @@ export async function askAboutMaterial(
     where: { studentId, curriculumCourseId },
     orderBy: { createdAt: "desc" },
   });
+
   if (!session) {
     session = await prisma.chatSession.create({
       data: { studentId, curriculumCourseId },
     });
   }
 
-  const history = await getRecentHistory(
-    session.id,
-    limits.CHAT_HISTORY_TOKENS,
-  );
+  const history = await getRecentHistory(session.id, limits?.CHAT_HISTORY_TOKENS || 2000, 8);
 
   await prisma.chatMessage.create({
     data: { sessionId: session.id, role: "USER", content: question },
   });
 
-  // No relevant chunks passed the threshold — don't force irrelevant content in.
   if (relevantChunks.length === 0) {
     const fallback =
       "I couldn't find information about that in this material. Try rephrasing your question, or check that you're studying the right document.";
+
     await prisma.chatMessage.create({
       data: { sessionId: session.id, role: "ASSISTANT", content: fallback },
     });
+
     await recordUsage(studentId, "CHAT_MESSAGE", { materialId });
+
     return { sessionId: session.id, answer: fallback };
   }
 
-  const noteText = relevantChunks
+  const contextText = relevantChunks
     .map((c) => (c.page ? `[Page ${c.page}]\n${c.content}` : c.content))
     .join("\n\n");
 
   const historyText =
     history.length > 0
-      ? history
-          .map(
-            (m) =>
-              `${m.role === "USER" ? "Student" : "Assistant"}: ${m.content}`,
-          )
-          .join("\n")
+      ? history.map((m) => `${m.role === "USER" ? "Student" : "Assistant"}: ${m.content}`).join("\n")
       : "(no earlier messages)";
 
-  const prompt = `
-SYSTEM
-You are a patient tutor helping a student understand their course material.
-Answer using only the material below. If it's not enough to answer, say so honestly.
-
-RELEVANT COURSE MATERIAL
+  const prompt = `RELEVANT COURSE MATERIAL
 """
-${noteText}
+${contextText}
 """
 
 RECENT CONVERSATION
 ${historyText}
 
 CURRENT QUESTION
-${question}
-`;
+${question}`;
 
-  const { generateText } = await import("../../lib/geminiClient.js");
   const { text: answer, usageMetadata } = await generateText({
     prompt,
-    maxOutputTokens: limits.CHAT_MAX_OUTPUT_TOKENS,
+    model: MODELS.CHAT,
+    system: CHAT_SYSTEM,
+    maxOutputTokens: limits?.CHAT_MAX_OUTPUT_TOKENS || 800,
   });
 
   await prisma.chatMessage.create({
@@ -249,121 +415,79 @@ ${question}
 
   await recordUsage(studentId, "CHAT_MESSAGE", {
     materialId,
-    model: "gemini-2.5-flash",
+    model: MODELS.CHAT,
     inputTokens: usageMetadata?.promptTokenCount ?? null,
     outputTokens: usageMetadata?.candidatesTokenCount ?? null,
     totalTokens: usageMetadata?.totalTokenCount ?? null,
   });
+
+  console.log(`[AI] Chat response generated (${answer.length} chars)`);
 
   return { sessionId: session.id, answer };
 }
 
-export async function explainTopic(
-  studentId,
-  materialId,
-  curriculumCourseId,
-  selectedText,
-) {
-  // Validate selectedText
+/**
+ * Explain a selected topic/text snippet (standalone, not part of chat history)
+ */
+export async function explainTopic(studentId, materialId, curriculumCourseId, selectedText) {
   if (!selectedText || typeof selectedText !== "string") {
     throw new AppError("Selected text is required", 400);
   }
 
-  const trimmedText = selectedText.trim();
-  if (trimmedText.length === 0) {
+  const trimmed = selectedText.trim();
+  if (trimmed.length === 0) {
     throw new AppError("Selected text cannot be empty", 400);
   }
 
-  // Enforce maximum length (2000 characters)
-  const MAX_SELECTED_TEXT_LENGTH = 2000;
-  if (trimmedText.length > MAX_SELECTED_TEXT_LENGTH) {
-    throw new AppError(
-      `Selected text is too long. Maximum ${MAX_SELECTED_TEXT_LENGTH} characters allowed`,
-      400,
-    );
+  if (trimmed.length > 2000) {
+    throw new AppError("Selected text is too long (max 2000 characters)", 400);
   }
 
-  // Get student and check subscription plan
   const student = await prisma.student.findUnique({
     where: { id: studentId },
     select: { subscriptionPlan: true },
   });
-
-  if (!student) {
-    throw new AppError("Student not found", 404);
-  }
-
   const plan = student.subscriptionPlan;
+  const limits = PLAN_LIMITS[plan];
 
-  // Check usage limits
   await assertWithinLimit(studentId, plan, "EXPLAIN_TOPIC");
 
-  // Verify material exists and student has access
-  const material = await prisma.courseMaterial.findUnique({
-    where: { id: materialId },
-    select: {
-      id: true,
-      uploadedBy: true,
-      curriculumCourseId: true,
-      status: true,
-    },
-  });
+  await getMaterialWithAccess(materialId, studentId);
 
-  if (!material) {
-    throw new AppError("Material not found", 404);
-  }
-
-  if (material.uploadedBy !== studentId) {
-    throw new AppError("You don't have access to this material", 403);
-  }
-
-  if (material.curriculumCourseId !== curriculumCourseId) {
-    throw new AppError("Material does not belong to the specified course", 400);
-  }
-
-  // Create prompt for Gemini - ONLY send the selected text
-  const prompt = `
-You are a patient tutor helping a university student understand their course material.
-
-The student has selected the following text from their study material and wants you to explain it:
+  const prompt = `The student selected this text and wants it explained:
 
 """
-${trimmedText}
+${trimmed}
 """
 
-Please provide a clear and simple explanation that:
-1. Explains the main concept or idea in the selected text
-2. Defines any difficult or technical terms
-3. Provides a short, relevant example when it helps understanding
-4. Uses language appropriate for a university student
+Provide a clear, concise explanation that:
+- Defines any difficult terms
+- Explains the concept step-by-step if complex
+- Gives a short example if helpful
+- Is suitable for a university student
 
-Keep your explanation concise and focused. Base your explanation ONLY on what is written in the selected text - do not add information from outside sources or make assumptions beyond what is stated.
+Do not invent information — explain only what's in the selected text.`;
 
-If the selected text is unclear or incomplete, mention that and explain what you can based on what's provided.
-`;
-
-  // Get plan limits for max output tokens
-  const limits = PLAN_LIMITS[plan];
-  const maxOutputTokens = limits.EXPLAIN_MAX_OUTPUT_TOKENS;
-
-  // Call Gemini API
-  const { generateText } = await import("../../lib/geminiClient.js");
   const { text: explanation, usageMetadata } = await generateText({
     prompt,
-    maxOutputTokens,
+    model: MODELS.EXPLAIN,
+    system: `You are a patient tutor helping a student understand a specific topic from their course material.`,
+    maxOutputTokens: limits?.EXPLAIN_MAX_OUTPUT_TOKENS || 600,
   });
 
-  // Record usage with actual token counts from Gemini
   await recordUsage(studentId, "EXPLAIN_TOPIC", {
     materialId,
-    model: "gemini-2.5-flash",
+    model: MODELS.EXPLAIN,
     inputTokens: usageMetadata?.promptTokenCount ?? null,
     outputTokens: usageMetadata?.candidatesTokenCount ?? null,
     totalTokens: usageMetadata?.totalTokenCount ?? null,
   });
 
-  return {
-    explanation,
-    selectedText: trimmedText,
-  };
+  return { explanation };
+}
+
+// ---------- EXAM GENERATION (not implemented yet) ----------
+
+export async function generateExamFromMaterial(_studentId, _curriculumCourseId, _materialId, _topic) {
+  throw new AppError("Practice exam generation isn't available yet.", 501);
 }

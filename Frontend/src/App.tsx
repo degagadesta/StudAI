@@ -11,6 +11,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { OnboardingRoute } from "./components/OnboardingRoute";
 
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -54,6 +55,9 @@ export default function App() {
         <BrowserRouter>
           <AuthProvider>
             <Routes>
+              {/* Landing Page Route */}
+              <Route path="/" element={<LandingPage />} />
+
               {/* Public Authentication Routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<Register />} />
@@ -98,8 +102,7 @@ export default function App() {
               </Route>
 
               {/* Root & Catch-all Fallbacks */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AuthProvider>
         </BrowserRouter>

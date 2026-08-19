@@ -20,6 +20,7 @@ import { getMaterials, type Material } from "../../api/Materialsapi";
 export type WorkspaceTab =
   | "notes"
   | "chat"
+  | "summary"
   | "exams"
   | "quiz"
   | "flashcards"
@@ -220,7 +221,17 @@ export default function WorkspaceSidebar({
           onClick={() => handleTabClick("chat")}
         />
 
-        {/* 2. NOTES */}
+        {/* 2. SUMMARY */}
+        <NavItem
+          id="summary"
+          label="Summary"
+          icon={FileText}
+          isActive={currentTab === "summary"}
+          isExpanded={isExpanded}
+          onClick={() => handleTabClick("summary")}
+        />
+
+        {/* 3. NOTES */}
         <div>
           <NavItem
             id="notes"
@@ -268,7 +279,7 @@ export default function WorkspaceSidebar({
           )}
         </div>
 
-        {/* 3. PREVIOUS EXAMS */}
+        {/* 4. PREVIOUS EXAMS */}
         <NavItem
           id="exams"
           label="Previous Exams"
@@ -278,7 +289,7 @@ export default function WorkspaceSidebar({
           onClick={() => handleTabClick("exams")}
         />
 
-        {/* 4. QUIZ */}
+        {/* 5. QUIZ */}
         <NavItem
           id="quiz"
           label="Quiz"
@@ -288,7 +299,7 @@ export default function WorkspaceSidebar({
           onClick={() => handleTabClick("quiz")}
         />
 
-        {/* 5. FLASHCARDS */}
+        {/* 6. FLASHCARDS */}
         <NavItem
           id="flashcards"
           label="Flash Cards"
@@ -298,7 +309,7 @@ export default function WorkspaceSidebar({
           onClick={() => handleTabClick("flashcards")}
         />
 
-        {/* 6. UPLOAD */}
+        {/* 7. UPLOAD */}
         <div>
           <NavItem
             id="upload"

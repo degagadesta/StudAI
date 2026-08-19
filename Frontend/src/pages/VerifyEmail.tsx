@@ -44,12 +44,12 @@ export default function VerifyEmail() {
         const response = await verifyEmail(token);
         console.log("[VerifyEmail] Verification response:", response);
 
-        // Set user in auth context with hasProfile
+        // Set user in auth context with hasProfile and profile data (saves 1 API call)
         console.log(
           "[VerifyEmail] Calling setUser with hasProfile:",
           response.hasProfile,
         );
-        setUser(response.student, response.hasProfile);
+        setUser(response.student, response.hasProfile, response.profile);
 
         console.log("[VerifyEmail] Setting status to success");
         setStatus("success");

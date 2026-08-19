@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { api, getAccessToken, setAccessToken, clearTokens } from "../api/client";
 import { activityTracker } from "../services/activityTracker";
+import type { StudentProfile } from "../api/authApi";
 
 interface User {
   id: string;
@@ -27,6 +28,13 @@ export function useAuth() {
   const isCheckingAuth = useRef(false);
   // Track the timestamp of the most recent explicit auth action (login, verify, etc.)
   const lastExplicitAuthTime = useRef<number>(0);
+  // Store profile setter callback (will be set by AuthContext)
+  const profileSetterRef = useRef<((profile: StudentProfile | null) => void) | null>(null);
+
+  // Method to register profile setter from context
+  const registerProfileSetter = useCallback((setter: (profile: StudentProfile | null) => void) => {
+    profileSetterRef.current = setter;
+  }, []);
 
   const checkAuth = useCallback(async (isExplicitAuth = false) => {
     console.log('[useAuth] checkAuth called, isExplicitAuth:', isExplicitAuth);
@@ -155,6 +163,12 @@ export function useAuth() {
     } finally {
       clearTokens();
       lastExplicitAuthTime.current = Date.now();
+
+      // Clear profile cache on logout
+      if (profileSetterRef.current) {
+        profileSetterRef.current(null);
+      }
+
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -164,10 +178,21 @@ export function useAuth() {
     }
   }, []);
 
-  const setUser = useCallback((user: User | null, hasProfile?: boolean) => {
-    console.log('[useAuth] setUser called, user:', user, 'hasProfile:', hasProfile);
+  const setUser = useCallback((user: User | null, hasProfile?: boolean, profile?: StudentProfile | null) => {
+    console.log('[useAuth] setUser called, user:', user, 'hasProfile:', hasProfile, 'profile:', profile);
     // Mark this as an explicit auth action
     lastExplicitAuthTime.current = Date.now();
+
+    // Store profile in cache if provided
+    if (profile && profileSetterRef.current) {
+      console.log('[useAuth] Storing profile in cache');
+      profileSetterRef.current(profile);
+    } else if (!user && profileSetterRef.current) {
+      // Clear profile if user is being cleared
+      console.log('[useAuth] Clearing profile cache (no user)');
+      profileSetterRef.current(null);
+    }
+
     setAuthState((prev) => ({
       ...prev,
       user,
@@ -197,5 +222,6 @@ export function useAuth() {
     setUser,
     logout,
     checkAuth,
+    registerProfileSetter,
   };
 }

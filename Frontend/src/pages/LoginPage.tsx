@@ -100,9 +100,9 @@ export default function LoginPage() {
       const data = await login({ email, password, remember: values.remember });
       console.log('[LoginPage] Login response:', data);
       console.log('[LoginPage] hasProfile value:', data.hasProfile);
-      
-      // Set user with hasProfile
-      setUser(data.student, data.hasProfile);
+
+      // Set user with profile data from backend (saves 1 API call)
+      setUser(data.student, data.hasProfile, data.profile);
 
       // Use centralized routing with onboarding check
       const redirectParam = validateRedirectPath(searchParams.get("redirect"));
@@ -130,8 +130,9 @@ export default function LoginPage() {
       const data = await googleSignIn(credentialResponse.credential);
       console.log('[LoginPage Google] Sign-in response:', data);
       console.log('[LoginPage Google] hasProfile value:', data.hasProfile);
-      
-      setUser(data.student, data.hasProfile);
+
+      // Set user with profile data from backend (saves 1 API call)
+      setUser(data.student, data.hasProfile, data.profile);
 
       // Use centralized routing with onboarding check
       const redirectParam = validateRedirectPath(searchParams.get("redirect"));
@@ -245,11 +246,10 @@ export default function LoginPage() {
                 placeholder="yourname@aastustudent.edu.et"
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? "email-error" : undefined}
-                className={`w-full px-3.5 py-3 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
-                  errors.email
-                    ? "border-error focus:border-error focus:ring-error/15"
-                    : "border-default focus:border-accent focus:ring-accent/20"
-                }`}
+                className={`w-full px-3.5 py-3 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.email
+                  ? "border-error focus:border-error focus:ring-error/15"
+                  : "border-default focus:border-accent focus:ring-accent/20"
+                  }`}
               />
               {errors.email && (
                 <p id="email-error" className="mt-1.5 text-xs text-error">
@@ -278,11 +278,10 @@ export default function LoginPage() {
                 aria-describedby={
                   errors.password ? "password-error" : undefined
                 }
-                className={`w-full px-3.5 py-3 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
-                  errors.password
-                    ? "border-error focus:border-error focus:ring-error/15"
-                    : "border-default focus:border-accent focus:ring-accent/20"
-                }`}
+                className={`w-full px-3.5 py-3 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.password
+                  ? "border-error focus:border-error focus:ring-error/15"
+                  : "border-default focus:border-accent focus:ring-accent/20"
+                  }`}
               />
               <button
                 type="button"

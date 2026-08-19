@@ -1,5 +1,5 @@
 // components/PdfViewerPage.tsx
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { useParams } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Loader2 } from "lucide-react";
@@ -30,6 +30,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.vers
 
 const SAVE_DEBOUNCE_MS = 800;
 const SELECTION_DEBOUNCE_MS = 150;
+const EMPTY_HIGHLIGHTS: Highlight[] = [];
 
 type PendingSelection = {
   pageNumber: number;
@@ -201,7 +202,14 @@ export default function PdfViewerPage({
       .then((data) => {
         if (!cancelled) setHighlights(data);
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (!cancelled) {
+          console.error("Failed to load highlights:", err);
+          setHighlightError(
+            getApiErrorMessage(err, "Could not load highlights."),
+          );
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -239,7 +247,9 @@ export default function PdfViewerPage({
             const pageAttr = entry.target.getAttribute("data-page-number");
             if (pageAttr) {
               const visiblePage = parseInt(pageAttr, 10);
-              setFurthestPage((prev) => Math.min(numPages, Math.max(prev, visiblePage)));
+              setFurthestPage((prev) =>
+                Math.min(numPages, Math.max(prev, visiblePage)),
+              );
             }
           }
         });
@@ -258,7 +268,10 @@ export default function PdfViewerPage({
   useEffect(() => {
     if (!numPages || numPages <= 0) return;
     const validFurthest = Math.min(furthestPage, numPages);
-    const percent = Math.min(100, Math.max(0, Math.round((validFurthest / numPages) * 100)));
+    const percent = Math.min(
+      100,
+      Math.max(0, Math.round((validFurthest / numPages) * 100)),
+    );
     onProgressChangeRef.current?.(percent);
   }, [furthestPage, numPages]);
 
@@ -266,8 +279,11 @@ export default function PdfViewerPage({
     (page: number, total: number) => {
       if (!id || !total || total <= 0) return;
       const validPage = Math.min(page, total);
-      const percent = Math.min(100, Math.max(0, Math.round((validPage / total) * 100)));
-      updateMaterialProgress(id, percent).catch(() => {});
+      const percent = Math.min(
+        100,
+        Math.max(0, Math.round((validPage / total) * 100)),
+      );
+      updateMaterialProgress(id, percent).catch(() => { });
     },
     [id],
   );
@@ -285,11 +301,11 @@ export default function PdfViewerPage({
   }, [furthestPage, numPages, saveProgress]);
 
   // Text layer rendered callbacks
+  // Always bump renderTick so HighlightLayer re-runs its effect with fresh DOM
+  // even when react-pdf rebuilds the text layer on a re-render.
   const handleTextLayerRendered = useCallback((pageNumber: number) => {
-    if (!renderedPages.current.has(pageNumber)) {
-      renderedPages.current.add(pageNumber);
-      setRenderTick((t) => t + 1);
-    }
+    renderedPages.current.add(pageNumber);
+    setRenderTick((t) => t + 1);
   }, []);
 
   const registerPageRef = useCallback(
@@ -309,11 +325,16 @@ export default function PdfViewerPage({
     const handleSelectionChange = () => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        if (preserveSelectionRef.current) return;
+        if (preserveSelectionRef.current) {
+          console.log("[highlight] blocked: preserveSelectionRef is true");
+          return;
+        }
 
         const selection = window.getSelection();
-        if (!selection || selection.isCollapsed || selection.rangeCount === 0)
+        if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+          console.log("[highlight] no selection / collapsed", selection);
           return;
+        }
 
         const range = selection.getRangeAt(0);
         const anchorNode = range.startContainer;
@@ -321,19 +342,37 @@ export default function PdfViewerPage({
           anchorNode instanceof Element ? anchorNode : anchorNode.parentElement
         )?.closest<HTMLElement>(".pdf-page-wrapper");
 
-        if (!pageWrapper || !containerRef.current?.contains(pageWrapper))
+        if (!pageWrapper || !containerRef.current?.contains(pageWrapper)) {
+          console.log("[highlight] no pageWrapper found", {
+            anchorNode,
+            pageWrapper,
+          });
           return;
+        }
 
         const pageAttr = pageWrapper.getAttribute("data-page-number");
-        if (!pageAttr) return;
+        if (!pageAttr) {
+          console.log("[highlight] no page-number attr");
+          return;
+        }
 
         const pageNumber = parseInt(pageAttr, 10);
         const offsets = rangeToOffsets(pageWrapper, range);
-        if (!offsets) return;
+        if (!offsets) {
+          console.log("[highlight] rangeToOffsets returned null", {
+            pageWrapper,
+            range,
+          });
+          return;
+        }
 
         const rect = range.getBoundingClientRect();
-        if (rect.width === 0 && rect.height === 0) return;
+        if (rect.width === 0 && rect.height === 0) {
+          console.log("[highlight] zero-size rect", rect);
+          return;
+        }
 
+        console.log("[highlight] SUCCESS, showing popover", offsets);
         preserveSelectionRef.current = true;
 
         setPendingSelection({
@@ -396,6 +435,7 @@ export default function PdfViewerPage({
         window.getSelection()?.removeAllRanges();
         setPendingSelection(null);
       } catch (err) {
+        console.error("Failed to create highlight:", err);
         setHighlightError(getApiErrorMessage(err, "Could not save highlight."));
       }
     },
@@ -414,6 +454,7 @@ export default function PdfViewerPage({
           prev.map((h) => (h.id === highlightId ? updated : h)),
         );
       } catch (err) {
+        console.error("Failed to update highlight:", err);
         setHighlightError(
           getApiErrorMessage(err, "Could not update highlight."),
         );
@@ -428,11 +469,34 @@ export default function PdfViewerPage({
       await deleteHighlight(highlightId);
       setHighlights((prev) => prev.filter((h) => h.id !== highlightId));
     } catch (err) {
+      console.error("Failed to delete highlight:", err);
       setHighlightError(getApiErrorMessage(err, "Could not delete highlight."));
     } finally {
       setActiveHighlight(null);
     }
   }, []);
+
+  const handleHighlightClick = useCallback(
+    (highlight: Highlight, rect: DOMRect) => {
+      setActiveHighlight({
+        highlight,
+        x: rect.left + rect.width / 2,
+        y: rect.top,
+      });
+    },
+    [],
+  );
+
+  // Group highlights by page number so memo-comparison works correctly
+  const highlightsByPage = useMemo(() => {
+    const map = new Map<number, Highlight[]>();
+    for (const h of highlights) {
+      const arr = map.get(h.pageNumber) ?? [];
+      arr.push(h);
+      map.set(h.pageNumber, arr);
+    }
+    return map;
+  }, [highlights]);
 
   const calculatedWidth = Math.max(300, Math.min(containerWidth * scale, 1400));
 
@@ -494,20 +558,12 @@ export default function PdfViewerPage({
                     key={`page_${pageNo}`}
                     pageNo={pageNo}
                     calculatedWidth={calculatedWidth}
-                    highlights={highlights.filter(
-                      (h) => h.pageNumber === pageNo,
-                    )}
+                    highlights={highlightsByPage.get(pageNo) ?? EMPTY_HIGHLIGHTS}
                     pageEl={pageRefs.current.get(pageNo)}
                     isTextLayerReady={renderedPages.current.has(pageNo)}
                     onRegisterRef={registerPageRef}
                     onTextLayerRendered={handleTextLayerRendered}
-                    onHighlightClick={(highlight, rect) =>
-                      setActiveHighlight({
-                        highlight,
-                        x: rect.left + rect.width / 2,
-                        y: rect.top,
-                      })
-                    }
+                    onHighlightClick={handleHighlightClick}
                   />
                 );
               })}
@@ -575,7 +631,7 @@ interface PdfPageItemProps {
   onHighlightClick: (highlight: Highlight, rect: DOMRect) => void;
 }
 
-function PdfPageItem({
+const PdfPageItem = memo(function PdfPageItem({
   pageNo,
   calculatedWidth,
   highlights,
@@ -585,11 +641,17 @@ function PdfPageItem({
   onTextLayerRendered,
   onHighlightClick,
 }: PdfPageItemProps) {
+  // Stable ref callback — avoids React calling old ref with null on every render
+  const setRef = useCallback(
+    (el: HTMLDivElement | null) => onRegisterRef(pageNo, el),
+    [pageNo, onRegisterRef],
+  );
+
   return (
     <div
       id={`pdf-page-${pageNo}`}
       data-page-number={pageNo}
-      ref={(el) => onRegisterRef(pageNo, el)}
+      ref={setRef}
       style={{ width: `${calculatedWidth}px` }}
       className="pdf-page-wrapper relative min-h-[400px] max-w-full bg-white shadow-md rounded-lg overflow-hidden flex justify-center items-center transition-all duration-150"
     >
@@ -607,7 +669,8 @@ function PdfPageItem({
         }
       />
 
-      {highlights.length > 0 && pageEl && (
+      {/* Always keep HighlightLayer mounted so it doesn't lose state on first highlight */}
+      {pageEl && (
         <HighlightLayer
           pageEl={pageEl}
           highlights={highlights}
@@ -617,4 +680,4 @@ function PdfPageItem({
       )}
     </div>
   );
-}
+});

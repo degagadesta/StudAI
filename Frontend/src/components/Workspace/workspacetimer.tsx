@@ -72,34 +72,34 @@ export default function StudyTimer() {
       <button
         type="button"
         onClick={() => setIsTimerOpen((prev) => !prev)}
-        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
           isRunning || isTimerOpen
-            ? "bg-[#253D31] text-[#FFFDF7] border-[#253D31]"
-            : "bg-[#FFFDF7] text-[#5B6156] border-[#DCD2B4] hover:text-[#253D31] hover:bg-[#F3EFE0]"
+            ? "bg-accent text-inverse border-accent"
+            : "bg-surface text-secondary border-default hover:text-primary hover:bg-surface-hover"
         }`}
       >
         <Timer
           size={15}
-          className={isRunning ? "text-[#C7D3B9] animate-pulse" : ""}
+          className={isRunning ? "text-inverse animate-pulse" : ""}
         />
         <span>Timer</span>
-        <span className="font-mono text-[11px] opacity-90 pl-1 border-l border-[#DCD2B4]/40">
+        <span className="font-mono text-[11px] opacity-90 pl-1 border-l border-default">
           {formatTime(secondsLeft)}
         </span>
       </button>
 
       {/* Timer Dropdown Popover */}
       {isTimerOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl shadow-lg p-3.5 z-50 flex flex-col items-center gap-3">
+        <div className="absolute right-0 mt-2 w-56 bg-surface border border-default rounded-xl shadow-xl p-3.5 z-50 flex flex-col items-center gap-3">
           <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider text-[#A9A18A] font-semibold">
+            <p className="text-[10px] uppercase tracking-wider text-muted font-semibold">
               Countdown Session
             </p>
             <p
               className={`text-3xl font-mono font-bold mt-0.5 ${
                 secondsLeft === 0
-                  ? "text-[#8B3A3A] animate-bounce"
-                  : "text-[#253D31]"
+                  ? "text-error animate-bounce"
+                  : "text-primary"
               }`}
             >
               {formatTime(secondsLeft)}
@@ -108,17 +108,17 @@ export default function StudyTimer() {
 
           {/* Quick Presets */}
           {!isRunning && (
-            <div className="w-full flex flex-col gap-2 pt-2 border-t border-[#F3EFE0]">
+            <div className="w-full flex flex-col gap-2 pt-2 border-t border-default">
               <div className="flex items-center justify-between gap-1">
                 {PRESETS.map((mins) => (
                   <button
                     key={mins}
                     type="button"
                     onClick={() => handleSetDuration(mins)}
-                    className={`flex-1 py-1 text-xs font-medium rounded-md border transition-colors ${
+                    className={`flex-1 py-1 text-xs font-medium rounded-md border transition-colors cursor-pointer ${
                       initialMinutes === mins
-                        ? "bg-[#253D31] text-[#FFFDF7] border-[#253D31]"
-                        : "bg-[#F3EFE0] text-[#5B6156] border-[#DCD2B4] hover:text-[#253D31]"
+                        ? "bg-accent text-inverse border-accent"
+                        : "bg-elevated text-secondary border-default hover:text-primary hover:bg-surface-hover"
                     }`}
                   >
                     {mins}m
@@ -127,7 +127,7 @@ export default function StudyTimer() {
               </div>
 
               {/* Custom Minutes Input */}
-              <div className="flex items-center justify-between text-xs text-[#5B6156] px-1">
+              <div className="flex items-center justify-between text-xs text-secondary px-1">
                 <span>Custom:</span>
                 <div className="flex items-center gap-1">
                   <input
@@ -138,7 +138,7 @@ export default function StudyTimer() {
                     onChange={(e) =>
                       handleSetDuration(Number(e.target.value) || 1)
                     }
-                    className="w-12 px-1.5 py-0.5 text-center bg-surface border border-default rounded outline-none text-xs focus:border-[#253D31]"
+                    className="w-12 px-1.5 py-0.5 text-center bg-elevated text-primary border border-default rounded outline-none text-xs focus:border-accent"
                   />
                   <span>min</span>
                 </div>
@@ -147,14 +147,14 @@ export default function StudyTimer() {
           )}
 
           {/* Action Controls */}
-          <div className="flex items-center gap-2 w-full pt-2 border-t border-[#F3EFE0]">
+          <div className="flex items-center gap-2 w-full pt-2 border-t border-default">
             <button
               type="button"
               onClick={() => {
                 if (secondsLeft === 0) handleReset();
                 setIsRunning(!isRunning);
               }}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-[#253D31] text-[#FFFDF7] rounded-lg text-xs font-medium hover:bg-[#1C2E25] transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-accent text-inverse rounded-lg text-xs font-medium hover:bg-accent-hover transition-colors cursor-pointer"
             >
               {isRunning ? <Pause size={13} /> : <Play size={13} />}
               <span>
@@ -164,7 +164,7 @@ export default function StudyTimer() {
             <button
               type="button"
               onClick={handleReset}
-              className="p-1.5 border border-[#DCD2B4] hover:bg-[#F3EFE0] rounded-lg text-[#8B3A3A] transition-colors"
+              className="p-1.5 border border-default hover:bg-error/10 text-error rounded-lg transition-colors cursor-pointer"
               title="Reset Timer"
             >
               <RotateCcw size={13} />

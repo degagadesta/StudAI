@@ -7,8 +7,8 @@ const PAGE_SIZE = 10;
 
 export default function MaterialsProgressTable({
   rows = [],
-  page,
-  totalPages,
+  page = 1,
+  totalPages = 1,
   onPageChange,
 }: {
   rows: MaterialProgressRow[];
@@ -17,6 +17,9 @@ export default function MaterialsProgressTable({
   onPageChange: (page: number) => void;
 }) {
   const navigate = useNavigate();
+
+  // Ensure page is a valid positive number to avoid NaN calculations
+  const safePage = Number.isNaN(Number(page)) || page < 1 ? 1 : page;
 
   return (
     <div className="bg-surface border border-default rounded-2xl p-6">
@@ -44,41 +47,47 @@ export default function MaterialsProgressTable({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
-                <tr key={row.id} className="border-t border-[#EFE8D4]">
-                  <td className="py-2.5 text-muted font-mono text-xs">
-                    {(page - 1) * PAGE_SIZE + i + 1}
-                  </td>
-                  <td className="py-2.5 text-primary font-medium truncate max-w-[220px]">
-                    {row.fileName}
-                  </td>
-                  <td className="py-2.5 text-secondary">
-                    {new Date(row.uploadedAt).toLocaleDateString()}
-                  </td>
-                  <td className="py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-24 bg-[#DCD2B4] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-accent-secondary"
-                          style={{ width: `${row.progress}%` }}
-                        />
+              {rows.map((row, i) => {
+                const progressVal = Number.isNaN(Number(row.progress))
+                  ? 0
+                  : Math.min(100, Math.max(0, Number(row.progress)));
+
+                return (
+                  <tr key={row.id} className="border-t border-[#EFE8D4]">
+                    <td className="py-2.5 text-muted font-mono text-xs">
+                      {(safePage - 1) * PAGE_SIZE + i + 1}
+                    </td>
+                    <td className="py-2.5 text-primary font-medium truncate max-w-[220px]">
+                      {row.fileName}
+                    </td>
+                    <td className="py-2.5 text-secondary">
+                      {new Date(row.uploadedAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-24 bg-[#DCD2B4] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-accent-secondary"
+                            style={{ width: `${progressVal}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-secondary">
+                          {progressVal}%
+                        </span>
                       </div>
-                      <span className="text-xs text-secondary">
-                        {row.progress}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 text-right">
-                    <button
-                      type="button"
-                      onClick={() => navigate(row.workspacePath)}
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg hover:bg-accent-light text-accent transition-colors"
-                    >
-                      <Eye size={15} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="py-2.5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => navigate(row.workspacePath)}
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg hover:bg-accent-light text-accent transition-colors"
+                      >
+                        <Eye size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
@@ -88,10 +97,11 @@ export default function MaterialsProgressTable({
                 <button
                   key={p}
                   onClick={() => onPageChange(p)}
-                  className={`w-7 h-7 rounded-lg text-xs font-mono transition-colors ${p === page
-                    ? "bg-accent text-inverse"
-                    : "text-secondary hover:bg-surface-hover"
-                    }`}
+                  className={`w-7 h-7 rounded-lg text-xs font-mono transition-colors ${
+                    p === safePage
+                      ? "bg-accent text-inverse"
+                      : "text-secondary hover:bg-surface-hover"
+                  }`}
                 >
                   {p}
                 </button>

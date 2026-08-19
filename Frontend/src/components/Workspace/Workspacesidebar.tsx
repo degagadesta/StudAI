@@ -32,20 +32,20 @@ export interface NoteItem {
 
 interface WorkspaceSidebarProps {
   activeTab?: WorkspaceTab;
+  selectedNoteId?: string | null;
+  selectedMaterialId?: string | null;
   onSelectTab?: (tab: WorkspaceTab) => void;
   onBack?: () => void;
-  /** Optional pre-fetched materials; if omitted, component fetches automatically */
   materials?: Material[];
-  /** List of user-created notes */
   notes?: NoteItem[];
-  /** Callback when an uploaded material is clicked */
   onSelectMaterial?: (material: Material) => void;
-  /** Callback when a specific note is clicked */
   onSelectNote?: (note: NoteItem) => void;
 }
 
 export default function WorkspaceSidebar({
   activeTab: controlledActiveTab,
+  selectedNoteId,
+  selectedMaterialId,
   onSelectTab,
   onBack,
   materials: initialMaterials,
@@ -125,13 +125,24 @@ export default function WorkspaceSidebar({
     setIsUploadOpen((prev) => !prev);
   };
 
-  // Programmatically handle selection and navigation for main Upload button
-  const handleUploadTabClick = () => {
-    handleTabClick("upload");
-    navigate("/app/start-studying");
+  const handleNotesTabClick = () => {
+    if (currentTab === "notes") {
+      setIsNotesOpen((prev) => !prev);
+    } else {
+      handleTabClick("notes");
+      setIsNotesOpen(true);
+    }
   };
 
-  // Programmatically handle selection and navigation
+  const handleUploadTabClick = () => {
+    if (currentTab === "upload") {
+      setIsUploadOpen((prev) => !prev);
+    } else {
+      handleTabClick("upload");
+      setIsUploadOpen(true);
+    }
+  };
+
   const handleMaterialClick = (material: Material) => {
     handleTabClick("upload");
     onSelectMaterial?.(material);
@@ -145,41 +156,39 @@ export default function WorkspaceSidebar({
 
   return (
     <aside
-      className={`h-full bg-[#FFFDF7] border-r border-[#DCD2B4] flex flex-col py-4 shrink-0 select-none transition-all duration-300 ease-in-out ${
+      className={`h-full bg-surface border-r border-default flex flex-col py-4 shrink-0 select-none transition-all duration-300 ease-in-out ${
         isExpanded ? "w-60 px-3" : "w-16 px-2 items-center"
       }`}
     >
       {/* Header Actions */}
-      <div className="w-full flex flex-col mb-3 pb-3 border-b border-[#DCD2B4]/60">
+      <div className="w-full flex flex-col mb-3 pb-3 border-b border-default">
         {!isExpanded ? (
-          /* COLLAPSED HEADER */
           <div className="relative group w-full flex justify-center">
             <button
               type="button"
               onClick={() => setIsExpanded(true)}
               onMouseEnter={() => setIsTopButtonHovered(true)}
               onMouseLeave={() => setIsTopButtonHovered(false)}
-              className="w-10 h-10 flex items-center justify-center rounded-xl text-[#5B6156] hover:bg-[#F3EFE0] hover:text-[#253D31] transition-all cursor-pointer"
+              className="w-10 h-10 flex items-center justify-center rounded-xl text-secondary hover:bg-surface-hover hover:text-primary transition-all cursor-pointer"
               aria-label="Expand Sidebar"
             >
               {isTopButtonHovered ? (
-                <PanelLeft size={20} className="text-[#253D31]" />
+                <PanelLeft size={20} className="text-accent" />
               ) : (
                 <ArrowLeft size={20} />
               )}
             </button>
 
-            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 text-xs font-medium text-[#FFFDF7] bg-[#253D31] rounded-md shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 text-xs font-medium text-inverse bg-accent rounded-md shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
               Expand Sidebar
             </div>
           </div>
         ) : (
-          /* EXPANDED HEADER */
           <div className="flex items-center justify-between w-full">
             <button
               type="button"
               onClick={handleBackClick}
-              className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-[#5B6156] hover:bg-[#F3EFE0] hover:text-[#253D31] transition-all cursor-pointer"
+              className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-secondary hover:bg-surface-hover hover:text-primary transition-all cursor-pointer"
             >
               <ArrowLeft size={18} className="shrink-0" />
               <span className="text-xs font-semibold whitespace-nowrap">
@@ -190,7 +199,7 @@ export default function WorkspaceSidebar({
             <button
               type="button"
               onClick={() => setIsExpanded(false)}
-              className="w-9 h-9 flex items-center justify-center rounded-xl text-[#5B6156] hover:bg-[#F3EFE0] hover:text-[#253D31] transition-all cursor-pointer shrink-0"
+              className="w-9 h-9 flex items-center justify-center rounded-xl text-secondary hover:bg-surface-hover hover:text-primary transition-all cursor-pointer shrink-0"
               title="Collapse Sidebar"
             >
               <PanelLeftClose size={18} />
@@ -219,29 +228,41 @@ export default function WorkspaceSidebar({
             icon={Notebook}
             isActive={currentTab === "notes"}
             isExpanded={isExpanded}
-            onClick={() => handleTabClick("notes")}
+            onClick={handleNotesTabClick}
             hasDropdown
             isOpen={isNotesOpen}
             onToggleDropdown={toggleNotesSubMenu}
           />
           {isExpanded && isNotesOpen && (
-            <div className="ml-7 mt-1 space-y-1 border-l-2 border-[#DCD2B4]/80 pl-2 py-1">
+            <div className="ml-7 mt-1 space-y-1 border-l-2 border-default pl-2 py-1">
               {notes.length === 0 ? (
-                <p className="px-2 py-1 text-[11px] text-[#5B6156]/70 italic">
+                <p className="px-2 py-1 text-[11px] text-muted italic">
                   No notes yet
                 </p>
               ) : (
-                notes.map((note) => (
-                  <button
-                    key={note.id}
-                    type="button"
-                    onClick={() => handleNoteClick(note)}
-                    className="w-full text-left px-2 py-1.5 text-xs text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-lg transition-all truncate flex items-center gap-2 cursor-pointer"
-                  >
-                    <FileText size={14} className="shrink-0 opacity-70" />
-                    <span className="truncate">{note.title}</span>
-                  </button>
-                ))
+                notes.map((note) => {
+                  const isNoteActive = selectedNoteId === note.id;
+                  return (
+                    <button
+                      key={note.id}
+                      type="button"
+                      onClick={() => handleNoteClick(note)}
+                      className={`w-full text-left px-2 py-1.5 text-xs rounded-lg transition-all truncate flex items-center gap-2 cursor-pointer ${
+                        isNoteActive
+                          ? "bg-accent text-inverse font-medium"
+                          : "text-secondary hover:text-primary hover:bg-surface-hover"
+                      }`}
+                    >
+                      <FileText
+                        size={14}
+                        className={`shrink-0 ${
+                          isNoteActive ? "text-inverse" : "opacity-70"
+                        }`}
+                      />
+                      <span className="truncate">{note.title}</span>
+                    </button>
+                  );
+                })
               )}
             </div>
           )}
@@ -291,29 +312,41 @@ export default function WorkspaceSidebar({
             onToggleDropdown={toggleUploadSubMenu}
           />
           {isExpanded && isUploadOpen && (
-            <div className="ml-7 mt-1 space-y-1 border-l-2 border-[#DCD2B4]/80 pl-2 py-1">
+            <div className="ml-7 mt-1 space-y-1 border-l-2 border-default pl-2 py-1">
               {isLoadingMaterials ? (
-                <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-[#5B6156]/70">
+                <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted">
                   <Loader2 size={13} className="animate-spin" />
-                  <span>Loading materials...</span>
+                  <span>Loading materials</span>
                 </div>
               ) : materials.length === 0 ? (
-                <p className="px-2 py-1 text-[11px] text-[#5B6156]/70 italic">
+                <p className="px-2 py-1 text-[11px] text-muted italic">
                   No materials uploaded
                 </p>
               ) : (
-                materials.map((mat) => (
-                  <button
-                    key={mat.id}
-                    type="button"
-                    onClick={() => handleMaterialClick(mat)}
-                    title={mat.fileName}
-                    className="w-full text-left px-2 py-1.5 text-xs text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-lg transition-all truncate flex items-center gap-2 cursor-pointer"
-                  >
-                    <File size={14} className="shrink-0 opacity-70" />
-                    <span className="truncate">{mat.fileName}</span>
-                  </button>
-                ))
+                materials.map((mat) => {
+                  const isMatActive = selectedMaterialId === mat.id;
+                  return (
+                    <button
+                      key={mat.id}
+                      type="button"
+                      onClick={() => handleMaterialClick(mat)}
+                      title={mat.fileName}
+                      className={`w-full text-left px-2 py-1.5 text-xs rounded-lg transition-all truncate flex items-center gap-2 cursor-pointer ${
+                        isMatActive
+                          ? "bg-accent text-inverse font-medium"
+                          : "text-secondary hover:text-primary hover:bg-surface-hover"
+                      }`}
+                    >
+                      <File
+                        size={14}
+                        className={`shrink-0 ${
+                          isMatActive ? "text-inverse" : "opacity-70"
+                        }`}
+                      />
+                      <span className="truncate">{mat.fileName}</span>
+                    </button>
+                  );
+                })
               )}
             </div>
           )}
@@ -323,7 +356,6 @@ export default function WorkspaceSidebar({
   );
 }
 
-// Reusable Navigation Item Component
 interface NavItemProps {
   id: WorkspaceTab;
   label: string;
@@ -361,21 +393,21 @@ function NavItem({
             : "w-10 justify-center"
         } ${
           isActive
-            ? "bg-[#253D31] text-[#FFFDF7] shadow-sm"
-            : "text-[#5B6156] hover:bg-[#F3EFE0] hover:text-[#253D31]"
+            ? "bg-accent text-inverse shadow-sm"
+            : "text-secondary hover:bg-surface-hover hover:text-primary"
         }`}
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <Icon
             size={20}
             className={`shrink-0 ${
-              isActive ? "text-[#C7D3B9]" : "text-[#5B6156]"
+              isActive ? "text-inverse" : "text-secondary"
             }`}
           />
           {isExpanded && (
             <span
               className={`text-xs font-semibold truncate ${
-                isActive ? "text-[#FFFDF7]" : "text-[#5B6156]"
+                isActive ? "text-inverse" : "text-secondary"
               }`}
             >
               {label}
@@ -383,20 +415,18 @@ function NavItem({
           )}
         </div>
 
-        {/* Chevron Dropdown Toggle Icon */}
         {hasDropdown && isExpanded && (
           <span
             onClick={onToggleDropdown}
-            className="p-1 rounded-md hover:bg-[#DCD2B4]/40 transition-colors"
+            className="p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
           >
             {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </span>
         )}
       </button>
 
-      {/* Tooltip for collapsed mode */}
       {!isExpanded && (
-        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 text-xs font-medium text-[#FFFDF7] bg-[#253D31] rounded-md shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 text-xs font-medium text-inverse bg-accent rounded-md shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
           {label}
         </div>
       )}

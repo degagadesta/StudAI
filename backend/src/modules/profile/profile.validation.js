@@ -76,8 +76,8 @@ export function validateProfileUpdate({
     if (currentSemester !== undefined) {
         if (!Number.isInteger(currentSemester)) {
             errors.push("Current semester must be a whole number");
-        } else if (currentSemester < 1 || currentSemester > 2) {
-            errors.push("Current semester must be either 1 or 2");
+        } else if (currentSemester < 1 || currentSemester > 3) {
+            errors.push("Current semester must be between 1 and 3");
         }
     }
 

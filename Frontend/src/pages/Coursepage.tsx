@@ -114,6 +114,45 @@ export default function CoursesPage() {
     }
   );
 
+  // Listen for batch material deletions (e.g., when semester/year changes)
+  useSocket<{
+    trigger: string;
+    summary: {
+      totalDeleted: number;
+      totalFailed: number;
+      reason: string;
+    };
+  }>(
+    "materials:batch_deleted",
+    (data) => {
+      console.log('[Coursepage] Materials batch deleted:', data);
+
+      if (data.trigger === "profile_update") {
+        // Refresh materials list after profile changes that delete materials
+        fetchMaterials(selectedCourse);
+
+        // Show notification if materials were deleted
+        if (data.summary.totalDeleted > 0) {
+          console.log(`${data.summary.totalDeleted} materials were removed due to ${data.summary.reason}`);
+        }
+      } else if (data.trigger === "course_dropped") {
+        // Refresh both courses and materials after course drop
+        fetchEnrolledCourses();
+
+        if (selectedCourse && data.summary.totalDeleted > 0) {
+          // If the current course was dropped, clear materials
+          fetchMaterials(selectedCourse);
+        }
+
+        // Show notification
+        if (data.summary.totalDeleted > 0) {
+          const courseText = data.courseTitle ? ` from "${data.courseTitle}"` : '';
+          console.log(`Course dropped. ${data.summary.totalDeleted} materials${courseText} were removed.`);
+        }
+      }
+    }
+  );
+
   // Socket.IO listeners for real-time course updates
   useSocket<{ curriculumCourseId: string; courseName: string; message: string }>(
     "course:added",

@@ -385,9 +385,8 @@ export default function WorkspacePage() {
             <>
               <div
                 onMouseDown={() => setIsResizingNotes(true)}
-                className={`w-1.5 hover:w-2 hover:bg-[#253D31]/30 cursor-col-resize transition-all shrink-0 flex items-center justify-center group ${
-                  isResizingNotes ? "bg-[#253D31]/40 w-2" : "bg-[#DCD2B4]/40"
-                }`}
+                className={`w-1.5 hover:w-2 hover:bg-[#253D31]/30 cursor-col-resize transition-all shrink-0 flex items-center justify-center group ${isResizingNotes ? "bg-[#253D31]/40 w-2" : "bg-[#DCD2B4]/40"
+                  }`}
                 title="Drag to resize Notes panel"
               >
                 <div className="w-0.5 h-8 bg-[#5B6156]/30 group-hover:bg-[#253D31] rounded-full transition-colors" />
@@ -410,9 +409,8 @@ export default function WorkspacePage() {
             <>
               <div
                 onMouseDown={() => setIsResizingChat(true)}
-                className={`w-1.5 hover:w-2 hover:bg-[#253D31]/30 cursor-col-resize transition-all shrink-0 flex items-center justify-center group ${
-                  isResizingChat ? "bg-[#253D31]/40 w-2" : "bg-[#DCD2B4]/40"
-                }`}
+                className={`w-1.5 hover:w-2 hover:bg-[#253D31]/30 cursor-col-resize transition-all shrink-0 flex items-center justify-center group ${isResizingChat ? "bg-[#253D31]/40 w-2" : "bg-[#DCD2B4]/40"
+                  }`}
                 title="Drag to resize AI Chat panel"
               >
                 <div className="w-0.5 h-8 bg-[#5B6156]/30 group-hover:bg-[#253D31] rounded-full transition-colors" />
@@ -424,8 +422,10 @@ export default function WorkspacePage() {
               >
                 <AIChatPanel
                   isEmbedded
+                  courseName={material?.courseName}
+                  activePdfName={material?.fileName}
+                  onSendMessage={handleAIChatSend}
                   onClose={() => setShowChat(false)}
-                  activePdfName={id ? `Material #${id}` : undefined}
                 />
               </div>
             </>

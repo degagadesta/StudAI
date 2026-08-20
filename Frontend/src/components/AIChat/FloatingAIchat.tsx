@@ -19,6 +19,7 @@ export interface ChatSession {
 interface FloatingAIChatProps {
   courseName?: string;
   activePdfName?: string;
+  materialId?: string;
   onSendMessage?: (message: string) => Promise<string> | Promise<void>;
   initialQuestion?: string;
   onQuestionSent?: () => void;
@@ -26,6 +27,8 @@ interface FloatingAIChatProps {
 
 export default function FloatingAIChat({
   activePdfName,
+  materialId,
+  onSendMessage,
   initialQuestion,
   onQuestionSent,
 }: FloatingAIChatProps) {
@@ -122,6 +125,8 @@ export default function FloatingAIChat({
             onClose={() => setIsOpen(false)}
             activePdfName={activePdfName}
             initialQuestion={initialQuestion}
+            materialId={materialId}
+            onSendMessage={onSendMessage}
           />
         </div>
       )}
@@ -133,9 +138,8 @@ export default function FloatingAIChat({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onClick={handleButtonClick}
-        className={`flex items-center gap-2 px-4 py-3 rounded-full bg-[#253D31] text-white shadow-lg hover:opacity-90 transition-opacity cursor-grab active:cursor-grabbing ${
-          isDragging ? "scale-105 ring-4 ring-[#253D31]/30" : ""
-        }`}
+        className={`flex items-center gap-2 px-4 py-3 rounded-full bg-[#253D31] text-white shadow-lg hover:opacity-90 transition-opacity cursor-grab active:cursor-grabbing ${isDragging ? "scale-105 ring-4 ring-[#253D31]/30" : ""
+          }`}
       >
         <GripVertical size={14} className="opacity-60" />
         {isOpen ? <X size={18} /> : <Sparkles size={18} />}

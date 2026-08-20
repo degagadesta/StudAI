@@ -20,6 +20,7 @@ import {
 } from "../api/Coursesapi";
 import { getMaterials, type Material } from "../api/Materialsapi";
 import { getApiErrorMessage } from "../api/authApi";
+import { useSocket } from "../hooks/useSocket";
 
 export default function CoursesPage() {
   const location = useLocation();
@@ -59,6 +60,81 @@ export default function CoursesPage() {
   useEffect(() => {
     fetchEnrolledCourses();
   }, []);
+
+  // Socket.IO listeners for real-time material status updates
+  useSocket<{ materialId: string; status: string }>(
+    "material:extracting",
+    (data) => {
+      setMaterials((prevMaterials) =>
+        prevMaterials.map((material) =>
+          material.id === data.materialId
+            ? { ...material, status: data.status as Material['status'] }
+            : material
+        )
+      );
+    }
+  );
+
+  useSocket<{ materialId: string; status: string }>(
+    "material:analyzing",
+    (data) => {
+      setMaterials((prevMaterials) =>
+        prevMaterials.map((material) =>
+          material.id === data.materialId
+            ? { ...material, status: data.status as Material['status'] }
+            : material
+        )
+      );
+    }
+  );
+
+  useSocket<{ materialId: string; status: string; numChunks: number; numPages: number }>(
+    "material:ready",
+    (data) => {
+      setMaterials((prevMaterials) =>
+        prevMaterials.map((material) =>
+          material.id === data.materialId
+            ? { ...material, status: data.status as Material['status'] }
+            : material
+        )
+      );
+    }
+  );
+
+  useSocket<{ materialId: string; status: string; error: string }>(
+    "material:failed",
+    (data) => {
+      setMaterials((prevMaterials) =>
+        prevMaterials.map((material) =>
+          material.id === data.materialId
+            ? { ...material, status: data.status as Material['status'] }
+            : material
+        )
+      );
+    }
+  );
+
+  // Socket.IO listeners for real-time course updates
+  useSocket<{ curriculumCourseId: string; courseName: string; message: string }>(
+    "course:added",
+    (data) => {
+      // Refresh courses list when a course is added
+      fetchEnrolledCourses();
+    }
+  );
+
+  useSocket<{ curriculumCourseId: string; courseName: string; deletedPDFs: number; message: string }>(
+    "course:dropped",
+    (data) => {
+      // Refresh courses list when a course is dropped
+      fetchEnrolledCourses();
+      // If current course was dropped, clear selection
+      if (selectedCourse && selectedCourse.curriculumCourseId === data.curriculumCourseId) {
+        setSelectedCourse(null);
+        setMaterials([]);
+      }
+    }
+  );
 
   // Handle navigation from search results
   useEffect(() => {
@@ -172,7 +248,7 @@ export default function CoursesPage() {
 
       // Refresh enrolled list from server
       await fetchEnrolledCourses();
-      
+
       // Refresh catalog to update isEnrolled status
       const catalogData = await getAvailableCourses(searchQuery);
       setDepartmentCatalog(catalogData || []);
@@ -256,7 +332,7 @@ export default function CoursesPage() {
               {materials.map((m) => {
                 const isProcessing = m.status !== "READY";
                 const isFailed = m.status === "FAILED";
-                
+
                 return (
                   <Link
                     key={m.id}
@@ -266,11 +342,10 @@ export default function CoursesPage() {
                         e.preventDefault();
                       }
                     }}
-                    className={`group relative p-5 bg-surface border border-default rounded-xl transition-colors block ${
-                      isProcessing
-                        ? "cursor-not-allowed opacity-75"
-                        : "hover:border-accent cursor-pointer"
-                    }`}
+                    className={`group relative p-5 bg-surface border border-default rounded-xl transition-colors block ${isProcessing
+                      ? "cursor-not-allowed opacity-75"
+                      : "hover:border-accent cursor-pointer"
+                      }`}
                   >
                     <div className="flex items-start gap-3 mb-4 pr-6">
                       <div className="w-9 h-9 rounded-lg bg-elevated flex items-center justify-center shrink-0">
@@ -285,14 +360,13 @@ export default function CoursesPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p
-                          className={`text-sm font-medium text-primary truncate ${
-                            !isProcessing && "group-hover:underline"
-                          }`}
+                          className={`text-sm font-medium text-primary truncate ${!isProcessing && "group-hover:underline"
+                            }`}
                         >
                           {m.fileName}
                         </p>
                         <p className="text-xs text-muted">{m.courseName}</p>
-                        
+
                         {/* Processing Status Badge */}
                         {isProcessing && (
                           <div className="mt-1.5">
@@ -481,11 +555,10 @@ export default function CoursesPage() {
                     <div
                       key={catCourse.id}
                       onClick={() => !isEnrolled && handleAddCourse(catCourse)}
-                      className={`p-3.5 rounded-xl border flex items-center justify-between transition-all ${
-                        isEnrolled
-                          ? "bg-[#F3EFE3] border-default opacity-75 cursor-default"
-                          : "bg-surface border-default hover:border-accent cursor-pointer hover:bg-[#FDFBF3]"
-                      }`}
+                      className={`p-3.5 rounded-xl border flex items-center justify-between transition-all ${isEnrolled
+                        ? "bg-[#F3EFE3] border-default opacity-75 cursor-default"
+                        : "bg-surface border-default hover:border-accent cursor-pointer hover:bg-[#FDFBF3]"
+                        }`}
                     >
                       <div className="min-w-0 pr-3">
                         <div className="flex items-center gap-2">
@@ -506,11 +579,10 @@ export default function CoursesPage() {
                       <button
                         type="button"
                         disabled={isEnrolled || addingCourseId === catCourse.id}
-                        className={`text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 shrink-0 ${
-                          isEnrolled
-                            ? "text-secondary bg-transparent"
-                            : "bg-accent text-[#FFFDF7] hover:bg-accent"
-                        }`}
+                        className={`text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 shrink-0 ${isEnrolled
+                          ? "text-secondary bg-transparent"
+                          : "bg-accent text-[#FFFDF7] hover:bg-accent"
+                          }`}
                       >
                         {addingCourseId === catCourse.id ? (
                           <Loader2 size={14} className="animate-spin" />

@@ -1,6 +1,8 @@
 import * as courseService from "./course.service.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { validateCourseSelection } from "./course.validation.js";
+import { invalidateCourses, invalidateDashboard } from "../../utils/cacheInvalidation.js";
+import { emitToStudent } from "../../lib/socket.js";
 
 export const getCourses = async (req, res, next) => {
   try {
@@ -17,9 +19,9 @@ export const getCourses = async (req, res, next) => {
       data: courses,
       search: searchQuery
         ? {
-            query: searchQuery,
-            resultCount: courses.length,
-          }
+          query: searchQuery,
+          resultCount: courses.length,
+        }
         : null,
     });
   } catch (error) {
@@ -63,6 +65,17 @@ export const addCourseSelection = asyncHandler(async (req, res) => {
     curriculumCourseId,
   );
 
+  // Invalidate relevant caches after course addition
+  await invalidateCourses(req.studentId);
+  await invalidateDashboard(req.studentId);
+
+  // Emit real-time course update event
+  emitToStudent(req.studentId, "course:added", {
+    curriculumCourseId,
+    courseName: result.courseName || "Course",
+    message: "Course added to your schedule"
+  });
+
   res.status(201).json({
     success: true,
     message: "Course added to your schedule",
@@ -81,6 +94,18 @@ export const dropCourseSelection = asyncHandler(async (req, res) => {
     req.studentId,
     curriculumCourseId,
   );
+
+  // Invalidate relevant caches after course removal
+  await invalidateCourses(req.studentId);
+  await invalidateDashboard(req.studentId);
+
+  // Emit real-time course update event
+  emitToStudent(req.studentId, "course:dropped", {
+    curriculumCourseId,
+    courseName: result.courseName || "Course",
+    deletedPDFs: result.deletedPDFs || 0,
+    message: "Course dropped successfully"
+  });
 
   // Add warning if PDFs were deleted
   const response = {

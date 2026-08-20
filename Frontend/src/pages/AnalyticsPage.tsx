@@ -12,8 +12,10 @@ import {
   type MaterialProgressRow,
 } from "../api/AnalyticsApi";
 import { getApiErrorMessage } from "../api/authApi";
+import { useSocket } from "../hooks/useSocket";
 import ActivityBarChart from "../components/Analytics/ActivityBarChart";
 import MaterialsProgressTable from "../components/Analytics/MaterialsProgressTable";
+import SocketStatus from "../components/SocketStatus";
 
 interface StatCardProps {
   icon: LucideIcon;
@@ -25,9 +27,8 @@ interface StatCardProps {
 function StatCard({ icon: Icon, label, value, dark = false }: StatCardProps) {
   return (
     <div
-      className={`p-5 rounded-2xl ${
-        dark ? "bg-accent text-inverse" : "bg-surface border border-default"
-      }`}
+      className={`p-5 rounded-2xl ${dark ? "bg-accent text-inverse" : "bg-surface border border-default"
+        }`}
     >
       <div className="flex items-center gap-1.5 mb-1.5">
         <Icon
@@ -52,28 +53,59 @@ export default function AnalyticsPage() {
   const [activity, setActivity] = useState<ActivityBreakdown | null>(null);
   const [materials, setMaterials] = useState<MaterialProgressRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch analytics data (summary, activity, and materials) on mount
+
+  // Function to fetch analytics data
+  const fetchAnalytics = async () => {
+    try {
+      setIsRefreshing(true);
+      const { summary, activity, materials } = await getAnalytics();
+      setSummary(summary);
+      setActivity(activity);
+      setMaterials(materials);
+      setError(null); // Clear any previous errors
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Could not load your analytics."));
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Fetch analytics data on mount
   useEffect(() => {
     let cancelled = false;
-    getAnalytics()
-      .then(({ summary, activity, materials }) => {
-        if (cancelled) return;
-        setSummary(summary);
-        setActivity(activity);
-        setMaterials(materials);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled)
+
+    const loadInitialData = async () => {
+      try {
+        await fetchAnalytics();
+      } catch (err) {
+        if (!cancelled) {
           setError(getApiErrorMessage(err, "Could not load your analytics."));
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadInitialData();
+
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Listen for real-time analytics updates
+  useSocket('analytics:updated', (data: { trigger: string; sessionId?: string; duration?: number }) => {
+    console.log('[Analytics] Real-time update received:', data);
+
+    // Refresh analytics data when activity changes
+    fetchAnalytics().catch(err => {
+      console.error('[Analytics] Failed to refresh after real-time update:', err);
+    });
   }, []);
 
   if (isLoading) {
@@ -105,6 +137,24 @@ export default function AnalyticsPage() {
 
   return (
     <div className="max-w-6xl mx-auto flex flex-col gap-4">
+      {/* Header with Socket Status */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-primary">
+            Analytics Dashboard
+            {isRefreshing && (
+              <span className="ml-2 text-sm text-secondary animate-pulse">
+                • Updating...
+              </span>
+            )}
+          </h1>
+          <p className="text-sm text-secondary">Real-time insights into your learning progress</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <SocketStatus />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           icon={BookOpen}

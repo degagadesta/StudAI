@@ -1,5 +1,5 @@
 import "./src/config/env.js"; // must run first — loads .env before anything else reads process.env
-import app from "./app.js";
+import app, { httpServer } from "./app.js";
 import { preloadEmbeddingModel } from "./src/lib/geminiClient.js";
 
 const PORT = process.env.PORT || 4000;
@@ -13,4 +13,4 @@ preloadEmbeddingModel()
     console.error("[Server] Failed to preload embedding model:", err);
   });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));

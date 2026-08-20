@@ -1,6 +1,7 @@
 import * as pdfService from "./pdf.service.js";
 import { validatePDFUpload } from "./pdf.validation.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { invalidateMaterials } from "../../utils/cacheInvalidation.js";
 
 export const uploadPDF = asyncHandler(async (req, res) => {
   const { curriculumCourseId } = req.body;
@@ -9,6 +10,9 @@ export const uploadPDF = asyncHandler(async (req, res) => {
   validatePDFUpload(file, curriculumCourseId);
 
   const result = await pdfService.uploadPDF(req.studentId, curriculumCourseId, file);
+
+  // Invalidate materials cache after upload
+  await invalidateMaterials(req.studentId);
 
   res.status(201).json({
     success: true,
@@ -58,6 +62,9 @@ export const updateProgress = asyncHandler(async (req, res) => {
 export const deletePDF = asyncHandler(async (req, res) => {
   const { id } = req.params;
   await pdfService.deletePDF(req.studentId, id);
+
+  // Invalidate materials cache after delete
+  await invalidateMaterials(req.studentId, id);
 
   res.status(200).json({ success: true, message: "PDF deleted successfully" });
 });

@@ -1,6 +1,8 @@
 import { prisma } from "../../lib/prisma.js";
 import { embedBatch } from "../../lib/geminiClient.js";
 import { extractTextFromPDF } from "./textExtraction.js";
+import { emitToStudent } from "../../lib/socket.js";
+import { invalidateMaterials } from "../../utils/cacheInvalidation.js";
 
 const CHUNK_SIZE = 800;
 const CHUNK_OVERLAP = 100;
@@ -69,16 +71,51 @@ export async function processMaterial(materialId) {
   try {
     const material = await prisma.courseMaterial.findUnique({
       where: { id: materialId },
-      select: { id: true, fileData: true, status: true },
+      select: {
+        id: true,
+        fileData: true,
+        status: true,
+        curriculumCourse: {
+          select: {
+            curriculum: {
+              select: {
+                studentProfile: {
+                  select: { studentId: true }
+                }
+              }
+            }
+          }
+        }
+      },
     });
 
     if (!material) throw new Error(`Material ${materialId} not found`);
     if (!material.fileData) throw new Error(`Material ${materialId} has no file data`);
 
+    // Get studentId for Socket.IO events - with proper error handling
+    let studentId = null;
+    try {
+      studentId = material?.curriculumCourse?.curriculum?.studentProfile?.studentId;
+
+      if (!studentId) {
+        console.warn(`[Processing] Could not find studentId for material ${materialId} - skipping Socket events`);
+      }
+    } catch (err) {
+      console.error(`[Processing] Error extracting studentId for material ${materialId}:`, err.message);
+    }
+
     await prisma.courseMaterial.update({
       where: { id: materialId },
       data: { status: "EXTRACTING" },
     });
+
+    // Emit real-time status update
+    if (studentId) {
+      emitToStudent(studentId, "material:extracting", {
+        materialId,
+        status: "EXTRACTING"
+      });
+    }
 
     console.log(`[Processing] Extracting text from PDF ${materialId}`);
     const { text, numPages } = await extractTextFromPDF(material.fileData);
@@ -100,6 +137,14 @@ export async function processMaterial(materialId) {
       where: { id: materialId },
       data: { status: "ANALYZING" },
     });
+
+    // Emit real-time status update
+    if (studentId) {
+      emitToStudent(studentId, "material:analyzing", {
+        materialId,
+        status: "ANALYZING"
+      });
+    }
 
     console.log(`[Processing] Splitting text into chunks`);
     const textChunks = createChunks(text);
@@ -170,6 +215,17 @@ export async function processMaterial(materialId) {
       data: { status: "READY" },
     });
 
+    // Invalidate cache and emit success event
+    if (studentId) {
+      await invalidateMaterials(studentId, materialId);
+      emitToStudent(studentId, "material:ready", {
+        materialId,
+        status: "READY",
+        numChunks: textChunks.length,
+        numPages
+      });
+    }
+
     console.log(`[Processing] ✓ Material ${materialId} processing complete - ${textChunks.length} chunks ready`);
 
     return { success: true, numChunks: textChunks.length, numPages };
@@ -180,6 +236,39 @@ export async function processMaterial(materialId) {
       where: { id: materialId },
       data: { status: "FAILED" },
     });
+
+    // Get studentId for error event with proper error handling
+    let studentId = null;
+    try {
+      const material = await prisma.courseMaterial.findUnique({
+        where: { id: materialId },
+        select: {
+          curriculumCourse: {
+            select: {
+              curriculum: {
+                select: {
+                  studentProfile: {
+                    select: { studentId: true }
+                  }
+                }
+              }
+            }
+          }
+        },
+      });
+
+      studentId = material?.curriculumCourse?.curriculum?.studentProfile?.studentId;
+    } catch (queryError) {
+      console.error(`[Processing] Error getting studentId for failed material ${materialId}:`, queryError.message);
+    }
+
+    if (studentId) {
+      emitToStudent(studentId, "material:failed", {
+        materialId,
+        status: "FAILED",
+        error: error.message
+      });
+    }
 
     throw error;
   }

@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { uploadPDF, getPDFs, servePDF, updateProgress, deletePDF } from "./pdf.controller.js";
 import { authenticate } from "../../middlewares/authenticate.js";
+import { cacheStudentData } from "../../middlewares/cache.js";
 import { AppError } from "../../utils/AppError.js";
 
 const router = Router();
@@ -23,7 +24,8 @@ const upload = multer({
 });
 
 router.post("/", authenticate, upload.single('pdf'), uploadPDF);
-router.get("/", authenticate, getPDFs);
+// Cache materials list for 2 minutes
+router.get("/", authenticate, cacheStudentData("materials:list", 120), getPDFs);
 router.get("/:id/file", authenticate, servePDF);
 router.patch("/:id/progress", authenticate, updateProgress);
 router.delete("/:id", authenticate, deletePDF);

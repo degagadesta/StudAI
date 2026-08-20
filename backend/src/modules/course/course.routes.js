@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate.js";
+import { cacheStudentData } from "../../middlewares/cache.js";
 import {
   getCourses,
   addCourseSelection,
@@ -9,10 +10,12 @@ import {
 
 const router = Router();
 
-router.get("/", authenticate, getCourses);
-// router.get("/getAllCourses", authenticate, getCourseAdded)
+// Cache enrolled courses for 5 minutes
+router.get("/", authenticate, cacheStudentData("courses:enrolled", 300), getCourses);
+// Cache available courses catalog for 10 minutes (less frequently changing)
+router.get("/catalog", authenticate, cacheStudentData("courses:catalog", 600), getAvailableCourses);
+
 router.post("/select", authenticate, addCourseSelection);
 router.delete("/select/:curriculumCourseId", authenticate, dropCourseSelection);
-router.get("/catalog", authenticate, getAvailableCourses);
 
 export default router;

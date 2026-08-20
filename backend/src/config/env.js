@@ -20,4 +20,15 @@ export const env = {
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   databaseUrl: process.env.DATABASE_URL,
+
+  // Redis Configuration
+  redisUrl: process.env.REDIS_URL,
+  redisHost: process.env.REDIS_HOST || "localhost",
+  redisPort: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379,
+  redisPassword: process.env.REDIS_PASSWORD || undefined,
+  redisDb: process.env.REDIS_DB ? parseInt(process.env.REDIS_DB) : 0,
+
+  // Socket.IO Configuration
+  socketCorsOrigin: process.env.SOCKET_CORS_ORIGIN || process.env.FRONTEND_URL || "http://localhost:5173",
+  socketPath: process.env.SOCKET_PATH || "/socket.io",
 };

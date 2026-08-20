@@ -1,5 +1,7 @@
 import * as activityService from "./activity.service.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { invalidateAnalytics } from "../../utils/cacheInvalidation.js";
+import { emitToStudent } from "../../lib/socket.js";
 
 /**
  * Start or resume activity session
@@ -23,6 +25,13 @@ export const heartbeat = asyncHandler(async (req, res) => {
     if (!sessionId) {
         // No sessionId provided, start new session
         const result = await activityService.startOrResumeSession(req.studentId);
+
+        // Emit analytics update for new session
+        emitToStudent(req.studentId, "analytics:updated", {
+            trigger: "session_started",
+            sessionId: result.sessionId
+        });
+
         return res.status(201).json({
             success: true,
             message: "New session started",
@@ -32,6 +41,17 @@ export const heartbeat = asyncHandler(async (req, res) => {
 
     try {
         const result = await activityService.updateSessionActivity(sessionId);
+
+        // Invalidate analytics cache when session updates
+        await invalidateAnalytics(req.studentId);
+
+        // Emit analytics update for activity heartbeat
+        emitToStudent(req.studentId, "analytics:updated", {
+            trigger: "session_active",
+            sessionId: result.sessionId,
+            duration: result.duration
+        });
+
         res.status(200).json({
             success: true,
             message: "Activity updated",
@@ -41,6 +61,13 @@ export const heartbeat = asyncHandler(async (req, res) => {
         if (err.statusCode === 410 || err.statusCode === 404) {
             // Session expired or not found, start new one
             const result = await activityService.startOrResumeSession(req.studentId);
+
+            // Emit analytics update for new session after expiry
+            emitToStudent(req.studentId, "analytics:updated", {
+                trigger: "session_restarted",
+                sessionId: result.sessionId
+            });
+
             return res.status(201).json({
                 success: true,
                 message: "New session started after expiry",
@@ -65,6 +92,16 @@ export const endSession = asyncHandler(async (req, res) => {
     }
 
     const result = await activityService.closeSession(sessionId);
+
+    // Invalidate analytics cache when session ends (affects stats)
+    await invalidateAnalytics(req.studentId);
+
+    // Emit analytics update when session ends
+    emitToStudent(req.studentId, "analytics:updated", {
+        trigger: "session_ended",
+        sessionId: result.sessionId,
+        duration: result.duration
+    });
 
     res.status(200).json({
         success: true,

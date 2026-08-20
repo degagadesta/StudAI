@@ -158,9 +158,8 @@ export default function AIChatPanel({
         if (responseText) aiText = responseText;
       } else {
         await new Promise((res) => setTimeout(res, 1200));
-        aiText = `Here are insights on **"${query}"** regarding ${
-          activePdfName || courseName || "your workspace material"
-        }.`;
+        aiText = `Here are insights on **"${query}"** regarding ${activePdfName || courseName || "your workspace material"
+          }.`;
       }
 
       if (aiText) {
@@ -227,11 +226,10 @@ export default function AIChatPanel({
             onClick={() =>
               setActiveView((prev) => (prev === "chat" ? "history" : "chat"))
             }
-            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-              activeView === "history"
-                ? "bg-accent-light text-accent font-semibold"
-                : "text-secondary hover:text-primary hover:bg-surface-hover"
-            }`}
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${activeView === "history"
+              ? "bg-accent-light text-accent font-semibold"
+              : "text-secondary hover:text-primary hover:bg-surface-hover"
+              }`}
             title="View History"
           >
             <History size={15} />
@@ -285,11 +283,10 @@ export default function AIChatPanel({
               <div
                 key={session.id}
                 onClick={() => handleSelectSession(session)}
-                className={`group relative flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
-                  currentSessionId === session.id
-                    ? "bg-accent-light border-accent text-accent font-medium"
-                    : "bg-surface hover:bg-surface-hover border-default text-primary"
-                }`}
+                className={`group relative flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${currentSessionId === session.id
+                  ? "bg-accent-light border-accent text-accent font-medium"
+                  : "bg-surface hover:bg-surface-hover border-default text-primary"
+                  }`}
               >
                 <div className="p-2 rounded-xl bg-elevated border border-default text-accent shrink-0 mt-0.5">
                   <MessageSquare size={14} />
@@ -359,16 +356,14 @@ export default function AIChatPanel({
               messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex gap-2.5 ${
-                    msg.sender === "user" ? "flex-row-reverse" : "flex-row"
-                  }`}
+                  className={`flex gap-2.5 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"
+                    }`}
                 >
                   <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                      msg.sender === "user"
-                        ? "bg-accent text-inverse"
-                        : "bg-elevated border border-default text-accent"
-                    }`}
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${msg.sender === "user"
+                      ? "bg-accent text-inverse"
+                      : "bg-elevated border border-default text-accent"
+                      }`}
                   >
                     {msg.sender === "user" ? (
                       <User size={13} />
@@ -378,19 +373,17 @@ export default function AIChatPanel({
                   </div>
 
                   <div
-                    className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed ${
-                      msg.sender === "user"
-                        ? "bg-accent text-inverse rounded-tr-xs shadow-sm"
-                        : "bg-elevated border border-default text-primary rounded-tl-xs shadow-sm"
-                    }`}
+                    className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed ${msg.sender === "user"
+                      ? "bg-accent text-inverse rounded-tr-xs shadow-sm"
+                      : "bg-elevated border border-default text-primary rounded-tl-xs shadow-sm"
+                      }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.text}</p>
                     <span
-                      className={`text-[9px] block mt-1 ${
-                        msg.sender === "user"
-                          ? "text-inverse/70 text-right"
-                          : "text-secondary text-left"
-                      }`}
+                      className={`text-[9px] block mt-1 ${msg.sender === "user"
+                        ? "text-inverse/70 text-right"
+                        : "text-secondary text-left"
+                        }`}
                     >
                       {new Date(msg.timestamp).toLocaleTimeString([], {
                         hour: "2-digit",

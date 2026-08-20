@@ -1,5 +1,8 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
+import { deletePDF } from "../pdf/pdf.service.js";
+import { emitToStudent } from "../../lib/socket.js";
+import { invalidateCourses, invalidateMaterials } from "../../utils/cacheInvalidation.js";
 
 export const getStudentCoursesByYear = async (studentId, searchQuery = null) => {
   // Check if student exists
@@ -357,48 +360,51 @@ export async function dropCourseSelection(studentId, curriculumCourseId) {
     throw new AppError("This course is not in your schedule", 404);
   }
 
-  let deletedPDFCount = 0;
+  // Find all PDFs uploaded by this student for this course
+  const materials = await prisma.courseMaterial.findMany({
+    where: {
+      curriculumCourseId,
+      uploadedBy: studentId,
+      status: { not: "DELETED" }, // Only count non-deleted materials
+    },
+    select: {
+      id: true,
+      title: true
+    },
+  });
 
-  // Use transaction to ensure atomic deletion
-  await prisma.$transaction(async (tx) => {
-    // Find all PDFs uploaded by this student for this course
-    const pdfs = await tx.courseMaterial.findMany({
-      where: {
-        curriculumCourseId,
-        uploadedBy: studentId,
-      },
-      select: { id: true },
-    });
+  console.log(`[Course] Found ${materials.length} materials to delete for course ${curriculumCourseId}`);
 
-    deletedPDFCount = pdfs.length;
+  // Track deletion results
+  const deletionResults = {
+    totalAttempted: materials.length,
+    successful: 0,
+    failed: 0,
+    failedIds: []
+  };
 
-    // Delete all related data for each PDF
-    for (const pdf of pdfs) {
-      // Delete material chunks
-      await tx.materialChunk.deleteMany({
-        where: { materialId: pdf.id },
-      });
-
-      // Delete flashcards
-      await tx.flashcard.deleteMany({
-        where: { materialId: pdf.id },
-      });
-
-      // Delete the course material (includes fileData)
-      await tx.courseMaterial.delete({
-        where: { id: pdf.id },
-      });
+  // Delete each PDF using the existing service (maintains quota tracking)
+  for (const material of materials) {
+    try {
+      console.log(`[Course] Deleting material ${material.id} (${material.title}) for student ${studentId}`);
+      await deletePDF(studentId, material.id);
+      deletionResults.successful++;
+      console.log(`[Course] ✓ Successfully deleted material ${material.id}`);
+    } catch (err) {
+      deletionResults.failed++;
+      deletionResults.failedIds.push(material.id);
+      console.error(`[Course] ✗ Failed to delete material ${material.id} (${material.title}):`, err.message);
     }
+  }
 
-    // Delete the course selection
-    await tx.studentCourseSelection.delete({
-      where: {
-        studentProfileId_curriculumCourseId: {
-          studentProfileId: profile.id,
-          curriculumCourseId,
-        },
+  // Delete the course selection
+  await prisma.studentCourseSelection.delete({
+    where: {
+      studentProfileId_curriculumCourseId: {
+        studentProfileId: profile.id,
+        curriculumCourseId,
       },
-    });
+    },
   });
 
   // Count remaining selections
@@ -406,12 +412,47 @@ export async function dropCourseSelection(studentId, curriculumCourseId) {
     where: { studentProfileId: profile.id },
   });
 
+  // Log deletion summary
+  if (deletionResults.totalAttempted > 0) {
+    console.log(`[Course] Material deletion summary for course drop:`, {
+      studentId,
+      courseId: curriculumCourseId,
+      attempted: deletionResults.totalAttempted,
+      successful: deletionResults.successful,
+      failed: deletionResults.failed,
+      failedMaterialIds: deletionResults.failedIds
+    });
+
+    // Emit real-time notification about material cleanup
+    try {
+      emitToStudent(studentId, "materials:batch_deleted", {
+        trigger: "course_dropped",
+        courseTitle: selection.curriculumCourse.course.title,
+        summary: {
+          totalDeleted: deletionResults.successful,
+          totalFailed: deletionResults.failed,
+          reason: "course_dropped"
+        }
+      });
+    } catch (socketErr) {
+      console.error(`[Course] Failed to emit socket event for student ${studentId}:`, socketErr.message);
+    }
+  }
+
+  // Invalidate related caches
+  try {
+    await invalidateCourses(studentId);
+    await invalidateMaterials(studentId);
+  } catch (err) {
+    console.error(`[Course] Failed to invalidate cache for student ${studentId}:`, err.message);
+  }
+
   return {
     droppedCourse: {
       courseCode: selection.curriculumCourse.courseCode,
       title: selection.curriculumCourse.course.title,
     },
-    deletedPDFs: deletedPDFCount,
+    materialsDeleted: deletionResults,
     remainingSelections,
   };
 }

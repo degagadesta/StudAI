@@ -4,8 +4,10 @@ import { cacheDel, cacheInvalidatePattern } from "../lib/redis.js";
  * Invalidate all courses cache for a student
  */
 export async function invalidateCourses(studentId) {
+    await cacheDel(`courses:enrolled:student:${studentId}`);
+    await cacheDel(`courses:catalog:student:${studentId}`);
+    await cacheInvalidatePattern(`courses:*:${studentId}*`);
     await cacheInvalidatePattern(`courses:list:${studentId}:*`);
-    await cacheInvalidatePattern(`courses:materials:${studentId}:*`);
 }
 
 /**
@@ -19,7 +21,10 @@ export async function invalidateCourseDetail(courseId) {
  * Invalidate materials cache for a student
  */
 export async function invalidateMaterials(studentId, materialId = null) {
+    await cacheDel(`materials:list:student:${studentId}`);
     await cacheDel(`materials:list:${studentId}`);
+    await cacheDel(`dashboard:pdfs:student:${studentId}`);
+    await cacheInvalidatePattern(`materials:*:${studentId}*`);
 
     if (materialId) {
         await cacheDel(`materials:detail:${materialId}`);
@@ -32,6 +37,7 @@ export async function invalidateMaterials(studentId, materialId = null) {
  */
 export async function invalidateAnalytics(studentId) {
     await cacheDel(`analytics:student:${studentId}`);
+    await cacheInvalidatePattern(`analytics:*:${studentId}*`);
     await cacheInvalidatePattern(`analytics:daily:${studentId}:*`);
     await cacheInvalidatePattern(`analytics:weekly:${studentId}:*`);
 }
@@ -40,6 +46,8 @@ export async function invalidateAnalytics(studentId) {
  * Invalidate dashboard cache for a student
  */
 export async function invalidateDashboard(studentId) {
+    await cacheDel(`dashboard:student:${studentId}`);
+    await cacheDel(`dashboard:pdfs:student:${studentId}`);
     await cacheDel(`dashboard:stats:${studentId}`);
 }
 
@@ -47,6 +55,7 @@ export async function invalidateDashboard(studentId) {
  * Invalidate profile cache for a student
  */
 export async function invalidateProfile(studentId) {
+    await cacheDel(`profile:student:${studentId}`);
     await cacheDel(`profile:${studentId}`);
 }
 

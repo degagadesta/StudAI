@@ -1,5 +1,8 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
+import { deletePDF } from "../pdf/pdf.service.js";
+import { invalidateAllStudent } from "../../utils/cacheInvalidation.js";
+import { emitToStudent } from "../../lib/socket.js";
 
 export async function getAcademicProfile(studentId) {
   const student = await prisma.student.findUnique({
@@ -205,6 +208,7 @@ export async function updateProfile(
     let updatedStudent = student;
     let updatedProfile = null;
     let courseSelectionsCleared = false;
+    let materialsDeleted = null;
 
     // =============================================
     // BASIC INFORMATION
@@ -325,6 +329,39 @@ export async function updateProfile(
       // -------------------------------------------
 
       if (yearOrSemesterChanged) {
+        // Query active selections before deleting
+        const activeSelections = await tx.studentCourseSelection.findMany({
+          where: { studentProfileId: profile.id },
+          select: { curriculumCourseId: true },
+        });
+        const curriculumCourseIds = activeSelections.map((s) => s.curriculumCourseId);
+
+        if (curriculumCourseIds.length > 0) {
+          console.log(`[Profile] Found ${curriculumCourseIds.length} courses to remove for student ${studentId}`);
+
+          // Soft delete all materials uploaded by the student in these courses atomically within the transaction
+          const deleteMaterialsResult = await tx.courseMaterial.updateMany({
+            where: {
+              uploadedBy: studentId,
+              curriculumCourseId: { in: curriculumCourseIds },
+              status: { not: "DELETED" },
+            },
+            data: {
+              status: "DELETED",
+              fileData: null,
+            },
+          });
+
+          console.log(`[Profile] Soft-deleted ${deleteMaterialsResult.count} materials for student ${studentId}`);
+
+          materialsDeleted = {
+            totalAttempted: deleteMaterialsResult.count,
+            successful: deleteMaterialsResult.count,
+            failed: 0,
+            failedIds: [],
+          };
+        }
+
         const deleteResult = await tx.studentCourseSelection.deleteMany({
           where: {
             studentProfileId: profile.id,
@@ -341,8 +378,17 @@ export async function updateProfile(
       student: updatedStudent,
       profile: updatedProfile,
       courseSelectionsCleared,
+      materialsDeleted,
     };
   });
+
+  if (result.courseSelectionsCleared) {
+    try {
+      await invalidateAllStudent(studentId);
+    } catch (err) {
+      console.error(`[Profile] Failed to invalidate cache for student ${studentId}:`, err.message);
+    }
+  }
 
   // ---------------------------------------------
   // 5. Response
@@ -361,5 +407,6 @@ export async function updateProfile(
     }),
 
     courseSelectionsCleared: result.courseSelectionsCleared,
+    materialsDeleted: result.materialsDeleted,
   };
 }

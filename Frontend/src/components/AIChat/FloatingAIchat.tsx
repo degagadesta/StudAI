@@ -46,9 +46,8 @@ export default function FloatingAIChat({
   const elementStartPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const hasDragged = useRef(false);
 
-  // Handle Drag Start
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0) return; // Only trigger on primary click/touch
+    if (e.button !== 0) return;
 
     setIsDragging(true);
     hasDragged.current = false;
@@ -58,7 +57,6 @@ export default function FloatingAIChat({
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
-  // --- DRAG HANDLERS ---
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       if (!isDragging) return;
@@ -66,12 +64,10 @@ export default function FloatingAIChat({
       const deltaX = dragStartPos.current.x - e.clientX;
       const deltaY = dragStartPos.current.y - e.clientY;
 
-      // Distinguish drag from tap/click
       if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
         hasDragged.current = true;
       }
 
-      // Keep button within screen bounds
       const newX = Math.max(
         16,
         Math.min(window.innerWidth - 180, elementStartPos.current.x + deltaX),
@@ -86,27 +82,32 @@ export default function FloatingAIChat({
     [isDragging],
   );
 
-  // Handle Drag End
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!isDragging) return;
     setIsDragging(false);
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
   };
 
-  // Handle Click / Toggle
   const handleButtonClick = () => {
     if (!hasDragged.current) {
       setIsOpen((prev) => !prev);
     }
   };
 
-  // Open chat automatically when an initial question (e.g. "Ask AI") is received
+  // Open the chat whenever a new question comes in from outside (e.g. the
+  // PDF selection popover's "Ask AI" button). Keyed on the string itself,
+  // so re-selecting the exact same text twice in a row while the panel is
+  // already open won't fire this again — see the note on AIChatPanel below
+  // for why that's fine in practice.
+  // FloatingAIChat.tsx — replace the existing effect and add local state
+
+  const [pendingQuestion, setPendingQuestion] = useState<string | undefined>(undefined);
+
   useEffect(() => {
     if (initialQuestion && initialQuestion.trim()) {
+      setPendingQuestion(initialQuestion); // decoupled from the parent's copy
       setIsOpen(true);
-      if (onQuestionSent) {
-        onQuestionSent();
-      }
+      onQuestionSent?.(); // safe to clear the parent's state now
     }
   }, [initialQuestion, onQuestionSent]);
 
@@ -118,20 +119,21 @@ export default function FloatingAIChat({
       }}
       className="fixed z-50 flex flex-col items-end select-none"
     >
-      {/* Popover Chat Panel */}
       {isOpen && (
         <div className="mb-3 w-[380px] h-[520px] bg-[#FFFDF7] rounded-2xl shadow-2xl border border-[#DCD2B4] overflow-hidden flex flex-col">
           <AIChatPanel
             onClose={() => setIsOpen(false)}
             activePdfName={activePdfName}
-            initialQuestion={initialQuestion}
+            initialQuestion={pendingQuestion}
             materialId={materialId}
-            onSendMessage={onSendMessage}
+            onSendMessage={(text) => {
+              setPendingQuestion(undefined); // consumed
+              return onSendMessage ? onSendMessage(text) : undefined;
+            }}
           />
         </div>
       )}
 
-      {/* DRAGGABLE BUTTON */}
       <button
         type="button"
         onPointerDown={handlePointerDown}

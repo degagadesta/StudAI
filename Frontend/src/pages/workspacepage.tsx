@@ -78,6 +78,14 @@ export default function WorkspacePage() {
     setReadPercent(percent);
   }, []);
 
+
+  const [askAIQuestion, setAskAIQuestion] = useState<string | null>(null);
+
+  const handleAskAIFromSelection = useCallback((selectedText: string) => {
+    const trimmed = selectedText.trim().slice(0, 2000);
+    setAskAIQuestion(`Explain this: "${trimmed}"`);
+  }, []);
+
   // Load material details
   useEffect(() => {
     if (!id) return;
@@ -312,6 +320,7 @@ export default function WorkspacePage() {
                   scale={scale}
                   onMetaLoaded={handleMetaLoaded}
                   onProgressChange={handleProgressChange}
+                  onAskAI={handleAskAIFromSelection}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-[#5B6156]">
@@ -437,7 +446,10 @@ export default function WorkspacePage() {
       <FloatingAIChat
         courseName={material?.courseName}
         activePdfName={material?.fileName}
+        materialId={material?.id}
         onSendMessage={handleAIChatSend}
+        initialQuestion={askAIQuestion ?? undefined}
+        onQuestionSent={() => setAskAIQuestion(null)}
       />
 
       {/* Settings Modal */}

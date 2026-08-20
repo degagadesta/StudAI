@@ -468,7 +468,7 @@ Provide a clear, concise explanation that:
 - Gives a short example if helpful
 - Is suitable for a university student
 
-Do not invent information — explain only what's in the selected text.`;
+Do not invent information — explain only what's in the selected text. based on the material uploaded`;
 
   const { text: explanation, usageMetadata } = await generateText({
     prompt,

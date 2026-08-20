@@ -30,9 +30,11 @@ export interface ChatSession {
 interface AIChatPanelProps {
   courseName?: string;
   activePdfName?: string;
+  materialId?: string;
   onClose?: () => void;
   onSendMessage?: (message: string) => Promise<string> | Promise<void>;
   isEmbedded?: boolean;
+  initialQuestion?: string;
 }
 
 const DEFAULT_PROMPTS = [
@@ -66,9 +68,11 @@ const INITIAL_HISTORY: ChatSession[] = [
 export default function AIChatPanel({
   courseName,
   activePdfName,
+  materialId,
   onClose,
   onSendMessage,
   isEmbedded = false,
+  initialQuestion,
 }: AIChatPanelProps) {
   const [activeView, setActiveView] = useState<"chat" | "history">("chat");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -85,6 +89,17 @@ export default function AIChatPanel({
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [activeView, messages, isGenerating]);
+
+  // Populate the input (not send) when text arrives from the PDF selection
+  // popover's "Ask AI" button — the user reviews/edits, then hits Enter.
+  useEffect(() => {
+    if (initialQuestion && initialQuestion.trim()) {
+      setActiveView("chat");
+      setInput(initialQuestion);
+      const focusTimer = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(focusTimer);
+    }
+  }, [initialQuestion]);
 
   const saveCurrentSession = (updatedMessages: Message[]) => {
     if (updatedMessages.length === 0) return;
@@ -227,8 +242,8 @@ export default function AIChatPanel({
               setActiveView((prev) => (prev === "chat" ? "history" : "chat"))
             }
             className={`p-1.5 rounded-lg transition-colors cursor-pointer ${activeView === "history"
-              ? "bg-accent-light text-accent font-semibold"
-              : "text-secondary hover:text-primary hover:bg-surface-hover"
+                ? "bg-accent-light text-accent font-semibold"
+                : "text-secondary hover:text-primary hover:bg-surface-hover"
               }`}
             title="View History"
           >
@@ -284,8 +299,8 @@ export default function AIChatPanel({
                 key={session.id}
                 onClick={() => handleSelectSession(session)}
                 className={`group relative flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${currentSessionId === session.id
-                  ? "bg-accent-light border-accent text-accent font-medium"
-                  : "bg-surface hover:bg-surface-hover border-default text-primary"
+                    ? "bg-accent-light border-accent text-accent font-medium"
+                    : "bg-surface hover:bg-surface-hover border-default text-primary"
                   }`}
               >
                 <div className="p-2 rounded-xl bg-elevated border border-default text-accent shrink-0 mt-0.5">
@@ -361,8 +376,8 @@ export default function AIChatPanel({
                 >
                   <div
                     className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${msg.sender === "user"
-                      ? "bg-accent text-inverse"
-                      : "bg-elevated border border-default text-accent"
+                        ? "bg-accent text-inverse"
+                        : "bg-elevated border border-default text-accent"
                       }`}
                   >
                     {msg.sender === "user" ? (
@@ -374,15 +389,15 @@ export default function AIChatPanel({
 
                   <div
                     className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed ${msg.sender === "user"
-                      ? "bg-accent text-inverse rounded-tr-xs shadow-sm"
-                      : "bg-elevated border border-default text-primary rounded-tl-xs shadow-sm"
+                        ? "bg-accent text-inverse rounded-tr-xs shadow-sm"
+                        : "bg-elevated border border-default text-primary rounded-tl-xs shadow-sm"
                       }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.text}</p>
                     <span
                       className={`text-[9px] block mt-1 ${msg.sender === "user"
-                        ? "text-inverse/70 text-right"
-                        : "text-secondary text-left"
+                          ? "text-inverse/70 text-right"
+                          : "text-secondary text-left"
                         }`}
                     >
                       {new Date(msg.timestamp).toLocaleTimeString([], {

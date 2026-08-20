@@ -16,6 +16,7 @@ export const MODELS = {
   SUMMARY_REDUCE: "gemini-3.5-flash",
   FLASHCARDS: "gemini-3.1-flash-lite",
   EXPLAIN: "gemini-3.1-flash-lite",
+  NOTES: "gemini-3.1-flash-lite",
 };
 
 // Local embedding model configuration
@@ -81,6 +82,7 @@ export async function generateStructured({
   model,
   system,
   temperature = 0.4,
+  maxOutputTokens,
 }) {
   if (!model) throw new Error("generateStructured requires an explicit model (use MODELS.*)");
 
@@ -93,6 +95,7 @@ export async function generateStructured({
         responseSchema: schema,
         temperature,
         ...(system ? { systemInstruction: system } : {}),
+        ...(maxOutputTokens ? { maxOutputTokens } : {}),
       },
     }),
   );

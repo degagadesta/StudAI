@@ -61,6 +61,87 @@ async function mapWithConcurrency(items, limit, fn) {
   return results;
 }
 
+
+// ---------- NOTES GENERATION ----------
+
+const notesSchema = {
+  type: Type.OBJECT,
+  properties: {
+    html: { type: Type.STRING },
+  },
+  required: ["html"],
+};
+
+const NOTES_SYSTEM = `You are a study assistant creating structured, editable study notes for a university student from their course material. Base your output ONLY on the material given to you — never add outside information. Output clean HTML only, using just these tags: <h1> <h2> <h3> <p> <strong> <em> <u> <ul> <ol> <li> <blockquote> <hr>. Do not use <script>, <style>, class or id attributes, or any other tags. Do not wrap the output in markdown code fences.`;
+
+export async function generateNotes(materialId, studentId) {
+  const material = await getMaterialWithAccess(materialId, studentId);
+
+  return dedupe(`notes:${materialId}`, () => doGenerateNotes(material, materialId, studentId));
+}
+
+async function doGenerateNotes(material, materialId, studentId) {
+  console.log(`[AI] Generating notes for material ${materialId}`);
+
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { subscriptionPlan: true },
+  });
+  const limits = PLAN_LIMITS[student.subscriptionPlan];
+
+  await assertWithinLimit(studentId, student.subscriptionPlan, "NOTES_GENERATION");
+
+  // Reuse the cached summary when one exists — same efficiency principle
+  // as flashcards: no need to re-read every chunk if a good condensation
+  // is already sitting there.
+  let contentBasis;
+  if (material.summary) {
+    console.log(`[AI] Using cached summary as basis for notes`);
+    contentBasis = material.summary;
+  } else {
+    const chunks = await prisma.materialChunk.findMany({
+      where: { materialId },
+      orderBy: { chunkIndex: "asc" },
+      take: 40,
+    });
+
+    if (chunks.length === 0) {
+      throw new AppError("This material has no content to generate notes from", 400);
+    }
+
+    contentBasis = chunks.map((c) => c.content).join("\n\n");
+
+    const MAX_CHARS = 40000;
+    if (contentBasis.length > MAX_CHARS) {
+      contentBasis = contentBasis.substring(0, MAX_CHARS);
+    }
+  }
+
+  const prompt = `COURSE MATERIAL:
+"""
+${contentBasis}
+"""
+
+Create structured study notes a student can review and edit later. Use headings to break the material into topics, bullet points for lists of facts, and bold for key terms. Be thorough but keep it skimmable.`;
+
+  const result = await generateStructured({
+    prompt,
+    schema: notesSchema,
+    model: MODELS.NOTES,
+    system: NOTES_SYSTEM,
+    maxOutputTokens: limits?.NOTES_MAX_OUTPUT_TOKENS || 3000,
+  });
+
+  await recordUsage(studentId, "NOTES_GENERATION", { materialId });
+
+  console.log(`[AI] Notes generated (${result.data.html.length} chars)`);
+
+  return { html: result.data.html };
+}
+
+
+
+
 // ---------- SUMMARY GENERATION ----------
 
 const summarySchema = {
@@ -468,7 +549,7 @@ Provide a clear, concise explanation that:
 - Gives a short example if helpful
 - Is suitable for a university student
 
-Do not invent information — explain only what's in the selected text. based on the material uploaded`;
+Do not invent information — explain only whats in the selected text. based on the material uploaded`;
 
   const { text: explanation, usageMetadata } = await generateText({
     prompt,

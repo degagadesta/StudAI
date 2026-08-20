@@ -28,6 +28,15 @@ export async function generateFlashcards(
   };
 }
 
+export async function generateNotes(materialId: string) {
+  const res = await api.post(
+    `/student/ai/materials/${materialId}/notes`,
+    {},
+    { timeout: 60000 },
+  );
+  return res.data.data as { html: string };
+}
+
 export async function askQuestion(
   curriculumCourseId: string,
   materialId: string,

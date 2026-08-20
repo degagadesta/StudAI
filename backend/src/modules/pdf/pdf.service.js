@@ -199,10 +199,31 @@ export async function getStudentPDFs(studentId) {
     throw new AppError("Student account is required", 400);
   }
 
-  // Return all materials (including processing ones), but never include fileData
+  // Find the student's currently active course selections
+  const selections = await prisma.studentCourseSelection.findMany({
+    where: {
+      studentProfile: {
+        studentId,
+      },
+    },
+    select: {
+      curriculumCourseId: true,
+    },
+  });
+
+  const activeCurriculumCourseIds = selections.map((s) => s.curriculumCourseId);
+
+  if (activeCurriculumCourseIds.length === 0) {
+    return {};
+  }
+
+  // Return all materials for active courses (including processing ones), but never include fileData
   const pdfs = await prisma.courseMaterial.findMany({
     where: {
       uploadedBy: studentId,
+      curriculumCourseId: {
+        in: activeCurriculumCourseIds,
+      },
       status: {
         not: "DELETED", // Exclude deleted materials
       },
@@ -389,7 +410,7 @@ export async function deletePDF(studentId, pdfId) {
     where: {
       id: pdfId,
       uploadedBy: studentId,
-      status: "READY",
+      status: { not: "DELETED" },
     },
 
     select: {

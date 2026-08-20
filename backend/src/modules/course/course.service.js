@@ -360,42 +360,25 @@ export async function dropCourseSelection(studentId, curriculumCourseId) {
     throw new AppError("This course is not in your schedule", 404);
   }
 
-  // Find all PDFs uploaded by this student for this course
-  const materials = await prisma.courseMaterial.findMany({
+  // Atomically soft-delete all PDFs uploaded by this student for this course in a single query
+  const deleteMaterialsResult = await prisma.courseMaterial.updateMany({
     where: {
       curriculumCourseId,
       uploadedBy: studentId,
-      status: { not: "DELETED" }, // Only count non-deleted materials
+      status: { not: "DELETED" },
     },
-    select: {
-      id: true,
-      title: true
+    data: {
+      status: "DELETED",
+      fileData: null,
     },
   });
 
-  console.log(`[Course] Found ${materials.length} materials to delete for course ${curriculumCourseId}`);
-
-  // Track deletion results
   const deletionResults = {
-    totalAttempted: materials.length,
-    successful: 0,
+    totalAttempted: deleteMaterialsResult.count,
+    successful: deleteMaterialsResult.count,
     failed: 0,
-    failedIds: []
+    failedIds: [],
   };
-
-  // Delete each PDF using the existing service (maintains quota tracking)
-  for (const material of materials) {
-    try {
-      console.log(`[Course] Deleting material ${material.id} (${material.title}) for student ${studentId}`);
-      await deletePDF(studentId, material.id);
-      deletionResults.successful++;
-      console.log(`[Course] ✓ Successfully deleted material ${material.id}`);
-    } catch (err) {
-      deletionResults.failed++;
-      deletionResults.failedIds.push(material.id);
-      console.error(`[Course] ✗ Failed to delete material ${material.id} (${material.title}):`, err.message);
-    }
-  }
 
   // Delete the course selection
   await prisma.studentCourseSelection.delete({

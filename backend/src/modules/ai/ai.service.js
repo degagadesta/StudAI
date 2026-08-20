@@ -152,7 +152,7 @@ Summary:`;
       const chunkResult = await generateText({
         prompt: chunkPrompt,
         model: MODELS.SUMMARY_MAP,
-        maxOutputTokens: 500,
+        // maxOutputTokens: 500,
       });
 
       return chunkResult.text;
@@ -324,7 +324,7 @@ Create exactly ${count} flashcards that test the key facts, definitions, and con
 
 // ---------- CHAT / RAG ----------
 
-const CHAT_SYSTEM = `You are a patient tutor helping a student understand their course material. Answer using only the material given to you. If it's not enough to answer, say so honestly. Keep answers clear and concise.`;
+const CHAT_SYSTEM = `You are a patient tutor helping a student understand their course material. Answer using the material given to you and general internet information if you asked you about the text that exists inside it. If it's not enough to answer, say so honestly. Keep answers clear and concise.`;
 
 export async function askAboutMaterial(studentId, curriculumCourseId, materialId, question) {
   const student = await prisma.student.findUnique({
@@ -408,7 +408,7 @@ ${question}`;
     prompt,
     model: MODELS.CHAT,
     system: CHAT_SYSTEM,
-    maxOutputTokens: limits?.CHAT_MAX_OUTPUT_TOKENS || 800,
+    //maxOutputTokens: limits?.CHAT_MAX_OUTPUT_TOKENS || 800,
   });
 
   await prisma.chatMessage.create({
@@ -474,7 +474,7 @@ Do not invent information — explain only what's in the selected text.`;
     prompt,
     model: MODELS.EXPLAIN,
     system: `You are a patient tutor helping a student understand a specific topic from their course material.`,
-    maxOutputTokens: limits?.EXPLAIN_MAX_OUTPUT_TOKENS || 600,
+    // maxOutputTokens: limits?.EXPLAIN_MAX_OUTPUT_TOKENS || 600,
   });
 
   await recordUsage(studentId, "EXPLAIN_TOPIC", {

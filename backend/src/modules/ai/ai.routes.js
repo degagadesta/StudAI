@@ -5,6 +5,7 @@ import {
   askQuestion,
   generateExam,
   explainTopic,
+  generateNotes
 } from "./ai.controller.js";
 import { authenticate } from "../../middlewares/authenticate.js";
 
@@ -24,5 +25,7 @@ router.post(
   generateExam,
 );
 router.post("/explain-topic", authenticate, explainTopic);
+
+router.post("/materials/:materialId/notes", authenticate, generateNotes);
 
 export default router;

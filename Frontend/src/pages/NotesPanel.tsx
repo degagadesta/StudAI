@@ -10,12 +10,12 @@ import { TextAlign } from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Extension } from "@tiptap/core";
 
-import { Sparkles, Loader2, X, Notebook } from "lucide-react";
+import { Sparkles, Loader2, X, Notebook, AlertCircle } from "lucide-react";
 
 import EditorToolbar from "../components/Workspace/Editortool";
 import { getMaterialNotes, saveMaterialNotes } from "../api/Materialsapi";
+import { generateNotes } from "../api/aiApi";
 
-// Custom FontSize Extension to support font sizing dropdown in toolbar
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     fontSize: {
@@ -52,17 +52,17 @@ export const FontSize = Extension.create({
     return {
       setFontSize:
         (fontSize: string) =>
-        ({ chain }) => {
-          return chain().setMark("textStyle", { fontSize }).run();
-        },
+          ({ chain }) => {
+            return chain().setMark("textStyle", { fontSize }).run();
+          },
       unsetFontSize:
         () =>
-        ({ chain }) => {
-          return chain()
-            .setMark("textStyle", { fontSize: null })
-            .removeEmptyTextStyle()
-            .run();
-        },
+          ({ chain }) => {
+            return chain()
+              .setMark("textStyle", { fontSize: null })
+              .removeEmptyTextStyle()
+              .run();
+          },
     };
   },
 });
@@ -80,11 +80,11 @@ export default function NotesPanel({
 }: NotesPanelProps) {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const latestContentRef = useRef<string>("");
 
-  // Initialize TipTap Editor with automatic background saving & required extensions
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -114,10 +114,8 @@ export default function NotesPanel({
       const htmlContent = editor.getHTML();
       latestContentRef.current = htmlContent;
 
-      // 1. Save instantly to local storage
       localStorage.setItem(`studai_note_${materialId}`, htmlContent);
 
-      // 2. Debounce API call (saves 1s after user stops typing)
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
         saveMaterialNotes(materialId, htmlContent).catch((err) =>
@@ -127,7 +125,6 @@ export default function NotesPanel({
     },
   });
 
-  // Load Saved Notes on Mount or Material Switch
   useEffect(() => {
     if (!materialId || !editor) return;
 
@@ -147,37 +144,63 @@ export default function NotesPanel({
       });
   }, [materialId, editor]);
 
-  // Flush remaining unsaved notes if component unmounts or tab changes
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
       if (materialId && latestContentRef.current) {
-        saveMaterialNotes(materialId, latestContentRef.current).catch(() => {});
+        saveMaterialNotes(materialId, latestContentRef.current).catch(() => { });
       }
     };
   }, [materialId]);
 
-  // Handle Note Generation Trigger
   const handleGenerateClick = async () => {
-    if (!editor) return;
+    if (!editor || !materialId) return;
+
+    // Don't silently blow away notes the student already wrote —
+    // setContent() below replaces everything in the editor.
+    const hasExistingContent = !editor.isEmpty;
+    if (hasExistingContent) {
+      const confirmed = window.confirm(
+        "This will replace your current notes with AI-generated ones. Continue?",
+      );
+      if (!confirmed) return;
+    }
+
     setIsGenerating(true);
+    setGenerateError(null);
+
     try {
+      let generatedHtml: string | undefined;
+
       if (onGenerateNotes) {
-        const generatedText = await onGenerateNotes();
-        if (generatedText) {
-          editor.commands.setContent(generatedText);
-        }
+        const result = await onGenerateNotes();
+        if (result) generatedHtml = result;
+      } else {
+        const result = await generateNotes(materialId);
+        generatedHtml = result.html;
       }
-    } catch (error) {
+
+      if (generatedHtml) {
+        editor.commands.setContent(generatedHtml);
+        latestContentRef.current = generatedHtml;
+        // setContent() doesn't fire onUpdate, so trigger the save manually.
+        localStorage.setItem(`studai_note_${materialId}`, generatedHtml);
+        saveMaterialNotes(materialId, generatedHtml).catch((err) =>
+          console.error("Auto-save after generation failed:", err),
+        );
+      }
+    } catch (error: any) {
       console.error("Failed to generate notes:", error);
+      setGenerateError(
+        error.response?.data?.message || "Failed to generate notes. Please try again.",
+      );
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Print Handler
   const handlePrint = () => {
     if (!editor) return;
     const printWindow = window.open("", "_blank");
@@ -206,13 +229,11 @@ export default function NotesPanel({
   return (
     <div
       ref={containerRef}
-      className={`flex flex-col h-full bg-surface ${
-        isFullScreen
-          ? "fixed inset-0 z-50 p-6 bg-surface overflow-y-auto"
-          : "relative p-3"
-      }`}
+      className={`flex flex-col h-full bg-surface ${isFullScreen
+        ? "fixed inset-0 z-50 p-6 bg-surface overflow-y-auto"
+        : "relative p-3"
+        }`}
     >
-      {/* Panel Top Header Bar with Close Button */}
       <div className="flex items-center justify-between pb-2 mb-2 border-b border-default shrink-0 select-none">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-xl bg-accent-light text-accent flex items-center justify-center shrink-0">
@@ -233,7 +254,6 @@ export default function NotesPanel({
         )}
       </div>
 
-      {/* 1. Rich-Text Toolbar Component */}
       <EditorToolbar
         editor={editor}
         isFullScreen={isFullScreen}
@@ -241,13 +261,18 @@ export default function NotesPanel({
         onPrint={handlePrint}
       />
 
-      {/* 2. Text Editor Container with Generate Button */}
+      {generateError && (
+        <div className="mt-2 flex items-center gap-2 text-xs text-error bg-error/10 border border-error rounded-lg px-3 py-2">
+          <AlertCircle size={14} className="shrink-0" />
+          {generateError}
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto mt-2 bg-page border border-default rounded-xl p-3 shadow-inner flex flex-col items-start gap-3">
-        {/* Generate Notes Pill Button */}
         <button
           type="button"
           onClick={handleGenerateClick}
-          disabled={isGenerating}
+          disabled={isGenerating || !materialId}
           className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-accent-light hover:bg-elevated text-accent border border-accent/20 rounded-full text-xs font-medium transition-colors cursor-pointer disabled:opacity-50"
         >
           {isGenerating ? (
@@ -258,7 +283,6 @@ export default function NotesPanel({
           <span>{isGenerating ? "Generating..." : "Generate Notes"}</span>
         </button>
 
-        {/* Tiptap Canvas */}
         <div className="w-full flex-1">
           <EditorContent editor={editor} />
         </div>

@@ -12,6 +12,12 @@ export const generateSummary = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: result });
 });
 
+export const generateNotes = asyncHandler(async (req, res) => {
+  const { materialId } = req.params;
+  const result = await aiService.generateNotes(materialId, req.studentId);
+  res.status(200).json({ success: true, data: result });
+});
+
 export const generateFlashcards = asyncHandler(async (req, res) => {
   const { materialId } = req.params;
   const { count } = req.body;

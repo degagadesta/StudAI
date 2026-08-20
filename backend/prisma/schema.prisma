@@ -126,18 +126,6 @@ model StudentProfile {
   student         Student                  @relation(fields: [studentId], references: [id])
 }
 
-model StudentCourseSelection {
-  id                 String           @id @default(uuid())
-  studentProfileId   String
-  curriculumCourseId String
-  createdAt          DateTime         @default(now())
-  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
-  studentProfile     StudentProfile   @relation(fields: [studentProfileId], references: [id])
-
-  @@unique([studentProfileId, curriculumCourseId])
-  @@index([studentProfileId])
-}
-
 model CourseMaterial {
   id                 String           @id @default(uuid())
   title              String
@@ -149,6 +137,7 @@ model CourseMaterial {
   curriculumCourseId String
   fileData           Bytes?
   fileSize           Int?
+  processingError    String?
   curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
   flashcards         Flashcard[]
   chunks             MaterialChunk[]
@@ -423,6 +412,18 @@ model PdfNote {
   @@index([materialId])
 }
 
+model StudentCourseSelection {
+  id                 String           @id @default(uuid())
+  studentProfileId   String
+  curriculumCourseId String
+  createdAt          DateTime         @default(now())
+  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  studentProfile     StudentProfile   @relation(fields: [studentProfileId], references: [id])
+
+  @@unique([studentProfileId, curriculumCourseId])
+  @@index([studentProfileId])
+}
+
 enum subscriptionPlan {
   FREE
   PRO
@@ -433,93 +434,8 @@ enum UsageFeature {
   SUMMARY
   FLASHCARDS
   CHAT_MESSAGE
+  NOTES_GENERATION
 }
-model UsageLog {
-  id          String       @id @default(uuid())
-  student     Student      @relation(fields: [studentId], references: [id])
-  studentId   String
-  feature     UsageFeature
-  materialId  String?
-  model       String?
-  inputTokens Int?
-  outputTokens Int?
-  totalTokens Int?
-  createdAt   DateTime     @default(now())
-
-  @@index([studentId, feature, createdAt])
-}
-
-model Student {
-  id            String  @id @default(uuid())
-  firstName     String
-  lastName      String
-  email         String  @unique
-  passwordHash  String?
-  googleId      String? @unique
-  emailVerified Boolean @default(false)
-
-  verificationToken          String?   @unique
-  verificationTokenExpiresAt DateTime?
-
-  resetToken          String?   @unique
-  resetTokenExpiresAt DateTime?
-
-  refreshToken          String?
-  refreshTokenExpiresAt DateTime?
-
-  createdAt DateTime @default(now())
-
-  profile               StudentProfile?
-  notes                 Note[]
-  flashcardReviews      FlashcardReview[]
-  quizAttempts          QuizAttempt[]
-  chatSessions          ChatSession[]
-  generatedExamAttempts ExamAttempt[]
-  weakTopics            WeakTopic[]
-  upcomingEvents        UpcomingEvent[]
-  activityLogs          ActivityLog[]
-  activitySessions      ActivitySession[]
-  pdfHighlights         PdfHighlight[]
-  pdfNotes              PdfNote[]
-  subscriptionPlan      subscriptionPlan  @default(FREE)
-
-  UsageLog UsageLog[]
-
-  // Performance indexes for auth operations
-  @@index([email])
-  @@index([googleId])
-  @@index([refreshToken])
-}
-
-model StudentProfile {
-  id              String     @id @default(uuid())
-  student         Student    @relation(fields: [studentId], references: [id])
-  studentId       String     @unique
-  curriculum      Curriculum @relation(fields: [curriculumId], references: [id])
-  curriculumId    String
-  currentYear     Int
-  currentSemester Int
-  updatedAt       DateTime   @updatedAt
-
-  selections StudentCourseSelection[]
-}
-
-
-// Which specific courses a student is actually taking this semester —
-// not automatically every course in the curriculum's year/semester slot.
-model StudentCourseSelection {
-  id                 String           @id @default(uuid())
-  studentProfile     StudentProfile   @relation(fields: [studentProfileId], references: [id])
-  studentProfileId   String
-  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
-  curriculumCourseId String
-  createdAt          DateTime         @default(now())
-
-  @@unique([studentProfileId, curriculumCourseId])
-  @@index([studentProfileId])
-}
-
-// ---------- Course materials ----------
 
 enum MaterialStatus {
   QUEUED

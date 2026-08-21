@@ -143,6 +143,7 @@ model CourseMaterial {
   chunks             MaterialChunk[]
   highlights         PdfHighlight[]
   notes              PdfNote[]
+  quizzes            Quiz[]
 
   @@index([curriculumCourseId])
   @@index([uploadedBy])
@@ -203,20 +204,24 @@ model Quiz {
   difficulty         Difficulty
   createdAt          DateTime         @default(now())
   curriculumCourseId String
+  materialId         String?
   curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  material           CourseMaterial?  @relation(fields: [materialId], references: [id], onDelete: Cascade)
   attempts           QuizAttempt[]
   questions          QuizQuestion[]
 
   @@index([curriculumCourseId])
+  @@index([materialId])
 }
 
 model QuizQuestion {
-  id            String @id @default(uuid())
+  id            String       @id @default(uuid())
   quizId        String
   question      String
+  questionType  QuestionType @default(MULTIPLE_CHOICE)
   correctAnswer String
   choices       Json?
-  quiz          Quiz   @relation(fields: [quizId], references: [id])
+  quiz          Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@index([quizId])
 }

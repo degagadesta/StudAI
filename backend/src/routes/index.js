@@ -1,3 +1,4 @@
+// Triggering nodemon reload with updated Prisma client
 import { Router } from "express";
 import authRoutes from "../modules/auth/auth.routes.js";
 import universityRoutes from "../modules/university/university.routes.js";
@@ -17,6 +18,7 @@ import highlightRoutes from "../modules/highlight/highlight.routes.js";
 import noteRoutes from "../modules/note/note.routes.js";
 import aiRoutes from "../modules/ai/ai.routes.js";
 import usageRoutes from "../modules/usage/usage.routes.js";
+import quizRoutes from "../modules/quiz/quiz.routes.js";
 
 const router = Router();
 router.use("/student/onboarding", onboardingRoutes);
@@ -36,5 +38,6 @@ router.use("/student", highlightRoutes);
 router.use("/student", noteRoutes);
 router.use("/student/ai", aiRoutes);
 router.use("/student/usage", usageRoutes);
+router.use("/student/quizzes", quizRoutes);
 
 export default router;

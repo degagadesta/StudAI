@@ -14,6 +14,7 @@ import AIChatPanel from "../components/AIChat/AIChatPanel";
 import FlashcardsPanel from "../components/Workspace/FlashcardsPanel";
 import SummaryPanel from "../components/Workspace/SummaryPanel";
 import PastExamPracticeTab from "../components/Workspace/PastExamPracticeTab";
+import QuizPanel from "../components/Workspace/QuizPanel";
 import SettingsModal, { type TabType } from "./SettingsModal";
 import { getMaterials, type Material } from "../api/Materialsapi";
 import { askQuestion } from "../api/aiApi";
@@ -435,9 +436,14 @@ export default function WorkspacePage() {
                   )
                 )}
                 {activeTab === "quiz" && (
-                  <div className="text-sm text-primary">
-                    Quiz Generator & Practice Content
-                  </div>
+
+                  material ? (
+                    <QuizPanel materialId={material.id} />
+                  ) : (
+                    <div className="text-sm text-[#5B6156] py-8 text-center">
+                      Please open a course material first to generate a quiz.
+                    </div>
+                  )
                 )}
                 {activeTab === "flashcards" && (
                   material ? (

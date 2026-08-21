@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { X, ZoomIn, ZoomOut, RotateCcw, GripHorizontal } from "lucide-react";
+import { X, ZoomIn, ZoomOut, RotateCcw, GripHorizontal, CheckCircle } from "lucide-react";
 
 import WorkspaceTopbar from "../components/Workspace/Workspacetopbar";
 import WorkspaceSidebar, {
@@ -46,6 +46,9 @@ export default function WorkspacePage() {
   // Settings Modal State
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [settingsTab, setSettingsTab] = useState<TabType>("profile");
+
+  // Share Toast State
+  const [shareToast, setShareToast] = useState<string | null>(null);
 
   // Panel Width States (in pixels)
   const [notesWidth, setNotesWidth] = useState<number>(360);
@@ -105,6 +108,34 @@ export default function WorkspacePage() {
   const handleOpenSettings = (tab?: string) => {
     setSettingsTab((tab as TabType) || "profile");
     setIsSettingsOpen(true);
+  };
+
+  const handleShareWorkspace = async () => {
+    const shareUrl = `${window.location.origin}/workspace/${id || ""}?tab=notes`;
+    const shareTitle = `${material?.courseName || "Course"} Study Notes`;
+    const shareText = `Check out my study notes for ${material?.courseName || "this course"} on StudAI!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard if user cancels or native share fails
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareToast("Share link copied to clipboard!");
+      setTimeout(() => setShareToast(null), 3500);
+    } catch {
+      setShareToast("Failed to copy link. Please copy URL manually.");
+      setTimeout(() => setShareToast(null), 3500);
+    }
   };
 
   // Sidebar Tab Click Handler
@@ -215,7 +246,7 @@ export default function WorkspacePage() {
       {/* Topbar */}
       <WorkspaceTopbar
         onOpenSettings={(tab) => handleOpenSettings(tab)}
-        onOpenShare={() => alert("Share link copied to clipboard!")}
+        onOpenShare={handleShareWorkspace}
         onOpenUpgrade={() => handleOpenSettings("plan")}
       />
 
@@ -459,6 +490,14 @@ export default function WorkspacePage() {
         initialTab={settingsTab}
         onClose={() => setIsSettingsOpen(false)}
       />
+
+      {/* Share Toast Notification */}
+      {shareToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-surface text-primary border border-default px-4 py-3 rounded-xl shadow-xl transition-all">
+          <CheckCircle size={18} className="text-success shrink-0" />
+          <span className="text-xs font-medium">{shareToast}</span>
+        </div>
+      )}
     </div>
   );
 }

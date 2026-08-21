@@ -385,6 +385,10 @@ export async function updateProfile(
   if (result.courseSelectionsCleared) {
     try {
       await invalidateAllStudent(studentId);
+      emitToStudent(studentId, "courses:cleared", {
+        reason: "semester_year_change",
+        message: "Academic period changed. Enrolled courses reset."
+      });
     } catch (err) {
       console.error(`[Profile] Failed to invalidate cache for student ${studentId}:`, err.message);
     }

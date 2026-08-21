@@ -7,7 +7,10 @@ export function setupSocketHandlers(io) {
     io.on("connection", (socket) => {
         const { studentId } = socket.data;
 
-        console.log(`[Socket.IO] Student ${studentId} connected (${socket.id})`);
+        if (studentId) {
+            socket.join(`student:${studentId}`);
+            console.log(`[Socket.IO] Student ${studentId} connected (${socket.id}) and joined student:${studentId}`);
+        }
 
         // Handle disconnection
         socket.on("disconnect", (reason) => {

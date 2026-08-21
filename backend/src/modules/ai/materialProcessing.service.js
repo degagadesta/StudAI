@@ -75,34 +75,15 @@ export async function processMaterial(materialId) {
         id: true,
         fileData: true,
         status: true,
-        curriculumCourse: {
-          select: {
-            curriculum: {
-              select: {
-                studentProfile: {
-                  select: { studentId: true }
-                }
-              }
-            }
-          }
-        }
+        uploadedBy: true,
       },
     });
 
     if (!material) throw new Error(`Material ${materialId} not found`);
     if (!material.fileData) throw new Error(`Material ${materialId} has no file data`);
 
-    // Get studentId for Socket.IO events - with proper error handling
-    let studentId = null;
-    try {
-      studentId = material?.curriculumCourse?.curriculum?.studentProfile?.studentId;
-
-      if (!studentId) {
-        console.warn(`[Processing] Could not find studentId for material ${materialId} - skipping Socket events`);
-      }
-    } catch (err) {
-      console.error(`[Processing] Error extracting studentId for material ${materialId}:`, err.message);
-    }
+    // Get studentId for Socket.IO events directly from uploadedBy
+    const studentId = material.uploadedBy;
 
     await prisma.courseMaterial.update({
       where: { id: materialId },
@@ -242,22 +223,10 @@ export async function processMaterial(materialId) {
     try {
       const material = await prisma.courseMaterial.findUnique({
         where: { id: materialId },
-        select: {
-          curriculumCourse: {
-            select: {
-              curriculum: {
-                select: {
-                  studentProfile: {
-                    select: { studentId: true }
-                  }
-                }
-              }
-            }
-          }
-        },
+        select: { uploadedBy: true },
       });
 
-      studentId = material?.curriculumCourse?.curriculum?.studentProfile?.studentId;
+      studentId = material?.uploadedBy;
     } catch (queryError) {
       console.error(`[Processing] Error getting studentId for failed material ${materialId}:`, queryError.message);
     }

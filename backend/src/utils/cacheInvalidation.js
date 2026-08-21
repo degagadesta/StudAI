@@ -29,7 +29,17 @@ export async function invalidateMaterials(studentId, materialId = null) {
     if (materialId) {
         await cacheDel(`materials:detail:${materialId}`);
         await cacheDel(`materials:status:${materialId}`);
+        await invalidateAICache(materialId);
     }
+}
+
+/**
+ * Invalidate AI generated outputs cache for a material
+ */
+export async function invalidateAICache(materialId) {
+    await cacheDel(`ai:notes:${materialId}`);
+    await cacheDel(`ai:summary:${materialId}`);
+    await cacheDel(`ai:flashcards:${materialId}`);
 }
 
 /**

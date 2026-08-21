@@ -1,5 +1,10 @@
 import { api } from "./client";
 
+// Helper function to get the full API base URL
+function getApiBaseUrl(): string {
+  return import.meta.env.VITE_API_URL || "/api";
+}
+
 export interface Material {
   id: string;
   fileName: string;
@@ -50,7 +55,7 @@ export async function getMaterials(): Promise<Material[]> {
       uploadedAt: pdf.uploadDate,
       progress: pdf.progress,
       status: pdf.status,
-      fileUrl: `/student/pdfs/${pdf.id}/file`,
+      fileUrl: `${getApiBaseUrl()}/student/pdfs/${pdf.id}/file`,
     })),
   );
 }

@@ -168,12 +168,45 @@ export default function CoursesPage() {
       // Refresh courses list when a course is dropped
       fetchEnrolledCourses();
       // If current course was dropped, clear selection
-      if (selectedCourse && selectedCourse.curriculumCourseId === data.curriculumCourseId) {
+      if (selectedCourse && (selectedCourse.id === data.curriculumCourseId || (selectedCourse as any).curriculumCourseId === data.curriculumCourseId)) {
         setSelectedCourse(null);
         setMaterials([]);
       }
     }
   );
+
+  useSocket<{ reason: string; message: string }>(
+    "courses:cleared",
+    () => {
+      console.log("[Coursepage] All enrolled courses cleared due to academic profile change");
+      setCourses([]);
+      setSelectedCourse(null);
+      setMaterials([]);
+    }
+  );
+
+  // Listen for local window events from SettingsModal when updated in same tab
+  useEffect(() => {
+    const handleCleared = () => {
+      console.log("[Coursepage] Window event: courses:cleared");
+      setCourses([]);
+      setSelectedCourse(null);
+      setMaterials([]);
+    };
+
+    const handleUpdated = () => {
+      console.log("[Coursepage] Window event: courses:updated");
+      fetchEnrolledCourses();
+    };
+
+    window.addEventListener("courses:cleared", handleCleared);
+    window.addEventListener("courses:updated", handleUpdated);
+
+    return () => {
+      window.removeEventListener("courses:cleared", handleCleared);
+      window.removeEventListener("courses:updated", handleUpdated);
+    };
+  }, []);
 
   // Handle navigation from search results
   useEffect(() => {
@@ -257,8 +290,13 @@ export default function CoursesPage() {
     try {
       await deleteCourse(courseId);
       setCourses((prev) => prev.filter((course) => course.id !== courseId));
-    } catch (err) {
-      setError(getApiErrorMessage(err, "Could not delete the course."));
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        // Course is already gone from database, remove card from UI
+        setCourses((prev) => prev.filter((course) => course.id !== courseId));
+      } else {
+        setError(getApiErrorMessage(err, "Could not delete the course."));
+      }
     } finally {
       setDeletingCourseId(null);
     }

@@ -42,7 +42,10 @@ export const heartbeat = asyncHandler(async (req, res) => {
     try {
         const result = await activityService.updateSessionActivity(sessionId);
 
-        // Emit analytics update for activity heartbeat directly
+        // Invalidate analytics cache on heartbeat update
+        await invalidateAnalytics(req.studentId);
+
+        // Emit analytics update for activity heartbeat
         emitToStudent(req.studentId, "analytics:updated", {
             trigger: "session_active",
             sessionId: result.sessionId,

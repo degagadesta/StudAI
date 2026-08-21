@@ -10,7 +10,7 @@ import { TextAlign } from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Extension } from "@tiptap/core";
 
-import { Sparkles, Loader2, X, Notebook, AlertCircle } from "lucide-react";
+import { Sparkles, Loader2, X, Notebook, AlertCircle, Download } from "lucide-react";
 
 import EditorToolbar from "../components/Workspace/Editortool";
 import { getMaterialNotes, saveMaterialNotes } from "../api/Materialsapi";
@@ -69,12 +69,14 @@ export const FontSize = Extension.create({
 
 interface NotesPanelProps {
   materialId?: string;
+  courseName?: string;
   onGenerateNotes?: () => Promise<string> | void;
   onClose?: () => void;
 }
 
 export default function NotesPanel({
   materialId,
+  courseName,
   onGenerateNotes,
   onClose,
 }: NotesPanelProps) {
@@ -224,6 +226,43 @@ export default function NotesPanel({
     printWindow.print();
   };
 
+  const handleExportNotes = () => {
+    if (!editor) return;
+    const htmlContent = editor.getHTML();
+    const rawTitle = courseName || "Study";
+    const sanitizedTitle = rawTitle
+      .replace(/[^a-zA-Z0-9_\-\s]/g, "")
+      .trim()
+      .replace(/\s+/g, "_");
+    const fileName = `${sanitizedTitle || "Study"}_Notes.doc`;
+
+    const header =
+      `<html xmlns:o='urn:schemas-microsoft-microsoft-com:office:office' ` +
+      `xmlns:w='urn:schemas-microsoft-microsoft-com:office:word' ` +
+      `xmlns='http://www.w3.org/TR/REC-html40'>` +
+      `<head><meta charset='utf-8'><title>${sanitizedTitle} Notes</title>` +
+      `<style>` +
+      `body { font-family: Arial, sans-serif; line-height: 1.6; color: #253D31; padding: 20px; }` +
+      `h1, h2, h3 { color: #253D31; }` +
+      `p { margin-bottom: 1em; }` +
+      `</style></head><body>`;
+    const footer = `</body></html>`;
+    const sourceHTML = header + htmlContent + footer;
+
+    const blob = new Blob(["\ufeff" + sourceHTML], {
+      type: "application/msword",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (!editor) return null;
 
   return (
@@ -242,16 +281,26 @@ export default function NotesPanel({
           <h4 className="text-xs font-semibold text-primary">Study Notes</h4>
         </div>
 
-        {onClose && (
+        <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleExportNotes}
             className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
-            title="Close Notes"
+            title="Export Notes to Document"
           >
-            <X size={16} />
+            <Download size={16} />
           </button>
-        )}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
+              title="Close Notes"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
       <EditorToolbar

@@ -407,6 +407,7 @@ export default function WorkspacePage() {
               >
                 <NotesPanel
                   materialId={id}
+                  courseName={material?.courseName || pdfMeta?.courseName}
                   onClose={() => setShowNotes(false)}
                 />
               </div>

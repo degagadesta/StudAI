@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FileText, RefreshCw, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { generateSummary } from "../../api/aiApi";
+import FormattedMarkdown from "../Common/FormattedMarkdown";
 
 interface SummaryPanelProps {
   materialId: string;
@@ -104,11 +105,7 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
             )}
 
             {/* Summary content */}
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <div className="text-sm text-primary leading-relaxed whitespace-pre-wrap">
-                {summary}
-              </div>
-            </div>
+            <FormattedMarkdown content={summary} />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">

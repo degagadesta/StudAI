@@ -44,44 +44,44 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
 
   return (
     <div className="flex flex-col h-full bg-surface overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-default">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
-            <FileText size={18} />
+      {/* Header Toolbar */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-default bg-elevated/40 shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-accent/10 text-accent flex items-center justify-center shrink-0">
+            <FileText size={16} />
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-primary">Summary</h3>
-            {materialName && (
-              <p className="text-xs text-secondary truncate">{materialName}</p>
+          <div className="truncate">
+            {materialName ? (
+              <p className="text-xs font-semibold text-primary truncate">{materialName}</p>
+            ) : (
+              <p className="text-xs font-semibold text-primary">Document Summary</p>
             )}
           </div>
         </div>
 
-        {summary && !isLoading && (
-          <button
-            onClick={handleRegenerate}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-secondary hover:text-accent hover:bg-elevated rounded-lg transition-colors cursor-pointer"
-            title="Regenerate summary"
-          >
-            <RefreshCw size={14} />
-            <span>Regenerate</span>
-          </button>
-        )}
+        <button
+          onClick={handleRegenerate}
+          disabled={isLoading}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-inverse bg-accent hover:opacity-90 active:scale-95 rounded-lg shadow-sm transition-all cursor-pointer disabled:opacity-50 shrink-0 ml-2"
+          title="Regenerate summary with AI"
+        >
+          <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
+          <span>{isLoading ? "Regenerating..." : "Regenerate Summary"}</span>
+        </button>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
+          <div className="flex flex-col items-center justify-center h-full min-h-[220px] text-center">
             <Loader2 size={32} className="text-accent animate-spin mb-3" />
-            <p className="text-sm font-medium text-primary">Generating summary...</p>
+            <p className="text-sm font-medium text-primary">Generating AI summary...</p>
             <p className="text-xs text-secondary mt-1">
-              This may take a moment for long documents
+              Analyzing course material and building key takeaways...
             </p>
           </div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
+          <div className="flex flex-col items-center justify-center h-full min-h-[220px] text-center px-4">
             <div className="w-12 h-12 rounded-full bg-error-bg flex items-center justify-center mb-3">
               <AlertCircle size={24} className="text-error" />
             </div>
@@ -89,7 +89,7 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
             <p className="text-xs text-secondary mb-4">{error}</p>
             <button
               onClick={() => loadSummary(false)}
-              className="px-4 py-2 text-xs font-medium text-inverse bg-accent hover:opacity-90 rounded-lg transition-opacity cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-inverse bg-accent hover:opacity-90 rounded-lg transition-opacity cursor-pointer shadow-sm"
             >
               Try Again
             </button>
@@ -98,9 +98,9 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
           <div className="space-y-4">
             {/* Cached indicator */}
             {isCached && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-success-bg border border-success/30 rounded-lg">
-                <CheckCircle2 size={14} className="text-success" />
-                <span className="text-xs text-success">Loaded from cache</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-success-bg border border-success/30 rounded-lg w-fit">
+                <CheckCircle2 size={13} className="text-success" />
+                <span className="text-[11px] font-medium text-success">Loaded from cache</span>
               </div>
             )}
 
@@ -108,7 +108,7 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
             <FormattedMarkdown content={summary} />
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
+          <div className="flex flex-col items-center justify-center h-full min-h-[220px] text-center px-4">
             <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center mb-3">
               <FileText size={24} className="text-secondary" />
             </div>
@@ -118,7 +118,7 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
             </p>
             <button
               onClick={() => loadSummary(false)}
-              className="mt-4 px-4 py-2 text-xs font-medium text-inverse bg-accent hover:opacity-90 rounded-lg transition-opacity"
+              className="mt-4 px-4 py-2 text-xs font-semibold text-inverse bg-accent hover:opacity-90 rounded-lg transition-opacity cursor-pointer shadow-sm"
             >
               Generate Summary
             </button>

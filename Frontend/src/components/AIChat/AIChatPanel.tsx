@@ -12,6 +12,7 @@ import {
   Trash2,
   MessageSquare,
 } from "lucide-react";
+import FormattedMarkdown from "../Common/FormattedMarkdown";
 
 export interface Message {
   id: string;
@@ -393,7 +394,11 @@ export default function AIChatPanel({
                         : "bg-elevated border border-default text-primary rounded-tl-xs shadow-sm"
                       }`}
                   >
-                    <p className="whitespace-pre-wrap">{msg.text}</p>
+                    {msg.sender === "ai" ? (
+                      <FormattedMarkdown content={msg.text} />
+                    ) : (
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+                    )}
                     <span
                       className={`text-[9px] block mt-1 ${msg.sender === "user"
                           ? "text-inverse/70 text-right"

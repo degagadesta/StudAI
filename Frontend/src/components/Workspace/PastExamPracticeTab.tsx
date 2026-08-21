@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, CheckCircle2, XCircle, SkipForward } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { getPracticeQuestions, evaluateAnswer } from "../../api/examApi";
 import type { Question } from "../../api/examApi";
 
@@ -54,8 +54,8 @@ export default function PastExamPracticeTab({
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
-        <Loader2 size={32} className="animate-spin text-blue-600 mb-3" />
-        <p className="text-sm text-slate-600">Loading practice questions...</p>
+        <Loader2 size={32} className="animate-spin text-accent mb-3" />
+        <p className="text-sm text-secondary">Loading practice questions...</p>
       </div>
     );
   }
@@ -63,8 +63,8 @@ export default function PastExamPracticeTab({
   if (error || questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
-        <p className="text-sm text-slate-600 mb-2">{error || "No questions available"}</p>
-        <p className="text-xs text-slate-500">
+        <p className="text-sm text-secondary mb-2">{error || "No questions available"}</p>
+        <p className="text-xs text-muted">
           Check back later when past exams are available for this course.
         </p>
       </div>
@@ -110,20 +110,20 @@ export default function PastExamPracticeTab({
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-surface text-primary">
       {/* Progress Header */}
-      <div className="pb-3 mb-3 border-b border-slate-200">
+      <div className="pb-3 mb-3 border-b border-default">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="text-xs font-semibold text-slate-900">
+          <h3 className="text-xs font-semibold text-primary">
             Question {currentIndex + 1} of {questions.length}
           </h3>
-          <span className="text-xs text-slate-600">
+          <span className="text-xs text-secondary font-mono">
             {Math.round(((currentIndex + 1) / questions.length) * 100)}%
           </span>
         </div>
-        <div className="w-full bg-slate-200 rounded-full h-1.5">
+        <div className="w-full bg-border/40 rounded-full h-1.5 overflow-hidden">
           <div
-            className="bg-blue-600 h-1.5 rounded-full transition-all"
+            className="bg-accent h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
           />
         </div>
@@ -131,21 +131,23 @@ export default function PastExamPracticeTab({
 
       {/* Question Content */}
       <div className="flex-1 overflow-y-auto space-y-4">
-        {/* Question Text */}
+        {/* Question Text & Metadata */}
         <div>
-          <p className="text-sm font-semibold text-slate-900 mb-2">
+          <p className="text-sm font-semibold text-primary mb-2 leading-relaxed">
             {currentQuestion.question}
           </p>
-          {currentQuestion.topic && (
-            <p className="text-xs text-slate-600">
-              <span className="font-semibold">Topic:</span> {currentQuestion.topic}
-            </p>
-          )}
-          {currentQuestion.marks && (
-            <p className="text-xs text-slate-600">
-              <span className="font-semibold">Marks:</span> {currentQuestion.marks}
-            </p>
-          )}
+          <div className="flex items-center gap-3 text-xs text-secondary">
+            {currentQuestion.topic && (
+              <p>
+                <span className="font-semibold text-primary">Topic:</span> {currentQuestion.topic}
+              </p>
+            )}
+            {currentQuestion.marks && (
+              <p>
+                <span className="font-semibold text-primary">Marks:</span> {currentQuestion.marks}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Answer Input - Dynamic by Question Type */}
@@ -156,16 +158,17 @@ export default function PastExamPracticeTab({
                 {["True", "False"].map((option) => (
                   <button
                     key={option}
+                    type="button"
                     onClick={() =>
                       setAnswers({
                         ...answers,
                         [currentQuestion.id]: option,
                       })
                     }
-                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition ${
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition border cursor-pointer ${
                       answers[currentQuestion.id] === option
-                        ? "bg-blue-600 text-white"
-                        : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                        ? "bg-accent text-inverse border-accent"
+                        : "bg-elevated text-primary border-default hover:bg-surface-hover"
                     }`}
                   >
                     {option}
@@ -179,16 +182,17 @@ export default function PastExamPracticeTab({
                 {currentQuestion.options?.map((option, idx) => (
                   <button
                     key={idx}
+                    type="button"
                     onClick={() =>
                       setAnswers({
                         ...answers,
                         [currentQuestion.id]: option,
                       })
                     }
-                    className={`w-full px-3 py-2 rounded-lg text-xs text-left font-medium transition border-2 ${
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs text-left font-medium transition-all border cursor-pointer ${
                       answers[currentQuestion.id] === option
-                        ? "border-blue-600 bg-blue-50 text-blue-900"
-                        : "border-slate-200 bg-white text-slate-900 hover:border-slate-300"
+                        ? "border-accent bg-accent/15 text-primary font-semibold shadow-sm"
+                        : "border-default bg-surface text-primary hover:border-accent/40 hover:bg-surface-hover"
                     }`}
                   >
                     {option}
@@ -208,7 +212,7 @@ export default function PastExamPracticeTab({
                   })
                 }
                 placeholder="Enter your answer here..."
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs resize-none"
+                className="w-full px-3 py-2 bg-page border border-default rounded-xl focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 text-xs text-primary placeholder:text-muted resize-none"
                 rows={currentQuestion.questionType === "ESSAY" ? 4 : 2}
               />
             )}
@@ -218,23 +222,23 @@ export default function PastExamPracticeTab({
         {/* Result Feedback */}
         {isAnswered && evaluated[currentQuestion.id] && (
           <div
-            className={`p-3 rounded-lg text-xs ${
+            className={`p-3.5 rounded-xl text-xs ${
               evaluated[currentQuestion.id].isCorrect
-                ? "bg-green-50 border border-green-200"
-                : "bg-red-50 border border-red-200"
+                ? "bg-success-bg border border-success/30 text-success"
+                : "bg-error-bg border border-error/30 text-error"
             }`}
           >
             <div className="flex items-center gap-2 mb-2">
               {evaluated[currentQuestion.id].isCorrect ? (
-                <CheckCircle2 size={16} className="text-green-600 flex-shrink-0" />
+                <CheckCircle2 size={16} className="text-success shrink-0" />
               ) : (
-                <XCircle size={16} className="text-red-600 flex-shrink-0" />
+                <XCircle size={16} className="text-error shrink-0" />
               )}
               <p
                 className={`font-semibold ${
                   evaluated[currentQuestion.id].isCorrect
-                    ? "text-green-900"
-                    : "text-red-900"
+                    ? "text-success"
+                    : "text-error"
                 }`}
               >
                 {evaluated[currentQuestion.id].isCorrect ? "Correct!" : "Incorrect"}
@@ -242,22 +246,22 @@ export default function PastExamPracticeTab({
             </div>
 
             {!evaluated[currentQuestion.id].isCorrect && (
-              <p className="mb-2 text-slate-700">
+              <p className="mb-2 text-primary">
                 <span className="font-semibold">Correct Answer:</span>{" "}
                 {evaluated[currentQuestion.id].correctAnswer}
               </p>
             )}
 
             {evaluated[currentQuestion.id].explanation && (
-              <div className="text-slate-700">
+              <div className="text-primary mt-2">
                 <p className="font-semibold mb-1">Explanation:</p>
-                <p className="text-slate-600">
+                <p className="text-secondary leading-relaxed">
                   {evaluated[currentQuestion.id].explanation}
                 </p>
               </div>
             )}
 
-            <div className="mt-2 pt-2 border-t border-slate-200 font-semibold text-slate-700">
+            <div className="mt-2 pt-2 border-t border-default/50 font-semibold text-primary">
               Score: {evaluated[currentQuestion.id].marks} /{" "}
               {evaluated[currentQuestion.id].maxMarks}
             </div>
@@ -266,16 +270,17 @@ export default function PastExamPracticeTab({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2 pt-4 border-t border-slate-200 mt-4">
+      <div className="flex gap-2 pt-4 border-t border-default mt-4">
         {!isAnswered ? (
           <button
+            type="button"
             onClick={handleSubmitAnswer}
             disabled={isEvaluating || !answers[currentQuestion.id]}
-            className="flex-1 px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+            className="flex-1 px-3 py-2.5 bg-accent text-inverse text-xs font-semibold rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
           >
             {isEvaluating ? (
               <>
-                <Loader2 size={14} className="animate-spin" />
+                <Loader2 size={14} className="animate-spin text-inverse" />
                 Evaluating...
               </>
             ) : (
@@ -284,9 +289,10 @@ export default function PastExamPracticeTab({
           </button>
         ) : (
           <button
+            type="button"
             onClick={handleNextQuestion}
             disabled={currentIndex === questions.length - 1}
-            className="flex-1 px-3 py-2 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-3 py-2.5 bg-accent text-inverse text-xs font-semibold rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm cursor-pointer"
           >
             {currentIndex === questions.length - 1 ? "All Done" : "Next Question"}
           </button>
@@ -296,16 +302,18 @@ export default function PastExamPracticeTab({
       {/* Navigation */}
       <div className="flex gap-2 mt-2">
         <button
+          type="button"
           onClick={handlePreviousQuestion}
           disabled={currentIndex === 0}
-          className="flex-1 px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 px-3 py-2 bg-elevated text-secondary hover:text-primary hover:bg-surface-hover border border-default text-xs font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           Previous
         </button>
         <button
+          type="button"
           onClick={handleNextQuestion}
           disabled={currentIndex === questions.length - 1}
-          className="flex-1 px-3 py-1.5 bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 px-3 py-2 bg-elevated text-secondary hover:text-primary hover:bg-surface-hover border border-default text-xs font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           Next
         </button>

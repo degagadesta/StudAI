@@ -28,6 +28,7 @@ export default function WorkspacePage() {
   // --- Panel Visibility States (Only Notes & Chat sidebars) ---
   const [showNotes, setShowNotes] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(true);
+  const [isPdfClosed, setIsPdfClosed] = useState<boolean>(false);
 
   // --- Draggable Modal States (For Exams, Quiz, Flashcards, & Summary) ---
   const [modalPos, setModalPos] = useState({ x: 120, y: 80 });
@@ -139,7 +140,27 @@ export default function WorkspacePage() {
     }
   };
 
-  // Sidebar Tab Click Handler
+  const handleClosePdf = () => {
+    if (showNotes || showChat) {
+      setIsPdfClosed(true);
+    } else {
+      navigate("/app/analytics");
+    }
+  };
+
+  const handleNotesClose = () => {
+    setShowNotes(false);
+    if (isPdfClosed && !showChat) {
+      navigate("/app/analytics");
+    }
+  };
+
+  const handleChatClose = () => {
+    setShowChat(false);
+    if (isPdfClosed && !showNotes) {
+      navigate("/app/analytics");
+    }
+  };
   const handleTabSelect = (tab: WorkspaceTab) => {
     setActiveTab(tab);
     if (tab === "notes") {
@@ -157,6 +178,7 @@ export default function WorkspacePage() {
 
   const handleMaterialSelect = (selectedMat: Material) => {
     setMaterial(selectedMat);
+    setIsPdfClosed(false);
   };
 
   // --- Modal Dragging Logic ---
@@ -265,6 +287,7 @@ export default function WorkspacePage() {
 
         <div className="flex-1 flex overflow-hidden relative">
           {/* SECTION 1: PDF Viewer Panel */}
+          {!isPdfClosed && (
           <div className="flex flex-col flex-1 min-w-[280px] bg-surface">
             {/* Top Toolbar */}
             <div className="flex flex-col border-b border-default bg-surface">
@@ -327,9 +350,9 @@ export default function WorkspacePage() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => navigate("/workspace")}
+                    onClick={handleClosePdf}
                     className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
-                    title="Close Material"
+                    title="Close PDF Viewer"
                   >
                     <X size={18} />
                   </button>
@@ -361,6 +384,7 @@ export default function WorkspacePage() {
               )}
             </div>
           </div>
+          )}
 
           {/* DRAGGABLE MODAL: Summary, Exams, Quiz, & Flashcards */}
           {isModalViewActive && (
@@ -444,13 +468,15 @@ export default function WorkspacePage() {
               </div>
 
               <div
-                style={{ width: `${notesWidth}px` }}
-                className="flex flex-col bg-surface border-l border-default shrink-0 overflow-hidden"
+                style={isPdfClosed ? undefined : { width: `${notesWidth}px` }}
+                className={`flex flex-col bg-surface border-l border-default shrink-0 overflow-hidden ${
+                  isPdfClosed ? "flex-1 w-full border-l-0" : ""
+                }`}
               >
                 <NotesPanel
                   materialId={id}
                   courseName={material?.courseName || pdfMeta?.courseName}
-                  onClose={() => setShowNotes(false)}
+                  onClose={handleNotesClose}
                 />
               </div>
             </>
@@ -469,15 +495,17 @@ export default function WorkspacePage() {
               </div>
 
               <div
-                style={{ width: `${chatWidth}px` }}
-                className="flex flex-col bg-surface border-l border-default shrink-0 overflow-hidden"
+                style={isPdfClosed ? undefined : { width: `${chatWidth}px` }}
+                className={`flex flex-col bg-surface border-l border-default shrink-0 overflow-hidden ${
+                  isPdfClosed ? "flex-1 w-full border-l-0" : ""
+                }`}
               >
                 <AIChatPanel
                   isEmbedded
                   courseName={material?.courseName}
                   activePdfName={material?.fileName}
                   onSendMessage={handleAIChatSend}
-                  onClose={() => setShowChat(false)}
+                  onClose={handleChatClose}
                 />
               </div>
             </>

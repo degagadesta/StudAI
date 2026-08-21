@@ -13,6 +13,7 @@ import FloatingAIChat from "../components/AIChat/FloatingAIchat";
 import AIChatPanel from "../components/AIChat/AIChatPanel";
 import FlashcardsPanel from "../components/Workspace/FlashcardsPanel";
 import SummaryPanel from "../components/Workspace/SummaryPanel";
+import PastExamPracticeTab from "../components/Workspace/PastExamPracticeTab";
 import SettingsModal, { type TabType } from "./SettingsModal";
 import { getMaterials, type Material } from "../api/Materialsapi";
 import { askQuestion } from "../api/aiApi";
@@ -370,20 +371,30 @@ export default function WorkspacePage() {
                   />
                 )}
                 {activeTab === "exams" && (
-                  <div className="text-sm text-[#253D31]">
-                    Previous Exams Viewer Content
-                  </div>
+                  material ? (
+                    <PastExamPracticeTab curriculumCourseId={material.curriculumCourseId} />
+                  ) : (
+                    <div className="text-sm text-[#5B6156] py-8 text-center">
+                      Please open a course material first to access previous exams.
+                    </div>
+                  )
                 )}
                 {activeTab === "quiz" && (
                   <div className="text-sm text-[#253D31]">
                     Quiz Generator & Practice Content
                   </div>
                 )}
-                {activeTab === "flashcards" && material && (
-                  <FlashcardsPanel
-                    materialId={material.id}
-                    materialName={material.fileName}
-                  />
+                {activeTab === "flashcards" && (
+                  material ? (
+                    <FlashcardsPanel
+                      materialId={material.id}
+                      materialName={material.fileName}
+                    />
+                  ) : (
+                    <div className="text-sm text-[#5B6156] py-8 text-center">
+                      Please open a course material first to access flashcards.
+                    </div>
+                  )
                 )}
               </div>
             </div>

@@ -235,26 +235,42 @@ model QuizAttempt {
 }
 
 model PastExam {
-  id                 String           @id @default(uuid())
+  id                 String        @id @default(uuid())
   year               Int
   type               ExamType
   fileUrl            String
+  status             ExamStatus    @default(QUEUED)
   curriculumCourseId String
-  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  uploadedBy         String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  processingError    String?
+  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id], onDelete: Cascade)
   chunks             PastExamChunk[]
 
   @@index([curriculumCourseId])
+  @@index([status])
+  @@index([uploadedBy])
 }
 
 model PastExamChunk {
-  id         String   @id @default(uuid())
-  pastExamId String
-  topic      String?
-  question   String
-  marks      Float?
-  pastExam   PastExam @relation(fields: [pastExamId], references: [id])
+  id            String       @id @default(uuid())
+  pastExamId    String
+  topic         String?
+  question      String
+  questionType  QuestionType @default(MULTIPLE_CHOICE)
+  options       Json?        // Array of options e.g., ["A) Option 1", "B) Option 2"]
+  correctAnswer String
+  explanation   String?      // Detailed AI-generated explanation
+  marks         Float?
+  status        ChunkStatus  @default(EXTRACTED)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  pastExam      PastExam     @relation(fields: [pastExamId], references: [id], onDelete: Cascade)
 
   @@index([pastExamId])
+  @@index([topic])
+  @@index([questionType])
 }
 
 model TopicStatistic {
@@ -461,6 +477,28 @@ enum Difficulty {
 enum ExamType {
   MID
   FINAL
+}
+
+enum ExamStatus {
+  QUEUED
+  PROCESSING
+  NEEDS_REVIEW
+  READY
+  FAILED
+}
+
+enum QuestionType {
+  TRUE_FALSE
+  MULTIPLE_CHOICE
+  SHORT_ANSWER
+  ESSAY
+}
+
+enum ChunkStatus {
+  EXTRACTED
+  NEEDS_REVIEW
+  VERIFIED
+  REJECTED
 }
 
 enum ChatRole {

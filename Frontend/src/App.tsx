@@ -31,6 +31,10 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import NotificationsPage from "./pages/NotificationsModal";
 import SettingsModal from "./pages/SettingsModal";
 
+// Exam routes
+import AdminExamDashboard from "./pages/AdminExamDashboard";
+import ExamPracticePage from "./pages/ExamPracticePage";
+
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 // Wrapper component to safely adapt SettingsModal to React Router navigation
@@ -82,6 +86,24 @@ export default function App() {
                 <Route
                   path="/dashboard"
                   element={<Navigate to="/app/analytics" replace />}
+                />
+
+                {/* Admin Exam Dashboard & Student Practice */}
+                <Route
+                  path="/admin/exams"
+                  element={
+                    <ProtectedRoute>
+                      <AdminExamDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/exams/practice/:courseId"
+                  element={
+                    <ProtectedRoute>
+                      <ExamPracticePage />
+                    </ProtectedRoute>
+                  }
                 />
 
                 {/* Main Application Layout */}

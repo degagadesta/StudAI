@@ -42,9 +42,9 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#FFFDF7] overflow-hidden">
+    <div className="flex flex-col h-full bg-surface overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#DCD2B4]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-default">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
             <FileText size={18} />
@@ -60,7 +60,7 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
         {summary && !isLoading && (
           <button
             onClick={handleRegenerate}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-secondary hover:text-accent hover:bg-elevated rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-secondary hover:text-accent hover:bg-elevated rounded-lg transition-colors cursor-pointer"
             title="Regenerate summary"
           >
             <RefreshCw size={14} />
@@ -81,14 +81,14 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-3">
-              <AlertCircle size={24} className="text-red-500" />
+            <div className="w-12 h-12 rounded-full bg-error-bg flex items-center justify-center mb-3">
+              <AlertCircle size={24} className="text-error" />
             </div>
             <p className="text-sm font-medium text-primary mb-1">Failed to generate summary</p>
             <p className="text-xs text-secondary mb-4">{error}</p>
             <button
               onClick={() => loadSummary(false)}
-              className="px-4 py-2 text-xs font-medium text-inverse bg-accent hover:opacity-90 rounded-lg transition-opacity"
+              className="px-4 py-2 text-xs font-medium text-inverse bg-accent hover:opacity-90 rounded-lg transition-opacity cursor-pointer"
             >
               Try Again
             </button>
@@ -97,14 +97,14 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
           <div className="space-y-4">
             {/* Cached indicator */}
             {isCached && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-                <CheckCircle2 size={14} className="text-green-600" />
-                <span className="text-xs text-green-700">Loaded from cache</span>
+              <div className="flex items-center gap-2 px-3 py-2 bg-success-bg border border-success/30 rounded-lg">
+                <CheckCircle2 size={14} className="text-success" />
+                <span className="text-xs text-success">Loaded from cache</span>
               </div>
             )}
 
             {/* Summary content */}
-            <div className="prose prose-sm max-w-none">
+            <div className="prose prose-sm max-w-none dark:prose-invert">
               <div className="text-sm text-primary leading-relaxed whitespace-pre-wrap">
                 {summary}
               </div>

@@ -30,6 +30,12 @@ export const getPDFs = asyncHandler(async (req, res) => {
 // Streams the raw PDF binary back to the client
 export const servePDF = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const etag = `W/"pdf-${id}"`;
+
+  if (req.headers["if-none-match"] === etag) {
+    return res.status(304).end();
+  }
+
   const { fileName, buffer, progress } = await pdfService.getPDFFile(req.studentId, id);
 
   res.set({
@@ -37,6 +43,8 @@ export const servePDF = asyncHandler(async (req, res) => {
     "Content-Disposition": `inline; filename="${encodeURIComponent(fileName)}"`,
     "Content-Length": buffer.length,
     "X-Progress": progress.toString(),
+    "Cache-Control": "private, max-age=86400, stale-while-revalidate=3600",
+    "ETag": etag,
   });
 
   res.send(buffer);

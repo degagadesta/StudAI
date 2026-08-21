@@ -6,6 +6,7 @@ import { retrieveRelevantChunks } from "./retrieval.service.js";
 import { getRecentHistory } from "./chatHistory.service.js";
 import { assertWithinLimit, recordUsage } from "../usage/usage.service.js";
 import { PLAN_LIMITS } from "../../config/planLimits.js";
+import { cacheGet, cacheSet } from "../../lib/redis.js";
 
 // ---------- Shared helper ----------
 // ai.service.js
@@ -77,7 +78,24 @@ const NOTES_SYSTEM = `You are a study assistant creating structured, editable st
 export async function generateNotes(materialId, studentId) {
   const material = await getMaterialWithAccess(materialId, studentId);
 
-  return dedupe(`notes:${materialId}`, () => doGenerateNotes(material, materialId, studentId));
+  const cacheKey = `ai:notes:${materialId}`;
+  const cached = await cacheGet(cacheKey);
+  if (cached) {
+    try {
+      console.log(`[AI] Returning cached notes for material ${materialId}`);
+      return JSON.parse(cached);
+    } catch (e) {
+      // Ignore JSON parse error and proceed to generation
+    }
+  }
+
+  const result = await dedupe(`notes:${materialId}`, () => doGenerateNotes(material, materialId, studentId));
+
+  if (result && result.html) {
+    await cacheSet(cacheKey, JSON.stringify(result), 604800);
+  }
+
+  return result;
 }
 
 async function doGenerateNotes(material, materialId, studentId) {

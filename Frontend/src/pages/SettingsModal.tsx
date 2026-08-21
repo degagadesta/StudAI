@@ -174,9 +174,10 @@ export default function SettingsModal({
       
       await loadProfile(); // Refresh profile
       
-      // Refresh courses if on course tab (they may have changed if year/semester changed)
-      if (activeTab === "course") {
-        await loadCourses();
+      if (result.courseSelectionsCleared) {
+        window.dispatchEvent(new CustomEvent("courses:cleared"));
+      } else {
+        window.dispatchEvent(new CustomEvent("courses:updated"));
       }
 
       // Show warning if course selections were cleared

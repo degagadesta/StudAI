@@ -72,7 +72,9 @@ export const addCourseSelection = asyncHandler(async (req, res) => {
   // Emit real-time course update event
   emitToStudent(req.studentId, "course:added", {
     curriculumCourseId,
-    courseName: result.courseName || "Course",
+    courseName: result.course?.title || "Course",
+    course: result.course,
+    selectionId: result.selectionId,
     message: "Course added to your schedule"
   });
 
@@ -102,8 +104,8 @@ export const dropCourseSelection = asyncHandler(async (req, res) => {
   // Emit real-time course update event
   emitToStudent(req.studentId, "course:dropped", {
     curriculumCourseId,
-    courseName: result.courseName || "Course",
-    deletedPDFs: result.deletedPDFs || 0,
+    droppedCourse: result.droppedCourse,
+    deletedPDFs: result.materialsDeleted?.successful || 0,
     message: "Course dropped successfully"
   });
 

@@ -380,12 +380,14 @@ export default function OnboardingPage() {
                               className="flex flex-col items-start gap-1 p-4 bg-surface border border-default rounded-xl text-left hover:border-accent transition-colors"
                             >
                               <span className="font-serif text-base text-primary">
-                                {u.name
-                                  .split(" ")
-                                  .map((w) => w[0])
-                                  .join("")
-                                  .slice(0, 4)
-                                  .toUpperCase()}
+                                {u.shortName ||
+                                  u.name
+                                    .split(" ")
+                                    .filter((w) => w.toLowerCase() !== "and")
+                                    .map((w) => w[0])
+                                    .join("")
+                                    .slice(0, 5)
+                                    .toUpperCase()}
                               </span>
                               <span className="text-[11px] text-secondary leading-tight">
                                 {u.name}

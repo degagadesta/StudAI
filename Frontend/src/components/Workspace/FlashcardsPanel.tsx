@@ -86,9 +86,9 @@ export default function FlashcardsPanel({
   const currentCard = flashcards[currentIndex];
 
   return (
-    <div className="flex flex-col h-full bg-[#FFFDF7] overflow-hidden">
+    <div className="flex flex-col h-full bg-surface overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#DCD2B4]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-default">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
             <Sparkles size={18} />

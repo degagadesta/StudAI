@@ -14,6 +14,7 @@ import AIChatPanel from "../components/AIChat/AIChatPanel";
 import FlashcardsPanel from "../components/Workspace/FlashcardsPanel";
 import SummaryPanel from "../components/Workspace/SummaryPanel";
 import PastExamPracticeTab from "../components/Workspace/PastExamPracticeTab";
+import QuizPanel from "../components/Workspace/QuizPanel";
 import SettingsModal, { type TabType } from "./SettingsModal";
 import { getMaterials, type Material } from "../api/Materialsapi";
 import { askQuestion } from "../api/aiApi";
@@ -212,7 +213,7 @@ export default function WorkspacePage() {
     activeTab === "summary";
 
   return (
-    <div className="relative flex flex-col h-screen bg-[#FDFBF7] overflow-hidden select-none">
+    <div className="relative flex flex-col h-screen bg-page overflow-hidden select-none">
       {/* Topbar */}
       <WorkspaceTopbar
         onOpenSettings={(tab) => handleOpenSettings(tab)}
@@ -234,28 +235,28 @@ export default function WorkspacePage() {
 
         <div className="flex-1 flex overflow-hidden relative">
           {/* SECTION 1: PDF Viewer Panel */}
-          <div className="flex flex-col flex-1 min-w-[280px] bg-[#FFFDF7]">
+          <div className="flex flex-col flex-1 min-w-[280px] bg-surface">
             {/* Top Toolbar */}
-            <div className="flex flex-col border-b border-[#DCD2B4]/60 bg-[#FFFDF7]">
+            <div className="flex flex-col border-b border-default bg-surface">
               <div className="grid grid-cols-3 items-center px-4 py-2">
                 {/* Left Column: Zoom Controls */}
                 <div className="flex items-center gap-1.5 justify-start">
-                  <div className="flex items-center bg-[#FFFDF7] border border-[#DCD2B4] rounded-lg p-0.5 shadow-sm">
+                  <div className="flex items-center bg-surface border border-default rounded-lg p-0.5 shadow-sm">
                     <button
                       type="button"
                       onClick={handleZoomOut}
-                      className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-md transition-colors cursor-pointer"
+                      className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors cursor-pointer"
                       title="Zoom Out"
                     >
                       <ZoomOut size={15} />
                     </button>
-                    <span className="text-xs font-mono px-2 text-[#5B6156]">
+                    <span className="text-xs font-mono px-2 text-secondary">
                       {Math.round(scale * 100)}%
                     </span>
                     <button
                       type="button"
                       onClick={handleZoomIn}
-                      className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-md transition-colors cursor-pointer"
+                      className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors cursor-pointer"
                       title="Zoom In"
                     >
                       <ZoomIn size={15} />
@@ -263,7 +264,7 @@ export default function WorkspacePage() {
                     <button
                       type="button"
                       onClick={handleZoomReset}
-                      className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-md transition-colors border-l border-[#DCD2B4] cursor-pointer"
+                      className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-md transition-colors border-l border-default cursor-pointer"
                       title="Reset Zoom"
                     >
                       <RotateCcw size={14} />
@@ -275,15 +276,15 @@ export default function WorkspacePage() {
                 <div className="text-center min-w-0">
                   {pdfMeta ? (
                     <>
-                      <p className="text-sm font-medium text-[#253D31] truncate">
+                      <p className="text-sm font-medium text-primary truncate">
                         {pdfMeta.fileName}
                       </p>
-                      <p className="text-xs text-[#5B6156] truncate">
+                      <p className="text-xs text-secondary truncate">
                         {pdfMeta.courseName}
                       </p>
                     </>
                   ) : (
-                    <p className="text-sm font-medium text-[#5B6156]">
+                    <p className="text-sm font-medium text-secondary">
                       Workspace Material
                     </p>
                   )}
@@ -291,13 +292,13 @@ export default function WorkspacePage() {
 
                 {/* Right Column: Progress & Close Button */}
                 <div className="flex items-center gap-3 justify-end">
-                  <span className="text-xs font-mono text-[#5B6156]">
+                  <span className="text-xs font-mono text-secondary">
                     {readPercent}% read
                   </span>
                   <button
                     type="button"
                     onClick={() => navigate("/workspace")}
-                    className="p-1.5 text-[#5B6156] hover:text-[#253D31] hover:bg-[#F3EFE0] rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
                     title="Close Material"
                   >
                     <X size={18} />
@@ -306,9 +307,9 @@ export default function WorkspacePage() {
               </div>
 
               {/* Progress Bar */}
-              <div className="h-1 bg-[#DCD2B4]/40 w-full overflow-hidden">
+              <div className="h-1 bg-border/40 w-full overflow-hidden">
                 <div
-                  className="h-full bg-[#253D31] transition-all duration-300"
+                  className="h-full bg-accent transition-all duration-300"
                   style={{ width: `${readPercent}%` }}
                 />
               </div>
@@ -324,7 +325,7 @@ export default function WorkspacePage() {
                   onAskAI={handleAskAIFromSelection}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-[#5B6156]">
+                <div className="flex items-center justify-center h-full text-secondary">
                   No material selected
                 </div>
               )}
@@ -337,16 +338,16 @@ export default function WorkspacePage() {
               style={{
                 transform: `translate(${modalPos.x}px, ${modalPos.y}px)`,
               }}
-              className="absolute z-40 w-[460px] max-h-[80vh] flex flex-col bg-[#FFFDF7] border border-[#DCD2B4] rounded-xl shadow-2xl overflow-hidden"
+              className="absolute z-40 w-[460px] max-h-[80vh] flex flex-col bg-surface border border-default rounded-xl shadow-2xl overflow-hidden"
             >
               {/* Draggable Header */}
               <div
                 onMouseDown={handleModalMouseDown}
-                className="flex items-center justify-between px-4 py-3 bg-[#F3EFE0]/70 border-b border-[#DCD2B4]/60 cursor-grab active:cursor-grabbing"
+                className="flex items-center justify-between px-4 py-3 bg-elevated/70 border-b border-default cursor-grab active:cursor-grabbing"
               >
                 <div className="flex items-center gap-2">
-                  <GripHorizontal size={16} className="text-[#5B6156]" />
-                  <span className="text-sm font-semibold text-[#253D31] capitalize">
+                  <GripHorizontal size={16} className="text-secondary" />
+                  <span className="text-sm font-semibold text-primary capitalize">
                     {activeTab === "summary" && "Document Summary"}
                     {activeTab === "exams" && "Previous Exams Viewer"}
                     {activeTab === "quiz" && "Quiz Generator & Practice"}
@@ -356,14 +357,14 @@ export default function WorkspacePage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("chat")}
-                  className="p-1 text-[#5B6156] hover:text-[#253D31] hover:bg-[#DCD2B4]/40 rounded-lg transition-colors cursor-pointer"
+                  className="p-1 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
                 >
                   <X size={16} />
                 </button>
               </div>
 
               {/* Modal Body */}
-              <div className="flex-1 overflow-y-auto p-4 bg-[#FFFDF7]">
+              <div className="flex-1 overflow-y-auto p-4 bg-surface">
                 {activeTab === "summary" && (
                   <SummaryPanel
                     materialId={id || ""}
@@ -380,9 +381,14 @@ export default function WorkspacePage() {
                   )
                 )}
                 {activeTab === "quiz" && (
-                  <div className="text-sm text-[#253D31]">
-                    Quiz Generator & Practice Content
-                  </div>
+
+                  material ? (
+                    <QuizPanel materialId={material.id} />
+                  ) : (
+                    <div className="text-sm text-[#5B6156] py-8 text-center">
+                      Please open a course material first to generate a quiz.
+                    </div>
+                  )
                 )}
                 {activeTab === "flashcards" && (
                   material ? (
@@ -405,16 +411,16 @@ export default function WorkspacePage() {
             <>
               <div
                 onMouseDown={() => setIsResizingNotes(true)}
-                className={`w-1.5 hover:w-2 hover:bg-[#253D31]/30 cursor-col-resize transition-all shrink-0 flex items-center justify-center group ${isResizingNotes ? "bg-[#253D31]/40 w-2" : "bg-[#DCD2B4]/40"
+                className={`w-1.5 hover:w-2 hover:bg-accent/30 cursor-col-resize transition-all shrink-0 flex items-center justify-center group ${isResizingNotes ? "bg-accent/40 w-2" : "bg-border/40"
                   }`}
                 title="Drag to resize Notes panel"
               >
-                <div className="w-0.5 h-8 bg-[#5B6156]/30 group-hover:bg-[#253D31] rounded-full transition-colors" />
+                <div className="w-0.5 h-8 bg-secondary/30 group-hover:bg-accent rounded-full transition-colors" />
               </div>
 
               <div
                 style={{ width: `${notesWidth}px` }}
-                className="flex flex-col bg-[#FFFDF7] border-l border-[#DCD2B4]/60 shrink-0 overflow-hidden"
+                className="flex flex-col bg-surface border-l border-default shrink-0 overflow-hidden"
               >
                 <NotesPanel
                   materialId={id}
@@ -430,16 +436,16 @@ export default function WorkspacePage() {
             <>
               <div
                 onMouseDown={() => setIsResizingChat(true)}
-                className={`w-1.5 hover:w-2 hover:bg-[#253D31]/30 cursor-col-resize transition-all shrink-0 flex items-center justify-center group ${isResizingChat ? "bg-[#253D31]/40 w-2" : "bg-[#DCD2B4]/40"
+                className={`w-1.5 hover:w-2 hover:bg-accent/30 cursor-col-resize transition-all shrink-0 flex items-center justify-center group ${isResizingChat ? "bg-accent/40 w-2" : "bg-border/40"
                   }`}
                 title="Drag to resize AI Chat panel"
               >
-                <div className="w-0.5 h-8 bg-[#5B6156]/30 group-hover:bg-[#253D31] rounded-full transition-colors" />
+                <div className="w-0.5 h-8 bg-secondary/30 group-hover:bg-accent rounded-full transition-colors" />
               </div>
 
               <div
                 style={{ width: `${chatWidth}px` }}
-                className="flex flex-col bg-[#FFFDF7] border-l border-[#DCD2B4]/60 shrink-0 overflow-hidden"
+                className="flex flex-col bg-surface border-l border-default shrink-0 overflow-hidden"
               >
                 <AIChatPanel
                   isEmbedded

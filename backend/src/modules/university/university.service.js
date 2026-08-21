@@ -5,6 +5,7 @@ export const getAllUniversities = async () => {
         select: {
             id: true,
             name: true,
+            shortName: true,
             city: true,
         },
         orderBy: {
@@ -19,6 +20,7 @@ export const getUniversityById = async (id) => {
         select: {
             id: true,
             name: true,
+            shortName: true,
             city: true,
         },
     });

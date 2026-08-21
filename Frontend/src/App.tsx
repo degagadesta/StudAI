@@ -140,6 +140,7 @@ export default function App() {
                     <Route path="courses" element={<CoursesPage />} />
                     <Route path="schedule" element={<SchedulePage />} />
                     <Route path="profile" element={<ProfilePage />} />
+                    <Route path="notifications" element={<NotificationsModal/>}/>
                     {/* <Route path="notifications" element={<NotificationsPage />} /> */}
                     <Route path="settings" element={<SettingsModalWrapper />} />
                   </Route>

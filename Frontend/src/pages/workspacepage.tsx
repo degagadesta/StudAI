@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { X, ZoomIn, ZoomOut, RotateCcw, GripHorizontal } from "lucide-react";
+import { X, ZoomIn, ZoomOut, RotateCcw, GripHorizontal, CheckCircle } from "lucide-react";
 
 import WorkspaceTopbar from "../components/Workspace/Workspacetopbar";
 import WorkspaceSidebar, {
@@ -29,6 +29,7 @@ export default function WorkspacePage() {
   // --- Panel Visibility States (Only Notes & Chat sidebars) ---
   const [showNotes, setShowNotes] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(true);
+  const [isPdfClosed, setIsPdfClosed] = useState<boolean>(false);
 
   // --- Draggable Modal States (For Exams, Quiz, Flashcards, & Summary) ---
   const [modalPos, setModalPos] = useState({ x: 120, y: 80 });
@@ -48,6 +49,9 @@ export default function WorkspacePage() {
   // Settings Modal State
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [settingsTab, setSettingsTab] = useState<TabType>("profile");
+
+  // Share Toast State
+  const [shareToast, setShareToast] = useState<string | null>(null);
 
   // Panel Width States (in pixels)
   const [notesWidth, setNotesWidth] = useState<number>(360);
@@ -109,7 +113,55 @@ export default function WorkspacePage() {
     setIsSettingsOpen(true);
   };
 
-  // Sidebar Tab Click Handler
+  const handleShareWorkspace = async () => {
+    const shareUrl = `${window.location.origin}/workspace/${id || ""}?tab=notes`;
+    const shareTitle = `${material?.courseName || "Course"} Study Notes`;
+    const shareText = `Check out my study notes for ${material?.courseName || "this course"} on StudAI!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard if user cancels or native share fails
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareToast("Share link copied to clipboard!");
+      setTimeout(() => setShareToast(null), 3500);
+    } catch {
+      setShareToast("Failed to copy link. Please copy URL manually.");
+      setTimeout(() => setShareToast(null), 3500);
+    }
+  };
+
+  const handleClosePdf = () => {
+    if (showNotes || showChat) {
+      setIsPdfClosed(true);
+    } else {
+      navigate("/app/analytics");
+    }
+  };
+
+  const handleNotesClose = () => {
+    setShowNotes(false);
+    if (isPdfClosed && !showChat) {
+      navigate("/app/analytics");
+    }
+  };
+
+  const handleChatClose = () => {
+    setShowChat(false);
+    if (isPdfClosed && !showNotes) {
+      navigate("/app/analytics");
+    }
+  };
   const handleTabSelect = (tab: WorkspaceTab) => {
     setActiveTab(tab);
     if (tab === "notes") {
@@ -127,6 +179,7 @@ export default function WorkspacePage() {
 
   const handleMaterialSelect = (selectedMat: Material) => {
     setMaterial(selectedMat);
+    setIsPdfClosed(false);
   };
 
   // --- Modal Dragging Logic ---
@@ -217,7 +270,7 @@ export default function WorkspacePage() {
       {/* Topbar */}
       <WorkspaceTopbar
         onOpenSettings={(tab) => handleOpenSettings(tab)}
-        onOpenShare={() => alert("Share link copied to clipboard!")}
+        onOpenShare={handleShareWorkspace}
         onOpenUpgrade={() => handleOpenSettings("plan")}
       />
 
@@ -235,6 +288,7 @@ export default function WorkspacePage() {
 
         <div className="flex-1 flex overflow-hidden relative">
           {/* SECTION 1: PDF Viewer Panel */}
+          {!isPdfClosed && (
           <div className="flex flex-col flex-1 min-w-[280px] bg-surface">
             {/* Top Toolbar */}
             <div className="flex flex-col border-b border-default bg-surface">
@@ -297,9 +351,9 @@ export default function WorkspacePage() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => navigate("/workspace")}
+                    onClick={handleClosePdf}
                     className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
-                    title="Close Material"
+                    title="Close PDF Viewer"
                   >
                     <X size={18} />
                   </button>
@@ -331,6 +385,7 @@ export default function WorkspacePage() {
               )}
             </div>
           </div>
+          )}
 
           {/* DRAGGABLE MODAL: Summary, Exams, Quiz, & Flashcards */}
           {isModalViewActive && (
@@ -419,13 +474,15 @@ export default function WorkspacePage() {
               </div>
 
               <div
-                style={{ width: `${notesWidth}px` }}
-                className="flex flex-col bg-surface border-l border-default shrink-0 overflow-hidden"
+                style={isPdfClosed ? undefined : { width: `${notesWidth}px` }}
+                className={`flex flex-col bg-surface border-l border-default shrink-0 overflow-hidden ${
+                  isPdfClosed ? "flex-1 w-full border-l-0" : ""
+                }`}
               >
                 <NotesPanel
                   materialId={id}
                   courseName={material?.courseName || pdfMeta?.courseName}
-                  onClose={() => setShowNotes(false)}
+                  onClose={handleNotesClose}
                 />
               </div>
             </>
@@ -444,15 +501,17 @@ export default function WorkspacePage() {
               </div>
 
               <div
-                style={{ width: `${chatWidth}px` }}
-                className="flex flex-col bg-surface border-l border-default shrink-0 overflow-hidden"
+                style={isPdfClosed ? undefined : { width: `${chatWidth}px` }}
+                className={`flex flex-col bg-surface border-l border-default shrink-0 overflow-hidden ${
+                  isPdfClosed ? "flex-1 w-full border-l-0" : ""
+                }`}
               >
                 <AIChatPanel
                   isEmbedded
                   courseName={material?.courseName}
                   activePdfName={material?.fileName}
                   onSendMessage={handleAIChatSend}
-                  onClose={() => setShowChat(false)}
+                  onClose={handleChatClose}
                 />
               </div>
             </>
@@ -476,6 +535,14 @@ export default function WorkspacePage() {
         initialTab={settingsTab}
         onClose={() => setIsSettingsOpen(false)}
       />
+
+      {/* Share Toast Notification */}
+      {shareToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-surface text-primary border border-default px-4 py-3 rounded-xl shadow-xl transition-all">
+          <CheckCircle size={18} className="text-success shrink-0" />
+          <span className="text-xs font-medium">{shareToast}</span>
+        </div>
+      )}
     </div>
   );
 }

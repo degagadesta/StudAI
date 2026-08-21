@@ -26,6 +26,17 @@ const RANGE_CONFIG: Record<
     helper: "Days active, past 12 months",
   },
 };
+function formatTimeValue(value: number, unit: string): string {
+  if (unit !== "h") {
+    return `${value}${unit}`;
+  }
+  const totalMinutes = Math.round(value * 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const formattedMinutes = minutes.toString().padStart(2, "0");
+  return `${hours}:${formattedMinutes}`;
+}
+
 function Bars({
   buckets,
   unit,
@@ -51,9 +62,8 @@ function Bars({
             onMouseLeave={() => setHovered(null)}
           >
             {isActive && (
-              <div className="absolute -top-9 bg-accent text-inverse text-xs font-mono px-2.5 py-1 rounded-lg whitespace-nowrap">
-                {b.value}
-                {unit}
+              <div className="absolute -top-9 bg-accent text-inverse text-xs font-mono px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">
+                {formatTimeValue(b.value, unit)}
               </div>
             )}
             <div

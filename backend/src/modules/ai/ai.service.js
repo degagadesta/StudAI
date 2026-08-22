@@ -452,7 +452,7 @@ const CHAT_SYSTEM = `You are StudAI's expert academic tutor helping a student un
 
 Answer using the material given to you and general internet information if asked about concepts related to it. If the material is not enough to answer, say so honestly.`;
 
-export async function askAboutMaterial(studentId, curriculumCourseId, materialId, question) {
+export async function askAboutMaterial(studentId, curriculumCourseId, materialId, question, targetSessionId = null) {
   const student = await prisma.student.findUnique({
     where: { id: studentId },
     select: { subscriptionPlan: true },
@@ -480,10 +480,12 @@ export async function askAboutMaterial(studentId, curriculumCourseId, materialId
     throw err;
   });
 
-  let session = await prisma.chatSession.findFirst({
-    where: { studentId, curriculumCourseId },
-    orderBy: { createdAt: "desc" },
-  });
+  let session = null;
+  if (targetSessionId) {
+    session = await prisma.chatSession.findFirst({
+      where: { id: targetSessionId, studentId },
+    });
+  }
 
   if (!session) {
     session = await prisma.chatSession.create({
@@ -552,6 +554,89 @@ ${question}`;
   console.log(`[AI] Chat response generated (${answer.length} chars)`);
 
   return { sessionId: session.id, answer };
+}
+
+export async function getCourseChatSessions(studentId, curriculumCourseId) {
+  const sessions = await prisma.chatSession.findMany({
+    where: { studentId, curriculumCourseId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      messages: {
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+
+  return sessions.map((session) => {
+    const firstUserMsg = session.messages.find((m) => m.role === "USER");
+    const title = firstUserMsg
+      ? firstUserMsg.content.slice(0, 35) + (firstUserMsg.content.length > 35 ? "..." : "")
+      : "Study Session";
+
+    return {
+      id: session.id,
+      title,
+      timestamp: session.createdAt,
+      messages: session.messages.map((m) => ({
+        id: m.id,
+        sender: m.role === "USER" ? "user" : "ai",
+        text: m.content,
+        timestamp: m.createdAt,
+      })),
+    };
+  });
+}
+
+export async function getSessionMessages(studentId, sessionId) {
+  const session = await prisma.chatSession.findFirst({
+    where: { id: sessionId, studentId },
+    include: {
+      messages: {
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  });
+
+  if (!session) {
+    throw new AppError("Chat session not found", 404);
+  }
+
+  const firstUserMsg = session.messages.find((m) => m.role === "USER");
+  const title = firstUserMsg
+    ? firstUserMsg.content.slice(0, 35) + (firstUserMsg.content.length > 35 ? "..." : "")
+    : "Study Session";
+
+  return {
+    id: session.id,
+    title,
+    timestamp: session.createdAt,
+    messages: session.messages.map((m) => ({
+      id: m.id,
+      sender: m.role === "USER" ? "user" : "ai",
+      text: m.content,
+      timestamp: m.createdAt,
+    })),
+  };
+}
+
+export async function deleteChatSession(studentId, sessionId) {
+  const session = await prisma.chatSession.findFirst({
+    where: { id: sessionId, studentId },
+  });
+
+  if (!session) {
+    throw new AppError("Chat session not found", 404);
+  }
+
+  await prisma.chatMessage.deleteMany({
+    where: { sessionId },
+  });
+
+  await prisma.chatSession.delete({
+    where: { id: sessionId },
+  });
+
+  return { message: "Chat session deleted successfully" };
 }
 
 /**

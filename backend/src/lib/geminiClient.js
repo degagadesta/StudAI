@@ -10,7 +10,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 // flash; cheap/bulk tasks (chunk-level map step, snippet explanations)
 // get the lite tier.
 export const MODELS = {
-  CHAT: "gemini-3.5-flash",
+  CHAT: "gemini-3.1-flash-lite",
   SUMMARY_SINGLE: "gemini-3.1-flash-lite",
   SUMMARY_MAP: "gemini-3.1-flash-lite",
   SUMMARY_REDUCE: "gemini-3.5-flash",

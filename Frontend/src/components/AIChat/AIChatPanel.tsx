@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Sparkles,
   Send,
@@ -13,6 +13,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import FormattedMarkdown from "../Common/FormattedMarkdown";
+import { getChatSessions, getSessionMessages, deleteChatSession } from "../../api/aiApi";
 
 export interface Message {
   id: string;
@@ -30,10 +31,11 @@ export interface ChatSession {
 
 interface AIChatPanelProps {
   courseName?: string;
+  curriculumCourseId?: string;
   activePdfName?: string;
   materialId?: string;
   onClose?: () => void;
-  onSendMessage?: (message: string) => Promise<string> | Promise<void>;
+  onSendMessage?: (message: string, sessionId?: string) => Promise<any>;
   isEmbedded?: boolean;
   initialQuestion?: string;
 }
@@ -44,30 +46,9 @@ const DEFAULT_PROMPTS = [
   "Generate 5 quiz questions for revision",
 ];
 
-const INITIAL_HISTORY: ChatSession[] = [
-  {
-    id: "session-1",
-    title: "Key concepts in Chapter 2",
-    timestamp: new Date(Date.now() - 3600000 * 24),
-    messages: [
-      {
-        id: "m1",
-        sender: "user",
-        text: "Can you explain key concepts in Chapter 2?",
-        timestamp: new Date(Date.now() - 3600000 * 24),
-      },
-      {
-        id: "m2",
-        sender: "ai",
-        text: "Chapter 2 covers core system architecture principles, including separation of concerns, modularity, and layered design patterns.",
-        timestamp: new Date(Date.now() - 3600000 * 24),
-      },
-    ],
-  },
-];
-
 export default function AIChatPanel({
   courseName,
+  curriculumCourseId,
   activePdfName,
   materialId,
   onClose,
@@ -78,12 +59,48 @@ export default function AIChatPanel({
   const [activeView, setActiveView] = useState<"chat" | "history">("chat");
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<ChatSession[]>(INITIAL_HISTORY);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const fetchSessions = useCallback(async () => {
+    if (!curriculumCourseId) return;
+    try {
+      setIsLoadingSessions(true);
+      const apiSessions = await getChatSessions(curriculumCourseId);
+      const formattedSessions: ChatSession[] = apiSessions.map((s) => ({
+        id: s.id,
+        title: s.title,
+        timestamp: new Date(s.timestamp),
+        messages: s.messages.map((m) => ({
+          id: m.id,
+          sender: m.sender,
+          text: m.text,
+          timestamp: new Date(m.timestamp),
+        })),
+      }));
+
+      setSessions(formattedSessions);
+
+      // If no session selected yet and we have sessions, pick the latest one
+      if (!currentSessionId && formattedSessions.length > 0) {
+        setCurrentSessionId(formattedSessions[0].id);
+        setMessages(formattedSessions[0].messages);
+      }
+    } catch (err) {
+      console.error("Failed to load chat sessions:", err);
+    } finally {
+      setIsLoadingSessions(false);
+    }
+  }, [curriculumCourseId, currentSessionId]);
+
+  useEffect(() => {
+    fetchSessions();
+  }, [curriculumCourseId]);
 
   useEffect(() => {
     if (activeView === "chat") {
@@ -91,8 +108,7 @@ export default function AIChatPanel({
     }
   }, [activeView, messages, isGenerating]);
 
-  // Populate the input (not send) when text arrives from the PDF selection
-  // popover's "Ask AI" button — the user reviews/edits, then hits Enter.
+  // Populate the input when text arrives from the PDF selection popover's "Ask AI" button
   useEffect(() => {
     if (initialQuestion && initialQuestion.trim()) {
       setActiveView("chat");
@@ -102,52 +118,41 @@ export default function AIChatPanel({
     }
   }, [initialQuestion]);
 
-  const saveCurrentSession = (updatedMessages: Message[]) => {
-    if (updatedMessages.length === 0) return;
-
-    const sessionTitle =
-      updatedMessages[0]?.text.slice(0, 32) +
-      (updatedMessages[0]?.text.length > 32 ? "..." : "");
-
-    if (currentSessionId) {
-      setSessions((prev) =>
-        prev.map((s) =>
-          s.id === currentSessionId
-            ? { ...s, messages: updatedMessages, timestamp: new Date() }
-            : s,
-        ),
-      );
-    } else {
-      const newId = `session-${Date.now()}`;
-      const newSession: ChatSession = {
-        id: newId,
-        title: sessionTitle || "Study Session",
-        timestamp: new Date(),
-        messages: updatedMessages,
-      };
-      setSessions((prev) => [newSession, ...prev]);
-      setCurrentSessionId(newId);
-    }
-  };
-
   const handleStartNewChat = () => {
     setMessages([]);
     setCurrentSessionId(null);
     setActiveView("chat");
   };
 
-  const handleSelectSession = (session: ChatSession) => {
-    setMessages(session.messages);
+  const handleSelectSession = async (session: ChatSession) => {
     setCurrentSessionId(session.id);
     setActiveView("chat");
+    try {
+      const sessionData = await getSessionMessages(session.id);
+      const formattedMessages: Message[] = sessionData.messages.map((m) => ({
+        id: m.id,
+        sender: m.sender,
+        text: m.text,
+        timestamp: new Date(m.timestamp),
+      }));
+      setMessages(formattedMessages);
+    } catch (err) {
+      console.error("Failed to fetch session messages:", err);
+      setMessages(session.messages);
+    }
   };
 
-  const handleDeleteSession = (e: React.MouseEvent, id: string) => {
+  const handleDeleteSession = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    setSessions((prev) => prev.filter((s) => s.id !== id));
-    if (currentSessionId === id) {
-      setMessages([]);
-      setCurrentSessionId(null);
+    try {
+      await deleteChatSession(id);
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      if (currentSessionId === id) {
+        setMessages([]);
+        setCurrentSessionId(null);
+      }
+    } catch (err) {
+      console.error("Failed to delete session:", err);
     }
   };
 
@@ -169,16 +174,25 @@ export default function AIChatPanel({
 
     try {
       let aiText = "";
+      let returnedSessionId = currentSessionId;
+
       if (onSendMessage) {
-        const responseText = await onSendMessage(query);
-        if (responseText) aiText = responseText;
+        const responseObj = await onSendMessage(query, currentSessionId || undefined);
+        if (typeof responseObj === "string") {
+          aiText = responseObj;
+        } else if (responseObj && responseObj.answer) {
+          aiText = responseObj.answer;
+          returnedSessionId = responseObj.sessionId;
+        }
       } else {
         await new Promise((res) => setTimeout(res, 1200));
-        aiText = `Here are insights on **"${query}"** regarding ${activePdfName || courseName || "your workspace material"
-          }.`;
+        aiText = `Here are insights on **"${query}"** regarding ${activePdfName || courseName || "your workspace material"}.`;
       }
 
       if (aiText) {
+        if (returnedSessionId) {
+          setCurrentSessionId(returnedSessionId);
+        }
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
           sender: "ai",
@@ -187,7 +201,10 @@ export default function AIChatPanel({
         };
         const updatedWithAi = [...newMessages, aiMessage];
         setMessages(updatedWithAi);
-        saveCurrentSession(updatedWithAi);
+        
+        if (curriculumCourseId) {
+          fetchSessions();
+        }
       }
     } catch (err) {
       console.error("Failed to generate response:", err);

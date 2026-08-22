@@ -18,14 +18,17 @@ export interface ChatSession {
 
 interface FloatingAIChatProps {
   courseName?: string;
+  curriculumCourseId?: string;
   activePdfName?: string;
   materialId?: string;
-  onSendMessage?: (message: string) => Promise<string> | Promise<void>;
+  onSendMessage?: (message: string, sessionId?: string) => Promise<any>;
   initialQuestion?: string;
   onQuestionSent?: () => void;
 }
 
 export default function FloatingAIChat({
+  courseName,
+  curriculumCourseId,
   activePdfName,
   materialId,
   onSendMessage,
@@ -94,20 +97,13 @@ export default function FloatingAIChat({
     }
   };
 
-  // Open the chat whenever a new question comes in from outside (e.g. the
-  // PDF selection popover's "Ask AI" button). Keyed on the string itself,
-  // so re-selecting the exact same text twice in a row while the panel is
-  // already open won't fire this again — see the note on AIChatPanel below
-  // for why that's fine in practice.
-  // FloatingAIChat.tsx — replace the existing effect and add local state
-
   const [pendingQuestion, setPendingQuestion] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (initialQuestion && initialQuestion.trim()) {
-      setPendingQuestion(initialQuestion); // decoupled from the parent's copy
+      setPendingQuestion(initialQuestion);
       setIsOpen(true);
-      onQuestionSent?.(); // safe to clear the parent's state now
+      onQuestionSent?.();
     }
   }, [initialQuestion, onQuestionSent]);
 
@@ -123,12 +119,14 @@ export default function FloatingAIChat({
         <div className="mb-3 w-[380px] h-[520px] bg-[#FFFDF7] rounded-2xl shadow-2xl border border-[#DCD2B4] overflow-hidden flex flex-col">
           <AIChatPanel
             onClose={() => setIsOpen(false)}
+            courseName={courseName}
+            curriculumCourseId={curriculumCourseId}
             activePdfName={activePdfName}
             initialQuestion={pendingQuestion}
             materialId={materialId}
-            onSendMessage={(text) => {
-              setPendingQuestion(undefined); // consumed
-              return onSendMessage ? onSendMessage(text) : undefined;
+            onSendMessage={(text, sessionId) => {
+              setPendingQuestion(undefined);
+              return onSendMessage ? onSendMessage(text, sessionId) : Promise.resolve(undefined);
             }}
           />
         </div>

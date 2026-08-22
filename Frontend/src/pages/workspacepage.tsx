@@ -187,7 +187,7 @@ export default function WorkspacePage() {
     };
   }, [isDraggingModal, isResizingNotes, isResizingChat, chatWidth, showChat]);
 
-  const handleAIChatSend = async (message: string): Promise<string> => {
+  const handleAIChatSend = async (message: string, sessionId?: string) => {
     if (!material) {
       return "Please open a PDF first to chat about it.";
     }
@@ -197,8 +197,9 @@ export default function WorkspacePage() {
         material.curriculumCourseId,
         material.id,
         message,
+        sessionId,
       );
-      return result.answer;
+      return result;
     } catch (error: unknown) {
       console.error("AI chat error:", error);
       throw error;
@@ -450,7 +451,9 @@ export default function WorkspacePage() {
                 <AIChatPanel
                   isEmbedded
                   courseName={material?.courseName}
+                  curriculumCourseId={material?.curriculumCourseId}
                   activePdfName={material?.fileName}
+                  materialId={material?.id}
                   onSendMessage={handleAIChatSend}
                   onClose={() => setShowChat(false)}
                 />
@@ -463,6 +466,7 @@ export default function WorkspacePage() {
       {/* Floating AI Chat Overlay */}
       <FloatingAIChat
         courseName={material?.courseName}
+        curriculumCourseId={material?.curriculumCourseId}
         activePdfName={material?.fileName}
         materialId={material?.id}
         onSendMessage={handleAIChatSend}

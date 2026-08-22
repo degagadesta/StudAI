@@ -32,12 +32,13 @@ export const generateFlashcards = asyncHandler(async (req, res) => {
 });
 
 export const askQuestion = asyncHandler(async (req, res) => {
-  const { curriculumCourseId, materialId, question } = req.body;
+  const { curriculumCourseId, materialId, question, sessionId } = req.body;
   const result = await aiService.askAboutMaterial(
     req.studentId,
     curriculumCourseId,
     materialId,
     question,
+    sessionId,
   );
   res.status(200).json({ success: true, data: result });
 });
@@ -62,5 +63,23 @@ export const explainTopic = asyncHandler(async (req, res) => {
     curriculumCourseId,
     selectedText,
   );
+  res.status(200).json({ success: true, data: result });
+});
+
+export const getChatSessions = asyncHandler(async (req, res) => {
+  const { curriculumCourseId } = req.params;
+  const result = await aiService.getCourseChatSessions(req.studentId, curriculumCourseId);
+  res.status(200).json({ success: true, data: result });
+});
+
+export const getSessionMessages = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+  const result = await aiService.getSessionMessages(req.studentId, sessionId);
+  res.status(200).json({ success: true, data: result });
+});
+
+export const deleteChatSession = asyncHandler(async (req, res) => {
+  const { sessionId } = req.params;
+  const result = await aiService.deleteChatSession(req.studentId, sessionId);
   res.status(200).json({ success: true, data: result });
 });

@@ -68,11 +68,11 @@ export default function CoursesPage() {
       setMaterials((prevMaterials) =>
         prevMaterials.map((material) =>
           material.id === data.materialId
-            ? { ...material, status: data.status as Material['status'] }
-            : material
-        )
+            ? { ...material, status: data.status as Material["status"] }
+            : material,
+        ),
       );
-    }
+    },
   );
 
   useSocket<{ materialId: string; status: string }>(
@@ -81,25 +81,27 @@ export default function CoursesPage() {
       setMaterials((prevMaterials) =>
         prevMaterials.map((material) =>
           material.id === data.materialId
-            ? { ...material, status: data.status as Material['status'] }
-            : material
-        )
+            ? { ...material, status: data.status as Material["status"] }
+            : material,
+        ),
       );
-    }
+    },
   );
 
-  useSocket<{ materialId: string; status: string; numChunks: number; numPages: number }>(
-    "material:ready",
-    (data) => {
-      setMaterials((prevMaterials) =>
-        prevMaterials.map((material) =>
-          material.id === data.materialId
-            ? { ...material, status: data.status as Material['status'] }
-            : material
-        )
-      );
-    }
-  );
+  useSocket<{
+    materialId: string;
+    status: string;
+    numChunks: number;
+    numPages: number;
+  }>("material:ready", (data) => {
+    setMaterials((prevMaterials) =>
+      prevMaterials.map((material) =>
+        material.id === data.materialId
+          ? { ...material, status: data.status as Material["status"] }
+          : material,
+      ),
+    );
+  });
 
   useSocket<{ materialId: string; status: string; error: string }>(
     "material:failed",
@@ -107,83 +109,93 @@ export default function CoursesPage() {
       setMaterials((prevMaterials) =>
         prevMaterials.map((material) =>
           material.id === data.materialId
-            ? { ...material, status: data.status as Material['status'] }
-            : material
-        )
+            ? { ...material, status: data.status as Material["status"] }
+            : material,
+        ),
       );
-    }
+    },
   );
 
   // Listen for batch material deletions (e.g., when semester/year changes)
   useSocket<{
     trigger: string;
+    courseTitle?: string;
     summary: {
       totalDeleted: number;
       totalFailed: number;
       reason: string;
     };
-  }>(
-    "materials:batch_deleted",
-    (data) => {
-      console.log('[Coursepage] Materials batch deleted:', data);
+  }>("materials:batch_deleted", (data) => {
+    console.log("[Coursepage] Materials batch deleted:", data);
 
-      if (data.trigger === "profile_update") {
-        // Refresh materials list after profile changes that delete materials
+    if (data.trigger === "profile_update") {
+      // Refresh materials list after profile changes that delete materials
+      fetchMaterials(selectedCourse);
+
+      // Show notification if materials were deleted
+      if (data.summary.totalDeleted > 0) {
+        console.log(
+          `${data.summary.totalDeleted} materials were removed due to ${data.summary.reason}`,
+        );
+      }
+    } else if (data.trigger === "course_dropped") {
+      // Refresh both courses and materials after course drop
+      fetchEnrolledCourses();
+
+      if (selectedCourse && data.summary.totalDeleted > 0) {
+        // If the current course was dropped, clear materials
         fetchMaterials(selectedCourse);
+      }
 
-        // Show notification if materials were deleted
-        if (data.summary.totalDeleted > 0) {
-          console.log(`${data.summary.totalDeleted} materials were removed due to ${data.summary.reason}`);
-        }
-      } else if (data.trigger === "course_dropped") {
-        // Refresh both courses and materials after course drop
-        fetchEnrolledCourses();
-
-        if (selectedCourse && data.summary.totalDeleted > 0) {
-          // If the current course was dropped, clear materials
-          fetchMaterials(selectedCourse);
-        }
-
-        // Show notification
-        if (data.summary.totalDeleted > 0) {
-          const courseText = data.courseTitle ? ` from "${data.courseTitle}"` : '';
-          console.log(`Course dropped. ${data.summary.totalDeleted} materials${courseText} were removed.`);
-        }
+      // Show notification
+      if (data.summary.totalDeleted > 0) {
+        const courseText = data.courseTitle
+          ? ` from "${data.courseTitle}"`
+          : "";
+        console.log(
+          `Course dropped. ${data.summary.totalDeleted} materials${courseText} were removed.`,
+        );
       }
     }
-  );
+  });
 
   // Socket.IO listeners for real-time course updates
-  useSocket<{ curriculumCourseId: string; courseName: string; message: string }>(
-    "course:added",
-    (data) => {
-      // Refresh courses list when a course is added
-      fetchEnrolledCourses();
-    }
-  );
+  useSocket<{
+    curriculumCourseId: string;
+    courseName: string;
+    message: string;
+  }>("course:added", (data) => {
+    // Refresh courses list when a course is added
+    fetchEnrolledCourses();
+  });
 
-  useSocket<{ curriculumCourseId: string; courseName: string; deletedPDFs: number; message: string }>(
-    "course:dropped",
-    (data) => {
-      // Refresh courses list when a course is dropped
-      fetchEnrolledCourses();
-      // If current course was dropped, clear selection
-      if (selectedCourse && (selectedCourse.id === data.curriculumCourseId || (selectedCourse as any).curriculumCourseId === data.curriculumCourseId)) {
-        setSelectedCourse(null);
-        setMaterials([]);
-      }
-    }
-  );
-
-  useSocket<{ reason: string; message: string }>(
-    "courses:cleared",
-    () => {
-      console.log("[Coursepage] All enrolled courses cleared due to academic profile change");
-      setCourses([]);
+  useSocket<{
+    curriculumCourseId: string;
+    courseName: string;
+    deletedPDFs: number;
+    message: string;
+  }>("course:dropped", (data) => {
+    // Refresh courses list when a course is dropped
+    fetchEnrolledCourses();
+    // If current course was dropped, clear selection
+    if (
+      selectedCourse &&
+      (selectedCourse.id === data.curriculumCourseId ||
+        (selectedCourse as any).curriculumCourseId === data.curriculumCourseId)
+    ) {
       setSelectedCourse(null);
       setMaterials([]);
     }
-  );
+  });
+
+  useSocket<{ reason: string; message: string }>("courses:cleared", () => {
+    console.log(
+      "[Coursepage] All enrolled courses cleared due to academic profile change",
+    );
+    setCourses([]);
+    setSelectedCourse(null);
+    setMaterials([]);
+  });
 
   // Listen for local window events from SettingsModal when updated in same tab
   useEffect(() => {
@@ -257,14 +269,19 @@ export default function CoursesPage() {
     };
   }, [searchQuery, isAddModalOpen]);
 
-  // Select course card to load materials
-  const handleSelectCourse = async (course: Course) => {
-    setSelectedCourse(course);
+  // Fetch materials for a given course
+  const fetchMaterials = async (course: Course | null) => {
+    if (!course) {
+      setMaterials([]);
+      return;
+    }
     setIsLoadingMaterials(true);
     try {
       const allMaterials = await getMaterials();
       const filtered = allMaterials.filter(
         (m) =>
+          m.courseId === course.id ||
+          m.curriculumCourseId === course.id ||
           m.courseName.toLowerCase().includes(course.name.toLowerCase()) ||
           m.courseName.toLowerCase().includes(course.code.toLowerCase()),
       );
@@ -276,6 +293,12 @@ export default function CoursesPage() {
     } finally {
       setIsLoadingMaterials(false);
     }
+  };
+
+  // Select course card to load materials
+  const handleSelectCourse = async (course: Course) => {
+    setSelectedCourse(course);
+    await fetchMaterials(course);
   };
 
   // Unenroll / Drop course
@@ -419,10 +442,11 @@ export default function CoursesPage() {
                         e.preventDefault();
                       }
                     }}
-                    className={`group relative p-5 bg-surface border border-default rounded-xl transition-colors block ${isProcessing
-                      ? "cursor-not-allowed opacity-75"
-                      : "hover:border-accent cursor-pointer"
-                      }`}
+                    className={`group relative p-5 bg-surface border border-default rounded-xl transition-colors block ${
+                      isProcessing
+                        ? "cursor-not-allowed opacity-75"
+                        : "hover:border-accent cursor-pointer"
+                    }`}
                   >
                     <div className="flex items-start gap-3 mb-4 pr-6">
                       <div className="w-9 h-9 rounded-lg bg-elevated flex items-center justify-center shrink-0">
@@ -437,8 +461,9 @@ export default function CoursesPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p
-                          className={`text-sm font-medium text-primary truncate ${!isProcessing && "group-hover:underline"
-                            }`}
+                          className={`text-sm font-medium text-primary truncate ${
+                            !isProcessing && "group-hover:underline"
+                          }`}
                         >
                           {m.fileName}
                         </p>
@@ -632,10 +657,11 @@ export default function CoursesPage() {
                     <div
                       key={catCourse.id}
                       onClick={() => !isEnrolled && handleAddCourse(catCourse)}
-                      className={`p-3.5 rounded-xl border flex items-center justify-between transition-all ${isEnrolled
-                        ? "bg-[#F3EFE3] border-default opacity-75 cursor-default"
-                        : "bg-surface border-default hover:border-accent cursor-pointer hover:bg-[#FDFBF3]"
-                        }`}
+                      className={`p-3.5 rounded-xl border flex items-center justify-between transition-all ${
+                        isEnrolled
+                          ? "bg-[#F3EFE3] border-default opacity-75 cursor-default"
+                          : "bg-surface border-default hover:border-accent cursor-pointer hover:bg-[#FDFBF3]"
+                      }`}
                     >
                       <div className="min-w-0 pr-3">
                         <div className="flex items-center gap-2">
@@ -656,10 +682,11 @@ export default function CoursesPage() {
                       <button
                         type="button"
                         disabled={isEnrolled || addingCourseId === catCourse.id}
-                        className={`text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 shrink-0 ${isEnrolled
-                          ? "text-secondary bg-transparent"
-                          : "bg-accent text-[#FFFDF7] hover:bg-accent"
-                          }`}
+                        className={`text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 shrink-0 ${
+                          isEnrolled
+                            ? "text-secondary bg-transparent"
+                            : "bg-accent text-[#FFFDF7] hover:bg-accent"
+                        }`}
                       >
                         {addingCourseId === catCourse.id ? (
                           <Loader2 size={14} className="animate-spin" />

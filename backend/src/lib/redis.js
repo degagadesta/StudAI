@@ -46,50 +46,76 @@ async function initRedis() {
     }
 }
 
+// In-memory cache fallback when Redis is unavailable
+const inMemoryCache = new Map();
+
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, item] of inMemoryCache.entries()) {
+        if (item.expiresAt && item.expiresAt < now) {
+            inMemoryCache.delete(key);
+        }
+    }
+}, 60000).unref();
+
 /**
- * Get value from Redis cache
+ * Get value from Redis cache or in-memory fallback
  */
 async function cacheGet(key) {
-    if (!isConnected || !redisClient) {
-        return null;
+    if (isConnected && redisClient) {
+        try {
+            const value = await redisClient.get(key);
+            if (value) {
+                console.log(`[Redis] Cache HIT: ${key}`);
+            }
+            return value;
+        } catch (error) {
+            console.error(`[Redis] Get error for key "${key}":`, error.message);
+        }
     }
 
-    try {
-        const value = await redisClient.get(key);
-        if (value) {
-            console.log(`[Redis] Cache HIT: ${key}`);
+    const item = inMemoryCache.get(key);
+    if (item) {
+        if (item.expiresAt && item.expiresAt < Date.now()) {
+            inMemoryCache.delete(key);
+            return null;
         }
-        return value;
-    } catch (error) {
-        console.error(`[Redis] Get error for key "${key}":`, error.message);
-        return null;
+        console.log(`[Cache-Memory] Cache HIT: ${key}`);
+        return item.value;
     }
+
+    return null;
 }
 
 /**
- * Set value in Redis cache with TTL
+ * Set value in Redis cache or in-memory fallback with TTL
  */
 async function cacheSet(key, value, ttl = 300) {
-    if (!isConnected || !redisClient) {
-        return false;
+    const expiresAt = ttl > 0 ? Date.now() + ttl * 1000 : null;
+    inMemoryCache.set(key, { value, expiresAt });
+
+    if (isConnected && redisClient) {
+        try {
+            await redisClient.setEx(key, ttl, value);
+            console.log(`[Redis] Cache SET: ${key} (TTL: ${ttl}s)`);
+            return true;
+        } catch (error) {
+            console.error(`[Redis] Set error for key "${key}":`, error.message);
+        }
     }
 
-    try {
-        await redisClient.setEx(key, ttl, value);
-        console.log(`[Redis] Cache SET: ${key} (TTL: ${ttl}s)`);
-        return true;
-    } catch (error) {
-        console.error(`[Redis] Set error for key "${key}":`, error.message);
-        return false;
-    }
+    console.log(`[Cache-Memory] Cache SET: ${key} (TTL: ${ttl}s)`);
+    return true;
 }
 
 /**
  * Delete a specific key from cache
  */
 async function cacheDel(key) {
+    inMemoryCache.delete(key);
+
     if (!isConnected || !redisClient) {
-        return false;
+        return true;
     }
 
     try {
@@ -106,8 +132,20 @@ async function cacheDel(key) {
  * Delete all keys matching a pattern
  */
 async function cacheInvalidatePattern(pattern) {
+    const regexPattern = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
+    let inMemoryCount = 0;
+    for (const key of inMemoryCache.keys()) {
+        if (regexPattern.test(key)) {
+            inMemoryCache.delete(key);
+            inMemoryCount++;
+        }
+    }
+    if (inMemoryCount > 0) {
+        console.log(`[Cache-Memory] Cache INVALIDATE: ${pattern} (${inMemoryCount} keys)`);
+    }
+
     if (!isConnected || !redisClient) {
-        return false;
+        return true;
     }
 
     try {

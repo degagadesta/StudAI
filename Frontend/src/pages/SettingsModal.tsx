@@ -18,7 +18,7 @@ import CourseTab from "../components/settings/tabs/CourseTab";
 import ThemeTab from "../components/settings/tabs/ThemeTab";
 import type { SubscriptionTier } from "../utils/PlanData";
 
-type TabType = "profile" | "plan" | "course" | "theme";
+export type TabType = "profile" | "plan" | "course" | "theme";
 
 interface SettingsModalProps {
   isOpen: boolean;

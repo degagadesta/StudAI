@@ -197,6 +197,26 @@ export interface RegisterResponse {
   };
 }
 
+export interface StudentProfile {
+  id?: string;
+  studentId?: string;
+  curriculumId?: string;
+  currentYear: number;
+  currentSemester: number;
+  curriculum: {
+    id?: string;
+    name?: string;
+    department: {
+      id?: string;
+      name: string;
+      university: {
+        id?: string;
+        name: string;
+      };
+    };
+  };
+}
+
 export interface LoginPayload {
   email: string;
   password: string;
@@ -211,6 +231,7 @@ export interface LoginResponse {
     firstName: string;
   };
   hasProfile?: boolean;
+  profile?: StudentProfile | null;
 }
 
 export interface ForgotPasswordPayload {
@@ -240,6 +261,7 @@ export interface VerifyEmailResponse {
     email: string;
   };
   hasProfile: boolean;
+  profile?: StudentProfile | null;
 }
 
 export interface ApiErrorPayload {

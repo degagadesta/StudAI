@@ -10,7 +10,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
   connectionTimeoutMillis: 15000, // 30 seconds
   idleTimeoutMillis: 30000,
-  query_timeout: 30000,
+  query_timeout: 60000,
   statement_timeout: 30000,
   max: 10, // Maximum number of connections
   idleTimeoutMillis: 60000, // 1 minute

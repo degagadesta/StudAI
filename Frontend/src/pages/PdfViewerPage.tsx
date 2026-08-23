@@ -283,7 +283,7 @@ export default function PdfViewerPage({
         100,
         Math.max(0, Math.round((validPage / total) * 100)),
       );
-      updateMaterialProgress(id, percent).catch(() => { });
+      updateMaterialProgress(id, percent).catch(() => {});
     },
     [id],
   );
@@ -558,7 +558,9 @@ export default function PdfViewerPage({
                     key={`page_${pageNo}`}
                     pageNo={pageNo}
                     calculatedWidth={calculatedWidth}
-                    highlights={highlightsByPage.get(pageNo) ?? EMPTY_HIGHLIGHTS}
+                    highlights={
+                      highlightsByPage.get(pageNo) ?? EMPTY_HIGHLIGHTS
+                    }
                     pageEl={pageRefs.current.get(pageNo)}
                     isTextLayerReady={renderedPages.current.has(pageNo)}
                     onRegisterRef={registerPageRef}

@@ -1,14 +1,23 @@
 import { useEffect, useState } from "react";
-import { FileText, RefreshCw, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  FileText,
+  RefreshCw,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { generateSummary } from "../../api/aiApi";
-import FormattedMarkdown from "../Common/FormattedMarkdown";
+import FormattedMarkdown from "../common/FormattedMarkdown";
 
 interface SummaryPanelProps {
   materialId: string;
   materialName?: string;
 }
 
-export default function SummaryPanel({ materialId, materialName }: SummaryPanelProps) {
+export default function SummaryPanel({
+  materialId,
+  materialName,
+}: SummaryPanelProps) {
   const [summary, setSummary] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isCached, setIsCached] = useState(false);
@@ -24,7 +33,10 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
       setIsCached(result.cached);
     } catch (err: any) {
       console.error("Failed to generate summary:", err);
-      setError(err.response?.data?.message || "Failed to generate summary. Please try again.");
+      setError(
+        err.response?.data?.message ||
+          "Failed to generate summary. Please try again.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -52,9 +64,13 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
           </div>
           <div className="truncate">
             {materialName ? (
-              <p className="text-xs font-semibold text-primary truncate">{materialName}</p>
+              <p className="text-xs font-semibold text-primary truncate">
+                {materialName}
+              </p>
             ) : (
-              <p className="text-xs font-semibold text-primary">Document Summary</p>
+              <p className="text-xs font-semibold text-primary">
+                Document Summary
+              </p>
             )}
           </div>
         </div>
@@ -75,7 +91,9 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full min-h-[220px] text-center">
             <Loader2 size={32} className="text-accent animate-spin mb-3" />
-            <p className="text-sm font-medium text-primary">Generating AI summary...</p>
+            <p className="text-sm font-medium text-primary">
+              Generating AI summary...
+            </p>
             <p className="text-xs text-secondary mt-1">
               Analyzing course material and building key takeaways...
             </p>
@@ -85,7 +103,9 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
             <div className="w-12 h-12 rounded-full bg-error-bg flex items-center justify-center mb-3">
               <AlertCircle size={24} className="text-error" />
             </div>
-            <p className="text-sm font-medium text-primary mb-1">Failed to generate summary</p>
+            <p className="text-sm font-medium text-primary mb-1">
+              Failed to generate summary
+            </p>
             <p className="text-xs text-secondary mb-4">{error}</p>
             <button
               onClick={() => loadSummary(false)}
@@ -100,7 +120,9 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
             {isCached && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-success-bg border border-success/30 rounded-lg w-fit">
                 <CheckCircle2 size={13} className="text-success" />
-                <span className="text-[11px] font-medium text-success">Loaded from cache</span>
+                <span className="text-[11px] font-medium text-success">
+                  Loaded from cache
+                </span>
               </div>
             )}
 
@@ -112,7 +134,9 @@ export default function SummaryPanel({ materialId, materialName }: SummaryPanelP
             <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center mb-3">
               <FileText size={24} className="text-secondary" />
             </div>
-            <p className="text-sm font-medium text-primary">No summary available</p>
+            <p className="text-sm font-medium text-primary">
+              No summary available
+            </p>
             <p className="text-xs text-secondary mt-1">
               Click the button below to generate a summary of this material
             </p>

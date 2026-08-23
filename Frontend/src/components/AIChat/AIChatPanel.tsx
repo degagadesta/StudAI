@@ -12,8 +12,12 @@ import {
   Trash2,
   MessageSquare,
 } from "lucide-react";
-import FormattedMarkdown from "../Common/FormattedMarkdown";
-import { getChatSessions, getSessionMessages, deleteChatSession } from "../../api/aiApi";
+import FormattedMarkdown from "../common/FormattedMarkdown";
+import {
+  getChatSessions,
+  getSessionMessages,
+  deleteChatSession,
+} from "../../api/aiApi";
 
 export interface Message {
   id: string;
@@ -177,7 +181,10 @@ export default function AIChatPanel({
       let returnedSessionId = currentSessionId;
 
       if (onSendMessage) {
-        const responseObj = await onSendMessage(query, currentSessionId || undefined);
+        const responseObj = await onSendMessage(
+          query,
+          currentSessionId || undefined,
+        );
         if (typeof responseObj === "string") {
           aiText = responseObj;
         } else if (responseObj && responseObj.answer) {
@@ -201,7 +208,7 @@ export default function AIChatPanel({
         };
         const updatedWithAi = [...newMessages, aiMessage];
         setMessages(updatedWithAi);
-        
+
         if (curriculumCourseId) {
           fetchSessions();
         }
@@ -259,10 +266,11 @@ export default function AIChatPanel({
             onClick={() =>
               setActiveView((prev) => (prev === "chat" ? "history" : "chat"))
             }
-            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${activeView === "history"
+            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+              activeView === "history"
                 ? "bg-accent-light text-accent font-semibold"
                 : "text-secondary hover:text-primary hover:bg-surface-hover"
-              }`}
+            }`}
             title="View History"
           >
             <History size={15} />
@@ -316,10 +324,11 @@ export default function AIChatPanel({
               <div
                 key={session.id}
                 onClick={() => handleSelectSession(session)}
-                className={`group relative flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${currentSessionId === session.id
+                className={`group relative flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
+                  currentSessionId === session.id
                     ? "bg-accent-light border-accent text-accent font-medium"
                     : "bg-surface hover:bg-surface-hover border-default text-primary"
-                  }`}
+                }`}
               >
                 <div className="p-2 rounded-xl bg-elevated border border-default text-accent shrink-0 mt-0.5">
                   <MessageSquare size={14} />
@@ -389,14 +398,16 @@ export default function AIChatPanel({
               messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex gap-2.5 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"
-                    }`}
+                  className={`flex gap-2.5 ${
+                    msg.sender === "user" ? "flex-row-reverse" : "flex-row"
+                  }`}
                 >
                   <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${msg.sender === "user"
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                      msg.sender === "user"
                         ? "bg-accent text-inverse"
                         : "bg-elevated border border-default text-accent"
-                      }`}
+                    }`}
                   >
                     {msg.sender === "user" ? (
                       <User size={13} />
@@ -406,10 +417,11 @@ export default function AIChatPanel({
                   </div>
 
                   <div
-                    className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed ${msg.sender === "user"
+                    className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-[11px] leading-relaxed ${
+                      msg.sender === "user"
                         ? "bg-accent text-inverse rounded-tr-xs shadow-sm"
                         : "bg-elevated border border-default text-primary rounded-tl-xs shadow-sm"
-                      }`}
+                    }`}
                   >
                     {msg.sender === "ai" ? (
                       <FormattedMarkdown content={msg.text} />
@@ -417,10 +429,11 @@ export default function AIChatPanel({
                       <p className="whitespace-pre-wrap">{msg.text}</p>
                     )}
                     <span
-                      className={`text-[9px] block mt-1 ${msg.sender === "user"
+                      className={`text-[9px] block mt-1 ${
+                        msg.sender === "user"
                           ? "text-inverse/70 text-right"
                           : "text-secondary text-left"
-                        }`}
+                      }`}
                     >
                       {new Date(msg.timestamp).toLocaleTimeString([], {
                         hour: "2-digit",

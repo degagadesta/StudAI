@@ -79,6 +79,14 @@ export async function invalidateAcademicStructure() {
 }
 
 /**
+ * Invalidate events cache for a student
+ */
+export async function invalidateEvents(studentId) {
+    await cacheDel(`events:student:${studentId}`);
+    await cacheInvalidatePattern(`events:*:${studentId}*`);
+}
+
+/**
  * Invalidate all caches for a student (use sparingly)
  */
 export async function invalidateAllStudent(studentId) {
@@ -87,4 +95,5 @@ export async function invalidateAllStudent(studentId) {
     await invalidateAnalytics(studentId);
     await invalidateDashboard(studentId);
     await invalidateProfile(studentId);
+    await invalidateEvents(studentId);
 }

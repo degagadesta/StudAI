@@ -4,3 +4,6 @@ npm-debug.log
 .env.*
 .git
 *.md
+uploads
+dist
+coverage

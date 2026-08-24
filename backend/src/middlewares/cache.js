@@ -65,7 +65,24 @@ export function cacheStudentData(resource, ttl = 300) {
     return cacheMiddleware(
         `${resource}:student`,
         ttl,
-        (req) => `${resource}:student:${req.studentId}`
+        (req) => {
+            const baseKey = `${resource}:student:${req.studentId}`;
+            if (req.query && Object.keys(req.query).length > 0) {
+                const sortedKeys = Object.keys(req.query).sort();
+                const queryParts = [];
+                for (const key of sortedKeys) {
+                    const value = req.query[key];
+                    if (value !== undefined && value !== null) {
+                        const valStr = typeof value === "object" ? JSON.stringify(value) : String(value);
+                        queryParts.push(`${key}=${valStr}`);
+                    }
+                }
+                if (queryParts.length > 0) {
+                    return `${baseKey}:${queryParts.join("&")}`;
+                }
+            }
+            return baseKey;
+        }
     );
 }
 

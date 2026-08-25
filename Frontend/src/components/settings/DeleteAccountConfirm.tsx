@@ -45,6 +45,24 @@ export default function DeleteAccountConfirm({
 
         {requirePassword && (
           <div className="pt-2">
+            {/* Decoy username input to prevent browser/password managers from autofilling the global search input */}
+            <input
+              type="text"
+              name="username"
+              autoComplete="username"
+              style={{
+                position: "absolute",
+                width: "1px",
+                height: "1px",
+                padding: "0",
+                margin: "-1px",
+                overflow: "hidden",
+                clip: "rect(0, 0, 0, 0)",
+                whiteSpace: "nowrap",
+                border: "0",
+              }}
+              readOnly
+            />
             <div className="relative">
               <Lock
                 size={16}
@@ -52,6 +70,8 @@ export default function DeleteAccountConfirm({
               />
               <input
                 type="password"
+                name="delete-confirm-password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);

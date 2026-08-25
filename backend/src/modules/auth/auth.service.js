@@ -491,6 +491,11 @@ export async function deleteAccount(studentId, password) {
         where: { studentId },
       });
 
+      // Delete usage logs
+      await tx.usageLog.deleteMany({
+        where: { studentId },
+      });
+
       // 2. Delete upcoming events
       await tx.upcomingEvent.deleteMany({
         where: { studentId },
@@ -516,7 +521,16 @@ export async function deleteAccount(studentId, password) {
         where: { studentId },
       });
 
-      // 7. Delete chat sessions (messages will cascade automatically)
+      // 7. Delete chat messages (sessions require messages to be deleted first due to RESTRICT fkey)
+      await tx.chatMessage.deleteMany({
+        where: {
+          session: {
+            studentId,
+          },
+        },
+      });
+
+      // Delete chat sessions
       await tx.chatSession.deleteMany({
         where: { studentId },
       });

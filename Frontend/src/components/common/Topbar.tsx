@@ -85,7 +85,9 @@ export default function Topbar({
         <div className="flex items-center gap-3 shrink-0">
           <div className="relative">
             <input
-              type="text"
+              type="search"
+              name="search"
+              autoComplete="off"
               value={query}
               onChange={handleChange}
               maxLength={SEARCH_MAX_LEN}

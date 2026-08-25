@@ -3,6 +3,7 @@ import { AppError } from "../../utils/AppError.js";
 import { deletePDF } from "../pdf/pdf.service.js";
 import { emitToStudent } from "../../lib/socket.js";
 import { invalidateCourses, invalidateMaterials } from "../../utils/cacheInvalidation.js";
+import { deletePDFFromStorage } from "../../lib/supabase.js";
 
 export const getStudentCoursesByYear = async (studentId, searchQuery = null) => {
   // Check if student exists
@@ -360,6 +361,20 @@ export async function dropCourseSelection(studentId, curriculumCourseId) {
     throw new AppError("This course is not in your schedule", 404);
   }
 
+  // Query active materials to find their storage paths prior to deletion
+  const materialsToDelete = await prisma.courseMaterial.findMany({
+    where: {
+      curriculumCourseId,
+      uploadedBy: studentId,
+      status: { not: "DELETED" },
+      storagePath: { not: null },
+    },
+    select: {
+      storagePath: true,
+    },
+  });
+  const supabasePaths = materialsToDelete.map((m) => m.storagePath).filter(Boolean);
+
   // Atomically soft-delete all PDFs uploaded by this student for this course in a single query
   const deleteMaterialsResult = await prisma.courseMaterial.updateMany({
     where: {
@@ -370,6 +385,7 @@ export async function dropCourseSelection(studentId, curriculumCourseId) {
     data: {
       status: "DELETED",
       fileData: null,
+      storagePath: null,
     },
   });
 
@@ -389,6 +405,18 @@ export async function dropCourseSelection(studentId, curriculumCourseId) {
       },
     },
   });
+
+  // Clean up files in Supabase Storage asynchronously after deletion succeeds
+  if (supabasePaths.length > 0) {
+    console.log(`[Course drop] Cleaning up ${supabasePaths.length} files from Supabase Storage...`);
+    Promise.all(
+      supabasePaths.map((path) =>
+        deletePDFFromStorage(path).catch((err) =>
+          console.error(`[Course Cleanup] Failed to delete file ${path} from storage:`, err.message)
+        )
+      )
+    ).catch((err) => console.error("[Course Cleanup] Error in promise batch deletion:", err.message));
+  }
 
   // Count remaining selections
   const remainingSelections = await prisma.studentCourseSelection.count({

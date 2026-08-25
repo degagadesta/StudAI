@@ -137,6 +137,7 @@ model CourseMaterial {
   curriculumCourseId String
   fileData           Bytes?
   fileSize           Int?
+  storagePath        String?
   processingError    String?
   curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
   flashcards         Flashcard[]

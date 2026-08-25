@@ -112,6 +112,7 @@ model Student {
   upcomingEvents             UpcomingEvent[]
   UsageLog                   UsageLog[]
   weakTopics                 WeakTopic[]
+  courseMaterials            CourseMaterial[]
 }
 
 model StudentProfile {
@@ -140,6 +141,7 @@ model CourseMaterial {
   storagePath        String?
   processingError    String?
   curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  student            Student?         @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
   flashcards         Flashcard[]
   chunks             MaterialChunk[]
   highlights         PdfHighlight[]

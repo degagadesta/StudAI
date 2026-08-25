@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, ChangeEvent, DragEvent } from "react";
+import { useState, useEffect, useRef, type ChangeEvent, type DragEvent } from "react";
 import { Link } from "react-router-dom";
 import { FileText, UploadCloud, Loader2, X, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
 
@@ -53,13 +53,12 @@ function MaterialCard({ m, onDelete, onRetry, justReady }: MaterialCardProps) {
 
   const cardContent = (
     <div
-      className={`group relative p-5 bg-surface border rounded-xl transition-all duration-300 ${
-        ready
+      className={`group relative p-5 bg-surface border rounded-xl transition-all duration-300 ${ready
           ? "border-default hover-border cursor-pointer"
           : failed
-          ? "border-error/40 cursor-default"
-          : "border-default cursor-default"
-      }`}
+            ? "border-error/40 cursor-default"
+            : "border-default cursor-default"
+        }`}
     >
       {/* Delete button — always available */}
       <button
@@ -386,11 +385,10 @@ export default function StartStudyingPage() {
             fileInputRef.current?.click();
           }
         }}
-        className={`relative flex flex-col items-center justify-center p-8 min-h-[200px] rounded-2xl border-2 border-dashed transition-colors ${
-          isDragging
+        className={`relative flex flex-col items-center justify-center p-8 min-h-[200px] rounded-2xl border-2 border-dashed transition-colors ${isDragging
             ? "border-accent bg-elevated"
             : "border-default bg-surface hover-border"
-        } ${!selectedFile && uploadProgress === null ? "cursor-pointer" : ""}`}
+          } ${!selectedFile && uploadProgress === null ? "cursor-pointer" : ""}`}
       >
         <input
           ref={fileInputRef}

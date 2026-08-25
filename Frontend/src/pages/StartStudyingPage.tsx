@@ -234,6 +234,68 @@ export default function StartStudyingPage() {
     updateMaterialStatus(data.materialId, "FAILED", { processingError: data.error });
   });
 
+  useSocket<{
+    curriculumCourseId: string;
+    droppedCourse: { courseCode: string; title: string };
+    deletedPDFs: number;
+  }>("course:dropped", (data) => {
+    console.log("[StartStudyingPage] Course dropped in real-time:", data);
+    setCourses((prevCourses) => {
+      const updated = prevCourses.filter((c) => c.id !== data.curriculumCourseId);
+      setSelectedCourseId((prevSelected) => {
+        if (prevSelected === data.curriculumCourseId) {
+          return updated.length > 0 ? updated[0].id : "";
+        }
+        return prevSelected;
+      });
+      return updated;
+    });
+    setMaterials((prev) => prev.filter((m) => m.curriculumCourseId !== data.curriculumCourseId));
+  });
+
+  useSocket("course:added", () => {
+    console.log("[StartStudyingPage] Course added in real-time, refreshing...");
+    getCourses()
+      .then((coursesData) => {
+        setCourses(coursesData);
+        setSelectedCourseId((prevSelected) => {
+          if (!prevSelected && coursesData.length > 0) {
+            return coursesData[0].id;
+          }
+          return prevSelected;
+        });
+      })
+      .catch((err) => console.error("Failed to refresh courses after add:", err));
+  });
+
+  useSocket("courses:cleared", () => {
+    console.log("[StartStudyingPage] Courses cleared in real-time");
+    setCourses([]);
+    setMaterials([]);
+    setSelectedCourseId("");
+  });
+
+  useSocket<{
+    trigger: string;
+    summary: { totalDeleted: number };
+  }>("materials:batch_deleted", (data) => {
+    console.log("[StartStudyingPage] Materials batch deleted:", data);
+    if (data.trigger === "profile_update") {
+      // Re-fetch everything if profile update triggered a batch delete
+      Promise.all([getMaterials(), getCourses()])
+        .then(([materialsData, coursesData]) => {
+          setMaterials(materialsData);
+          setCourses(coursesData);
+          setSelectedCourseId((prevSelected) => {
+            const stillExists = coursesData.some((c) => c.id === prevSelected);
+            if (stillExists) return prevSelected;
+            return coursesData.length > 0 ? coursesData[0].id : "";
+          });
+        })
+        .catch((err) => console.error("Failed to refresh after batch delete:", err));
+    }
+  });
+
   // ── Initial fetch ───────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;

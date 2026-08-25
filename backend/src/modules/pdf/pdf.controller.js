@@ -76,3 +76,17 @@ export const deletePDF = asyncHandler(async (req, res) => {
 
   res.status(200).json({ success: true, message: "PDF deleted successfully" });
 });
+
+export const retryProcessing = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const result = await pdfService.retryPDFProcessing(req.studentId, id);
+
+  // Invalidate materials cache after state reset
+  await invalidateMaterials(req.studentId, id);
+
+  res.status(200).json({
+    success: true,
+    message: "PDF processing restarted successfully",
+    data: result,
+  });
+});

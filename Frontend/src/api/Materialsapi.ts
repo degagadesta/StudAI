@@ -16,7 +16,9 @@ export interface Material {
   progress: number;
   fileUrl: string; // URL to the PDF file
   status: "QUEUED" | "EXTRACTING" | "ANALYZING" | "READY" | "FAILED" | "DELETED";
+  processingError?: string | null;
 }
+
 
 // Raw shape returned by GET /student/pdfs — grouped by curriculumCourseId,
 // NOT a flat array. Kept private to this file; getMaterials() flattens it.
@@ -32,6 +34,7 @@ interface GroupedMaterialsResponse {
       uploadDate: string;
       progress: number;
       status: "QUEUED" | "EXTRACTING" | "ANALYZING" | "READY" | "FAILED" | "DELETED";
+      processingError?: string | null;
     }[];
   };
 }
@@ -55,6 +58,7 @@ export async function getMaterials(): Promise<Material[]> {
       uploadedAt: pdf.uploadDate,
       progress: pdf.progress,
       status: pdf.status,
+      processingError: pdf.processingError,
       fileUrl: `${getApiBaseUrl()}/student/pdfs/${pdf.id}/file`,
     })),
   );
@@ -128,6 +132,39 @@ export async function updateMaterialProgress(
 
 export async function deleteMaterial(id: string): Promise<void> {
   await api.delete(`/student/pdfs/${id}`);
+}
+
+export async function retryMaterialProcessing(id: string): Promise<Material> {
+  const res = await api.post<{
+    success: boolean;
+    message: string;
+    data: {
+      id: string;
+      fileName: string;
+      fileSize: number;
+      uploadDate: string;
+      curriculumCourseId: string;
+      courseId: string;
+      courseName: string;
+      progress: number;
+      status: "QUEUED" | "EXTRACTING" | "ANALYZING" | "READY" | "FAILED";
+      processingError: string | null;
+    };
+  }>(`/student/pdfs/${id}/retry`);
+
+  const d = res.data.data;
+  return {
+    id: d.id,
+    fileName: d.fileName,
+    courseName: d.courseName,
+    curriculumCourseId: d.curriculumCourseId,
+    courseId: d.courseId,
+    fileSize: d.fileSize,
+    uploadedAt: d.uploadDate,
+    progress: d.progress,
+    status: d.status,
+    fileUrl: `${getApiBaseUrl()}/student/pdfs/${d.id}/file`,
+  };
 }
 
 /**

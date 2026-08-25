@@ -54,10 +54,10 @@ function MaterialCard({ m, onDelete, onRetry, justReady }: MaterialCardProps) {
   const cardContent = (
     <div
       className={`group relative p-5 bg-surface border rounded-xl transition-all duration-300 ${ready
-          ? "border-default hover-border cursor-pointer"
-          : failed
-            ? "border-error/40 cursor-default"
-            : "border-default cursor-default"
+        ? "border-default hover-border cursor-pointer"
+        : failed
+          ? "border-error/40 cursor-default"
+          : "border-default cursor-default"
         }`}
     >
       {/* Delete button — always available */}
@@ -281,7 +281,6 @@ export default function StartStudyingPage() {
   }>("materials:batch_deleted", (data) => {
     console.log("[StartStudyingPage] Materials batch deleted:", data);
     if (data.trigger === "profile_update") {
-      // Re-fetch everything if profile update triggered a batch delete
       Promise.all([getMaterials(), getCourses()])
         .then(([materialsData, coursesData]) => {
           setMaterials(materialsData);
@@ -448,8 +447,8 @@ export default function StartStudyingPage() {
           }
         }}
         className={`relative flex flex-col items-center justify-center p-8 min-h-[200px] rounded-2xl border-2 border-dashed transition-colors ${isDragging
-            ? "border-accent bg-elevated"
-            : "border-default bg-surface hover-border"
+          ? "border-accent bg-elevated"
+          : "border-default bg-surface hover-border"
           } ${!selectedFile && uploadProgress === null ? "cursor-pointer" : ""}`}
       >
         <input

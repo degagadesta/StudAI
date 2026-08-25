@@ -79,8 +79,9 @@ export default function MaterialsProgressTable({
                     <td className="py-2.5 text-right">
                       <button
                         type="button"
-                        onClick={() => navigate(row.workspacePath)}
-                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg hover:bg-accent-light text-accent transition-colors"
+                        disabled={!row.workspacePath}
+                        onClick={() => row.workspacePath && navigate(row.workspacePath)}
+                        className="inline-flex items-center justify-center w-7 h-7 rounded-lg hover:bg-accent-light text-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                       >
                         <Eye size={15} />
                       </button>

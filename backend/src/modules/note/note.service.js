@@ -28,6 +28,13 @@ async function verifyMaterialAccess(studentId, materialId) {
         );
     }
 
+    if (material.status !== "READY") {
+        if (material.status === "FAILED") {
+            throw new AppError("This material failed to process. Try re-uploading it.", 400);
+        }
+        throw new AppError("This material is still being processed. Please wait until processing is complete.", 400);
+    }
+
     return material;
 }
 

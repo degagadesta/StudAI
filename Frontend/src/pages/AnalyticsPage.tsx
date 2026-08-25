@@ -52,9 +52,17 @@ export default function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [activity, setActivity] = useState<ActivityBreakdown | null>(null);
   const [materials, setMaterials] = useState<MaterialProgressRow[]>([]);
+  const [materialsPage, setMaterialsPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const MATERIALS_PAGE_SIZE = 10;
+  const materialsTotalPages = Math.max(1, Math.ceil(materials.length / MATERIALS_PAGE_SIZE));
+  const pagedMaterials = materials.slice(
+    (materialsPage - 1) * MATERIALS_PAGE_SIZE,
+    materialsPage * MATERIALS_PAGE_SIZE
+  );
 
 
   // Function to fetch analytics data
@@ -101,12 +109,35 @@ export default function AnalyticsPage() {
   // Listen for real-time analytics updates
   useSocket('analytics:updated', (data: { trigger: string; sessionId?: string; duration?: number }) => {
     console.log('[Analytics] Real-time update received:', data);
-
-    // Refresh analytics data when activity changes
     fetchAnalytics().catch(err => {
       console.error('[Analytics] Failed to refresh after real-time update:', err);
     });
   }, []);
+
+  useSocket("course:added", () => {
+    console.log('[Analytics] Course added, refreshing stats...');
+    fetchAnalytics().catch(err => console.error('[Analytics] Failed to refresh after course add:', err));
+  });
+
+  useSocket("course:dropped", () => {
+    console.log('[Analytics] Course dropped, refreshing stats...');
+    fetchAnalytics().catch(err => console.error('[Analytics] Failed to refresh after course drop:', err));
+  });
+
+  useSocket("courses:cleared", () => {
+    console.log('[Analytics] Courses cleared, refreshing stats...');
+    fetchAnalytics().catch(err => console.error('[Analytics] Failed to refresh after courses cleared:', err));
+  });
+
+  useSocket("materials:batch_deleted", () => {
+    console.log('[Analytics] Materials batch deleted, refreshing stats...');
+    fetchAnalytics().catch(err => console.error('[Analytics] Failed to refresh after batch delete:', err));
+  });
+
+  useSocket("material:ready", () => {
+    console.log('[Analytics] Material became ready, refreshing stats...');
+    fetchAnalytics().catch(err => console.error('[Analytics] Failed to refresh after material ready:', err));
+  });
 
   if (isLoading) {
     return (
@@ -176,7 +207,12 @@ export default function AnalyticsPage() {
 
       <ActivityBarChart data={activity} />
 
-      <MaterialsProgressTable rows={materials} />
+      <MaterialsProgressTable
+        rows={pagedMaterials}
+        page={materialsPage}
+        totalPages={materialsTotalPages}
+        onPageChange={setMaterialsPage}
+      />
     </div>
   );
 }

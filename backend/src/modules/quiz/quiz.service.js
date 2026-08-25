@@ -44,6 +44,13 @@ export async function generateQuizFromMaterial(materialId, difficulty, count = 5
     throw new AppError("Material not found", 404);
   }
 
+  if (material.status !== "READY") {
+    if (material.status === "FAILED") {
+      throw new AppError("This material failed to process. Try re-uploading it.", 400);
+    }
+    throw new AppError("This material is still being processed. Please wait until processing is complete.", 400);
+  }
+
   // Get material text basis
   let contentBasis = material.summary;
   if (!contentBasis) {

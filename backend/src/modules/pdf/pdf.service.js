@@ -7,6 +7,8 @@ import {
 import { processMaterialAsync } from "../ai/materialProcessing.service.js";
 import { uploadPDFToStorage, downloadPDFFromStorage, deletePDFFromStorage } from "../../lib/supabase.js";
 
+import { emitToStudent } from "../../lib/socket.js";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // UPLOAD PDF
 // ─────────────────────────────────────────────────────────────────────────────
@@ -154,6 +156,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
         createdAt: true,
         progress: true,
         status: true,
+        processingError: true,
 
         curriculumCourse: {
           select: {
@@ -217,6 +220,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     courseName: pdf.curriculumCourse.course.title,
     progress: pdf.progress,
     status: pdf.status,
+    processingError: pdf.processingError,
   };
 }
 
@@ -266,6 +270,7 @@ export async function getStudentPDFs(studentId) {
       createdAt: true,
       progress: true,
       status: true, // Include status so frontend can show processing state
+      processingError: true,
 
       curriculumCourse: {
         select: {
@@ -311,6 +316,7 @@ export async function getStudentPDFs(studentId) {
       uploadDate: pdf.createdAt,
       progress: pdf.progress,
       status: pdf.status,
+      processingError: pdf.processingError,
     });
   }
 
@@ -334,7 +340,7 @@ export async function getPDFFile(studentId, pdfId) {
     where: {
       id: pdfId,
       uploadedBy: studentId,
-      status: "READY",
+      status: { not: "DELETED" },
     },
 
     select: {
@@ -342,6 +348,8 @@ export async function getPDFFile(studentId, pdfId) {
       fileData: true,
       storagePath: true,
       progress: true,
+      status: true,
+      processingError: true,
     },
   });
 
@@ -360,6 +368,7 @@ export async function getPDFFile(studentId, pdfId) {
   } else if (pdf.fileData) {
     buffer = pdf.fileData;
   } else {
+
     throw new AppError("PDF content is not available", 404);
   }
 
@@ -492,5 +501,81 @@ export async function deletePDF(studentId, pdfId) {
 
   return {
     message: "PDF deleted successfully",
+  };
+}
+
+/**
+ * Reset status of failed PDF material to QUEUED and restart background processing
+ */
+export async function retryPDFProcessing(studentId, pdfId) {
+  if (!studentId) {
+    throw new AppError("Student account is required", 400);
+  }
+
+  if (!pdfId) {
+    throw new AppError("PDF ID is required", 400);
+  }
+
+  const pdf = await prisma.courseMaterial.findFirst({
+    where: {
+      id: pdfId,
+      uploadedBy: studentId,
+      status: "FAILED",
+    },
+  });
+
+  if (!pdf) {
+    throw new AppError("Failed PDF material not found", 404);
+  }
+
+  // Update status back to QUEUED and clear processingError
+  const updated = await prisma.courseMaterial.update({
+    where: { id: pdfId },
+    data: {
+      status: "QUEUED",
+      processingError: null,
+    },
+    select: {
+      id: true,
+      title: true,
+      fileSize: true,
+      createdAt: true,
+      progress: true,
+      status: true,
+      processingError: true,
+      curriculumCourse: {
+        select: {
+          id: true,
+          course: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // Emit queued status update
+  emitToStudent(studentId, "material:queued", {
+    materialId: pdfId,
+    status: "QUEUED",
+  });
+
+  // Start background processing again
+  processMaterialAsync(pdfId);
+
+  return {
+    id: updated.id,
+    fileName: updated.title,
+    fileSize: updated.fileSize,
+    uploadDate: updated.createdAt,
+    curriculumCourseId: updated.curriculumCourse.id,
+    courseId: updated.curriculumCourse.course.id,
+    courseName: updated.curriculumCourse.course.title,
+    progress: updated.progress,
+    status: updated.status,
+    processingError: updated.processingError,
   };
 }

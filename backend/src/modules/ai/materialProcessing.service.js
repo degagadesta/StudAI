@@ -227,7 +227,10 @@ export async function processMaterial(materialId) {
 
     await prisma.courseMaterial.update({
       where: { id: materialId },
-      data: { status: "FAILED" },
+      data: { 
+        status: "FAILED",
+        processingError: error.message || "Unknown error occurred during processing"
+      },
     });
 
     // Get studentId for error event with proper error handling

@@ -401,8 +401,6 @@ async function getCourseMaterialProgress(studentId) {
     progress: m.progress, // 0-100, drives the progress bar on the frontend
     courseName: m.curriculumCourse?.course?.title ?? "Unknown course",
     courseId: m.curriculumCourse?.course?.id ?? null,
-    // Workspace feature isn't built yet — frontend can disable/hide
-    // the "View" button while this is null.
-    workspaceUrl: null,
+    workspaceUrl: `/workspace/${m.id}`,
   }));
 }

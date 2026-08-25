@@ -52,9 +52,17 @@ export default function AnalyticsPage() {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [activity, setActivity] = useState<ActivityBreakdown | null>(null);
   const [materials, setMaterials] = useState<MaterialProgressRow[]>([]);
+  const [materialsPage, setMaterialsPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const MATERIALS_PAGE_SIZE = 10;
+  const materialsTotalPages = Math.max(1, Math.ceil(materials.length / MATERIALS_PAGE_SIZE));
+  const pagedMaterials = materials.slice(
+    (materialsPage - 1) * MATERIALS_PAGE_SIZE,
+    materialsPage * MATERIALS_PAGE_SIZE
+  );
 
 
   // Function to fetch analytics data
@@ -176,7 +184,12 @@ export default function AnalyticsPage() {
 
       <ActivityBarChart data={activity} />
 
-      <MaterialsProgressTable rows={materials} />
+      <MaterialsProgressTable
+        rows={pagedMaterials}
+        page={materialsPage}
+        totalPages={materialsTotalPages}
+        onPageChange={setMaterialsPage}
+      />
     </div>
   );
 }

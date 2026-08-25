@@ -22,7 +22,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
  */
 export async function extractTextFromPDF(pdfBuffer) {
   try {
-    const pdf = await pdfjsLib.getDocument({ data: pdfBuffer }).promise;
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(pdfBuffer) }).promise;
     let fullText = "";
     const numPages = pdf.numPages;
 

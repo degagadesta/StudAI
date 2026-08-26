@@ -342,21 +342,22 @@ export async function updateProfile(
         if (curriculumCourseIds.length > 0) {
           console.log(`[Profile] Found ${curriculumCourseIds.length} courses to remove for student ${studentId}`);
 
-          // Query active materials to find their storage paths prior to deletion
+          // Query active materials to find their IDs + storage paths prior to deletion
           const materialsToDelete = await tx.courseMaterial.findMany({
             where: {
               uploadedBy: studentId,
               curriculumCourseId: { in: curriculumCourseIds },
               status: { not: "DELETED" },
-              storagePath: { not: null },
             },
             select: {
+              id: true,
               storagePath: true,
             },
           });
+          const materialIds = materialsToDelete.map((m) => m.id);
           supabasePaths = materialsToDelete.map((m) => m.storagePath).filter(Boolean);
 
-          // Soft delete all materials uploaded by the student in these courses atomically within the transaction
+          // Soft delete all materials: keep records for history, clear content
           const deleteMaterialsResult = await tx.courseMaterial.updateMany({
             where: {
               uploadedBy: studentId,
@@ -365,10 +366,16 @@ export async function updateProfile(
             },
             data: {
               status: "DELETED",
+              deletedAt: new Date(),
               fileData: null,
               storagePath: null,
             },
           });
+
+          // Delete chunks/embeddings for all affected materials (free up space)
+          if (materialIds.length > 0) {
+            await tx.materialChunk.deleteMany({ where: { materialId: { in: materialIds } } });
+          }
 
           console.log(`[Profile] Soft-deleted ${deleteMaterialsResult.count} materials for student ${studentId}`);
 

@@ -145,7 +145,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
         title: file.originalname,
         fileData: null, // Keep fileData null to save DB space
         fileSize: file.size,
-        uploadedBy: studentId,
+        ...(studentId ? { student: { connect: { id: studentId } } } : {}),
         status: "QUEUED", // Changed from READY - will be updated by processing
       },
 
@@ -473,24 +473,23 @@ export async function deletePDF(studentId, pdfId) {
     throw new AppError("PDF file not found or already deleted", 404);
   }
 
-  // Soft delete:
-  // - Remove the binary data and path
-  // - Keep the record
-  // - Mark status as DELETED
-  //
-  // This means the upload still counts
-  // toward the 24-hour upload quota.
+  // Soft delete: keep record for history/quota tracking, clear binary content
+  //  - Set status = DELETED + deletedAt timestamp
+  //  - Null out fileData and storagePath (actual content gone)
+  //  - Never expose as active content
   await prisma.courseMaterial.update({
-    where: {
-      id: pdfId,
-    },
-
+    where: { id: pdfId },
     data: {
       status: "DELETED",
+      deletedAt: new Date(),
       fileData: null,
       storagePath: null,
     },
   });
+
+  // Delete chunks/embeddings — these are content-specific and take significant space.
+  // The CourseMaterial record stays for history but chunks are no longer needed.
+  await prisma.materialChunk.deleteMany({ where: { materialId: pdfId } });
 
   // Clean up Supabase storage file asynchronously
   if (pdf.storagePath) {

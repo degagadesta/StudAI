@@ -133,6 +133,7 @@ model CourseMaterial {
   status             MaterialStatus   @default(QUEUED)
   summary            String?
   createdAt          DateTime         @default(now())
+  deletedAt          DateTime?
   uploadedBy         String?
   progress           Float            @default(0)
   curriculumCourseId String
@@ -150,6 +151,7 @@ model CourseMaterial {
 
   @@index([curriculumCourseId])
   @@index([uploadedBy])
+  @@index([status])
 }
 
 model MaterialChunk {

@@ -361,21 +361,22 @@ export async function dropCourseSelection(studentId, curriculumCourseId) {
     throw new AppError("This course is not in your schedule", 404);
   }
 
-  // Query active materials to find their storage paths prior to deletion
+  // Query active materials to find their IDs + storage paths prior to deletion
   const materialsToDelete = await prisma.courseMaterial.findMany({
     where: {
       curriculumCourseId,
       uploadedBy: studentId,
       status: { not: "DELETED" },
-      storagePath: { not: null },
     },
     select: {
+      id: true,
       storagePath: true,
     },
   });
+  const materialIds = materialsToDelete.map((m) => m.id);
   const supabasePaths = materialsToDelete.map((m) => m.storagePath).filter(Boolean);
 
-  // Atomically soft-delete all PDFs uploaded by this student for this course in a single query
+  // Atomically soft-delete all PDFs: keep records for history, clear content
   const deleteMaterialsResult = await prisma.courseMaterial.updateMany({
     where: {
       curriculumCourseId,
@@ -384,10 +385,16 @@ export async function dropCourseSelection(studentId, curriculumCourseId) {
     },
     data: {
       status: "DELETED",
+      deletedAt: new Date(),
       fileData: null,
       storagePath: null,
     },
   });
+
+  // Delete chunks/embeddings for all affected materials (free up space)
+  if (materialIds.length > 0) {
+    await prisma.materialChunk.deleteMany({ where: { materialId: { in: materialIds } } });
+  }
 
   const deletionResults = {
     totalAttempted: deleteMaterialsResult.count,

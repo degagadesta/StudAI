@@ -5,6 +5,8 @@ import {
   canUploadMore,
 } from "../../lib/subscriptionLimits.js";
 import { processMaterialAsync } from "../ai/materialProcessing.service.js";
+import { uploadPDFToStorage, downloadPDFFromStorage, deletePDFFromStorage } from "../../lib/supabase.js";
+
 import { emitToStudent } from "../../lib/socket.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -126,7 +128,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // 7. Save PDF
+  // 7. Save PDF (initially without storage path or file data)
   // ───────────────────────────────────────────────────────────────────────────
 
   let pdf;
@@ -141,9 +143,9 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
         },
 
         title: file.originalname,
-        fileData: file.buffer,
+        fileData: null, // Keep fileData null to save DB space
         fileSize: file.size,
-        uploadedBy: studentId,
+        ...(studentId ? { student: { connect: { id: studentId } } } : {}),
         status: "QUEUED", // Changed from READY - will be updated by processing
       },
 
@@ -174,11 +176,40 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     throw error;
   }
 
-  // 8. Start background processing (non-blocking)
+  // 8. Upload to Supabase Storage and Update DB with path
+  const storagePath = `${studentId}/${pdf.id}/${file.originalname}`;
+
+  try {
+    await uploadPDFToStorage(storagePath, file.buffer, file.mimetype);
+  } catch (uploadError) {
+    console.error(`[Upload] Failed to upload PDF ${pdf.id} to Supabase:`, uploadError.message);
+    // Cleanup DB record
+    await prisma.courseMaterial.delete({ where: { id: pdf.id } }).catch((dbErr) => {
+      console.error("[Upload] Failed to delete record after failed storage upload:", dbErr.message);
+    });
+    throw new AppError(`Failed to save PDF to storage: ${uploadError.message}`, 500);
+  }
+
+  try {
+    await prisma.courseMaterial.update({
+      where: { id: pdf.id },
+      data: { storagePath },
+    });
+  } catch (dbUpdateError) {
+    console.error(`[Upload] Failed to update storagePath in DB for ${pdf.id}:`, dbUpdateError.message);
+    // Cleanup storage file and DB record
+    await deletePDFFromStorage(storagePath);
+    await prisma.courseMaterial.delete({ where: { id: pdf.id } }).catch((dbErr) => {
+      console.error("[Upload] Failed to delete record after failed db update:", dbErr.message);
+    });
+    throw new AppError("Failed to save storage path in database", 500);
+  }
+
+  // 9. Start background processing (non-blocking)
   console.log(`[Upload] Starting background processing for material ${pdf.id}`);
   processMaterialAsync(pdf.id);
 
-  // 9. Return metadata only
+  // 10. Return metadata only
   return {
     id: pdf.id,
     fileName: pdf.title,
@@ -315,6 +346,7 @@ export async function getPDFFile(studentId, pdfId) {
     select: {
       title: true,
       fileData: true,
+      storagePath: true,
       progress: true,
       status: true,
       processingError: true,
@@ -325,20 +357,24 @@ export async function getPDFFile(studentId, pdfId) {
     throw new AppError("PDF file not found", 404);
   }
 
-  if (pdf.status !== "READY") {
-    if (pdf.status === "FAILED") {
-      throw new AppError(`PDF processing failed: ${pdf.processingError || "Unknown error"}. Please delete or retry.`, 400);
+  let buffer;
+  if (pdf.storagePath) {
+    try {
+      buffer = await downloadPDFFromStorage(pdf.storagePath);
+    } catch (err) {
+      console.error(`[PDF Service] Failed to download PDF from storage for ${pdfId}:`, err.message);
+      throw new AppError("Failed to retrieve PDF file from storage", 500);
     }
-    throw new AppError(`PDF is still processing (Status: ${pdf.status}). Please wait until processing is complete.`, 423);
-  }
+  } else if (pdf.fileData) {
+    buffer = pdf.fileData;
+  } else {
 
-  if (!pdf.fileData) {
     throw new AppError("PDF content is not available", 404);
   }
 
   return {
     fileName: pdf.title,
-    buffer: pdf.fileData,
+    buffer,
     progress: pdf.progress,
   };
 }
@@ -429,6 +465,7 @@ export async function deletePDF(studentId, pdfId) {
 
     select: {
       id: true,
+      storagePath: true,
     },
   });
 
@@ -436,23 +473,30 @@ export async function deletePDF(studentId, pdfId) {
     throw new AppError("PDF file not found or already deleted", 404);
   }
 
-  // Soft delete:
-  // - Remove the binary data
-  // - Keep the record
-  // - Mark status as DELETED
-  //
-  // This means the upload still counts
-  // toward the 24-hour upload quota.
+  // Soft delete: keep record for history/quota tracking, clear binary content
+  //  - Set status = DELETED + deletedAt timestamp
+  //  - Null out fileData and storagePath (actual content gone)
+  //  - Never expose as active content
   await prisma.courseMaterial.update({
-    where: {
-      id: pdfId,
-    },
-
+    where: { id: pdfId },
     data: {
       status: "DELETED",
+      deletedAt: new Date(),
       fileData: null,
+      storagePath: null,
     },
   });
+
+  // Delete chunks/embeddings — these are content-specific and take significant space.
+  // The CourseMaterial record stays for history but chunks are no longer needed.
+  await prisma.materialChunk.deleteMany({ where: { materialId: pdfId } });
+
+  // Clean up Supabase storage file asynchronously
+  if (pdf.storagePath) {
+    deletePDFFromStorage(pdf.storagePath).catch((err) => {
+      console.error(`[PDF Service] Failed to delete file ${pdf.storagePath} from Supabase:`, err.message);
+    });
+  }
 
   return {
     message: "PDF deleted successfully",

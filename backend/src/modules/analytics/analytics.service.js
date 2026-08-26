@@ -398,7 +398,7 @@ async function getCourseMaterialProgress(studentId) {
     id: m.id,
     fileName: m.title,
     uploadDate: m.createdAt,
-    progress: m.progress, // 0-100, drives the progress bar on the frontend
+    progress: m.progress,
     courseName: m.curriculumCourse?.course?.title ?? "Unknown course",
     courseId: m.curriculumCourse?.course?.id ?? null,
     workspaceUrl: `/workspace/${m.id}`,

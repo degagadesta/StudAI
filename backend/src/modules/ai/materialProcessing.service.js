@@ -3,6 +3,7 @@ import { embedBatch } from "../../lib/geminiClient.js";
 import { extractTextFromPDF } from "./textExtraction.js";
 import { emitToStudent } from "../../lib/socket.js";
 import { invalidateMaterials } from "../../utils/cacheInvalidation.js";
+import { downloadPDFFromStorage } from "../../lib/supabase.js";
 
 const CHUNK_SIZE = 800;
 const CHUNK_OVERLAP = 100;
@@ -74,13 +75,24 @@ export async function processMaterial(materialId) {
       select: {
         id: true,
         fileData: true,
+        storagePath: true,
         status: true,
         uploadedBy: true,
       },
     });
 
     if (!material) throw new Error(`Material ${materialId} not found`);
-    if (!material.fileData) throw new Error(`Material ${materialId} has no file data`);
+
+    let fileBuffer;
+    if (material.storagePath) {
+      console.log(`[Processing] Downloading PDF ${materialId} from Supabase: ${material.storagePath}`);
+      fileBuffer = await downloadPDFFromStorage(material.storagePath);
+    } else if (material.fileData) {
+      console.log(`[Processing] Using local fileData fallback for PDF ${materialId}`);
+      fileBuffer = material.fileData;
+    } else {
+      throw new Error(`Material ${materialId} has no file data or storage path`);
+    }
 
     // Get studentId for Socket.IO events directly from uploadedBy
     const studentId = material.uploadedBy;
@@ -99,7 +111,7 @@ export async function processMaterial(materialId) {
     }
 
     console.log(`[Processing] Extracting text from PDF ${materialId}`);
-    const { text, numPages } = await extractTextFromPDF(material.fileData);
+    const { text, numPages } = await extractTextFromPDF(fileBuffer);
     console.log(`[Processing] Extracted ${text.length} characters from ${numPages} pages`);
 
     if (!text || text.trim().length === 0) {

@@ -112,6 +112,7 @@ model Student {
   upcomingEvents             UpcomingEvent[]
   UsageLog                   UsageLog[]
   weakTopics                 WeakTopic[]
+  courseMaterials            CourseMaterial[]
 }
 
 model StudentProfile {
@@ -132,13 +133,16 @@ model CourseMaterial {
   status             MaterialStatus   @default(QUEUED)
   summary            String?
   createdAt          DateTime         @default(now())
+  deletedAt          DateTime?
   uploadedBy         String?
   progress           Float            @default(0)
   curriculumCourseId String
   fileData           Bytes?
   fileSize           Int?
+  storagePath        String?
   processingError    String?
   curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
+  student            Student?         @relation(fields: [uploadedBy], references: [id], onDelete: SetNull)
   flashcards         Flashcard[]
   chunks             MaterialChunk[]
   highlights         PdfHighlight[]
@@ -147,6 +151,7 @@ model CourseMaterial {
 
   @@index([curriculumCourseId])
   @@index([uploadedBy])
+  @@index([status])
 }
 
 model MaterialChunk {

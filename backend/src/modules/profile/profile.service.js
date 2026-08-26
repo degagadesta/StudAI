@@ -3,6 +3,7 @@ import { AppError } from "../../utils/AppError.js";
 import { deletePDF } from "../pdf/pdf.service.js";
 import { invalidateAllStudent } from "../../utils/cacheInvalidation.js";
 import { emitToStudent } from "../../lib/socket.js";
+import { deletePDFFromStorage } from "../../lib/supabase.js";
 
 export async function getAcademicProfile(studentId) {
   const student = await prisma.student.findUnique({
@@ -336,10 +337,27 @@ export async function updateProfile(
         });
         const curriculumCourseIds = activeSelections.map((s) => s.curriculumCourseId);
 
+        let supabasePaths = [];
+
         if (curriculumCourseIds.length > 0) {
           console.log(`[Profile] Found ${curriculumCourseIds.length} courses to remove for student ${studentId}`);
 
-          // Soft delete all materials uploaded by the student in these courses atomically within the transaction
+          // Query active materials to find their IDs + storage paths prior to deletion
+          const materialsToDelete = await tx.courseMaterial.findMany({
+            where: {
+              uploadedBy: studentId,
+              curriculumCourseId: { in: curriculumCourseIds },
+              status: { not: "DELETED" },
+            },
+            select: {
+              id: true,
+              storagePath: true,
+            },
+          });
+          const materialIds = materialsToDelete.map((m) => m.id);
+          supabasePaths = materialsToDelete.map((m) => m.storagePath).filter(Boolean);
+
+          // Soft delete all materials: keep records for history, clear content
           const deleteMaterialsResult = await tx.courseMaterial.updateMany({
             where: {
               uploadedBy: studentId,
@@ -348,9 +366,16 @@ export async function updateProfile(
             },
             data: {
               status: "DELETED",
+              deletedAt: new Date(),
               fileData: null,
+              storagePath: null,
             },
           });
+
+          // Delete chunks/embeddings for all affected materials (free up space)
+          if (materialIds.length > 0) {
+            await tx.materialChunk.deleteMany({ where: { materialId: { in: materialIds } } });
+          }
 
           console.log(`[Profile] Soft-deleted ${deleteMaterialsResult.count} materials for student ${studentId}`);
 
@@ -379,8 +404,21 @@ export async function updateProfile(
       profile: updatedProfile,
       courseSelectionsCleared,
       materialsDeleted,
+      supabasePaths: supabasePaths || [],
     };
   });
+
+  // Clean up files in Supabase Storage asynchronously after transaction succeeds
+  if (result.supabasePaths && result.supabasePaths.length > 0) {
+    console.log(`[Profile] Cleaning up ${result.supabasePaths.length} files from Supabase Storage...`);
+    Promise.all(
+      result.supabasePaths.map((path) =>
+        deletePDFFromStorage(path).catch((err) =>
+          console.error(`[Profile Cleanup] Failed to delete file ${path} from storage:`, err.message)
+        )
+      )
+    ).catch((err) => console.error("[Profile Cleanup] Error in promise batch deletion:", err.message));
+  }
 
   if (result.courseSelectionsCleared) {
     try {

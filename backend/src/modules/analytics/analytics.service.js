@@ -148,12 +148,18 @@ async function getDailyActivity(studentId, now) {
   }
 
   try {
-    // Only closed sessions have a fully accurate duration
+    // Include ALL sessions with recorded duration (both closed and stale/unclosed ones).
+    // Sessions closed by browser tab closure have endedAt=null but valid duration from heartbeats.
     const sessions = await prisma.activitySession.findMany({
       where: {
         studentId,
         startedAt: { gte: startDate, lte: endDate },
-        endedAt: { not: null },
+        duration: { gt: 0 },
+        // Exclude currently active session — it's handled separately below
+        NOT: {
+          endedAt: null,
+          lastActiveAt: { gte: new Date(now.getTime() - 30 * 60 * 1000) },
+        },
       },
       select: { startedAt: true, duration: true },
     });

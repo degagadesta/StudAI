@@ -19,6 +19,8 @@ import {
 } from "./auth.validation.js";
 import { startOrResumeSession } from "../activity/activity.service.js";
 import { studentCache } from "../../lib/studentCache.js";
+import { deletePDFFromStorage } from "../../lib/supabase.js";
+import { invalidateAllStudent } from "../../utils/cacheInvalidation.js";
 
 const googleClient = new OAuth2Client(env.googleClientId);
 
@@ -483,45 +485,130 @@ export async function deleteAccount(studentId, password) {
     }
   }
 
+  let supabasePaths = [];
+
   // Perform cascade deletion in transaction
   try {
     await prisma.$transaction(async (tx) => {
-      // 1. Delete activity logs
+      // 1. Fetch all student course materials to clear their database records and Supabase objects
+      const studentMaterials = await tx.courseMaterial.findMany({
+        where: { uploadedBy: studentId },
+        select: { id: true, storagePath: true },
+      });
+      const studentMaterialIds = studentMaterials.map((m) => m.id);
+      supabasePaths = studentMaterials.map((m) => m.storagePath).filter(Boolean);
+
+      // 2. Delete dependent records of course materials first
+      if (studentMaterialIds.length > 0) {
+        // Delete flashcard reviews for student's materials
+        await tx.flashcardReview.deleteMany({
+          where: {
+            flashcard: {
+              materialId: { in: studentMaterialIds }
+            }
+          }
+        });
+
+        // Delete flashcards
+        await tx.flashcard.deleteMany({
+          where: {
+            materialId: { in: studentMaterialIds }
+          }
+        });
+
+        // Delete chunks/embeddings
+        await tx.materialChunk.deleteMany({
+          where: {
+            materialId: { in: studentMaterialIds }
+          }
+        });
+
+        // Delete pdf highlights and notes for student's materials
+        await tx.pdfHighlight.deleteMany({
+          where: {
+            materialId: { in: studentMaterialIds }
+          }
+        });
+
+        await tx.pdfNote.deleteMany({
+          where: {
+            materialId: { in: studentMaterialIds }
+          }
+        });
+
+        // Delete quiz attempts for student's quizzes
+        await tx.quizAttempt.deleteMany({
+          where: {
+            quiz: {
+              materialId: { in: studentMaterialIds }
+            }
+          }
+        });
+
+        // Delete quizzes
+        await tx.quiz.deleteMany({
+          where: {
+            materialId: { in: studentMaterialIds }
+          }
+        });
+
+        // Delete the course materials
+        await tx.courseMaterial.deleteMany({
+          where: {
+            id: { in: studentMaterialIds }
+          }
+        });
+      }
+
+      // 3. Delete student activity and usage logs
       await tx.activityLog.deleteMany({
         where: { studentId },
       });
 
-      // Delete usage logs
       await tx.usageLog.deleteMany({
         where: { studentId },
       });
 
-      // 2. Delete upcoming events
+      // Delete active activity sessions
+      await tx.activitySession.deleteMany({
+        where: { studentId },
+      });
+
+      // 4. Delete upcoming events
       await tx.upcomingEvent.deleteMany({
         where: { studentId },
       });
 
-      // 3. Delete weak topics
+      // 5. Delete weak topics
       await tx.weakTopic.deleteMany({
         where: { studentId },
       });
 
-      // 4. Delete flashcard reviews
+      // 6. Delete flashcard reviews directly completed by the student
       await tx.flashcardReview.deleteMany({
         where: { studentId },
       });
 
-      // 5. Delete quiz attempts
+      // 7. Delete quiz attempts directly completed by the student
       await tx.quizAttempt.deleteMany({
         where: { studentId },
       });
 
-      // 6. Delete exam attempts
+      // 8. Delete exam attempts directly completed by the student
       await tx.examAttempt.deleteMany({
         where: { studentId },
       });
 
-      // 7. Delete chat messages (sessions require messages to be deleted first due to RESTRICT fkey)
+      // 9. Delete pdf highlights and notes created by the student on other shared materials
+      await tx.pdfHighlight.deleteMany({
+        where: { studentId },
+      });
+
+      await tx.pdfNote.deleteMany({
+        where: { studentId },
+      });
+
+      // 10. Delete chat messages
       await tx.chatMessage.deleteMany({
         where: {
           session: {
@@ -535,18 +622,12 @@ export async function deleteAccount(studentId, password) {
         where: { studentId },
       });
 
-      // 8. Delete notes
+      // 11. Delete notes
       await tx.note.deleteMany({
         where: { studentId },
       });
 
-      // 9. Set uploadedBy to NULL for course materials (preserve materials for other students)
-      await tx.courseMaterial.updateMany({
-        where: { uploadedBy: studentId },
-        data: { uploadedBy: null },
-      });
-
-      // 10. Delete student course selections (if profile exists)
+      // 12. Delete student course selections (if profile exists)
       const profile = await tx.studentProfile.findUnique({
         where: { studentId },
         select: { id: true },
@@ -557,20 +638,37 @@ export async function deleteAccount(studentId, password) {
           where: { studentProfileId: profile.id },
         });
 
-        // 11. Delete student profile
+        // Delete student profile
         await tx.studentProfile.delete({
           where: { id: profile.id },
         });
       }
 
-      // 12. Finally, delete the student record
+      // 13. Finally, delete the student record
       await tx.student.delete({
         where: { id: studentId },
       });
     });
 
-    // Invalidate student cache immediately
+    // Clean up Supabase storage files asynchronously after transaction completes
+    if (supabasePaths.length > 0) {
+      console.log(`[Auth Cleanup] Deleting ${supabasePaths.length} student files from Supabase...`);
+      Promise.all(
+        supabasePaths.map((path) =>
+          deletePDFFromStorage(path).catch((err) =>
+            console.error(`[Auth Cleanup] Failed to delete file ${path}:`, err.message)
+          )
+        )
+      ).catch((err) => console.error("[Auth Cleanup] Supabase batch deletion error:", err.message));
+    }
+
+    // Invalidate in-memory session cache immediately
     studentCache.delete(studentId);
+
+    // Invalidate Redis caches immediately
+    await invalidateAllStudent(studentId).catch((err) => {
+      console.error("[Auth Cleanup] Redis cache invalidation error:", err.message);
+    });
 
     // Optional: Send goodbye email (outside transaction to avoid rollback if email fails)
     try {

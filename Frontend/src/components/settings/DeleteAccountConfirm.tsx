@@ -37,9 +37,9 @@ export default function DeleteAccountConfirm({
         <div>
           <h4 className="font-serif text-lg text-primary">Delete Account?</h4>
           <p className="text-xs text-secondary mt-1">
-            This action is permanent and cannot be undone. All your course
-            materials, PDF reading history, and settings will be permanently
-            removed.
+            This action is permanent and cannot be undone. All your uploaded
+            study materials (PDFs), generated flashcards, quizzes, study notes,
+            highlights, and history will be permanently deleted.
           </p>
         </div>
 

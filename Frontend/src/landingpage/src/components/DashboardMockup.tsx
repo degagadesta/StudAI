@@ -8,14 +8,14 @@ export default function DashboardMockup() {
 
       {/* Main Glassmorphism Dashboard Container */}
       <div className="glass-card rounded-2xl overflow-hidden border border-brand-border/40 shadow-2xl flex flex-col md:flex-row text-left min-h-[520px]">
-        
+
         {/* Sidebar Nav (Miniature SaaS navigation) */}
         <div className="w-full md:w-56 border-b md:border-b-0 md:border-r border-brand-border/20 p-5 bg-brand-bg-darker/35 flex flex-col gap-6">
           <div className="flex items-center gap-2 px-2">
             <GraduationCap className="w-5 h-5 text-brand-primary" />
             <span className="font-display font-bold text-sm tracking-wide text-brand-text">StudAI Space</span>
           </div>
-          
+
           <div className="flex flex-col gap-1.5">
             <span className="text-[10px] font-bold text-brand-text-muted/65 uppercase tracking-wider px-2 mb-1">Study Dashboard</span>
             {[
@@ -25,11 +25,10 @@ export default function DashboardMockup() {
             ].map((item, idx) => (
               <button
                 key={idx}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
-                  item.active
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${item.active
                     ? "bg-brand-primary/10 text-brand-primary border border-brand-primary/20"
                     : "text-brand-text-muted hover:text-brand-text hover:bg-brand-border/10"
-                }`}
+                  }`}
               >
                 <item.icon className="w-4 h-4" />
                 {item.name}
@@ -41,7 +40,7 @@ export default function DashboardMockup() {
             <div className="bg-brand-dark-green/30 border border-brand-border/30 rounded-xl p-3.5">
               <div className="flex items-center gap-1.5 text-brand-primary text-xs font-bold mb-1">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>AASTU Portal Live</span>
+                <span>Portal Live</span>
               </div>
               <p className="text-[10px] text-brand-text-muted leading-relaxed">
                 Curriculum synchronized with Software Engineering, Year 4.
@@ -68,7 +67,7 @@ export default function DashboardMockup() {
 
           {/* Grid Layout inside Dashboard */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+
             {/* Left Column: Progress & Daily Plan */}
             <div className="lg:col-span-2 flex flex-col gap-5">
               {/* Continue Studying Card */}
@@ -80,11 +79,11 @@ export default function DashboardMockup() {
                   </div>
                   <span className="text-xs font-bold text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded">82% Complete</span>
                 </div>
-                
+
                 {/* Progress bar */}
                 <div className="w-full h-1.5 bg-brand-dark-green/45 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-brand-primary rounded-full transition-all duration-1000 ease-out" 
+                  <div
+                    className="h-full bg-brand-primary rounded-full transition-all duration-1000 ease-out"
                     style={{ width: "82%" }}
                   ></div>
                 </div>
@@ -177,7 +176,7 @@ export default function DashboardMockup() {
           </div>
           <span className="text-[10px] uppercase font-bold tracking-wider text-brand-primary">AI Tutor Session</span>
         </div>
-        
+
         <div className="flex flex-col gap-3">
           <div className="bg-brand-border/15 p-2 rounded-lg text-[10px] text-brand-text text-left max-w-[85%] self-start border border-brand-border/10">
             <span className="font-bold block text-[9px] text-brand-text-muted mb-0.5">Student</span>

@@ -33,7 +33,7 @@ export default function Footer() {
     <footer className="bg-brand-bg-darker border-t border-brand-border/20 py-16 text-left relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-8 pb-12 border-b border-brand-border/10">
-          
+
           {/* Logo and Tagline */}
           <div className="md:col-span-5 flex flex-col gap-4 max-w-sm">
             <a href="#" className="flex items-center gap-3">

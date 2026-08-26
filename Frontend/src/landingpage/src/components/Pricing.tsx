@@ -44,7 +44,7 @@ export default function Pricing() {
         "Bulk student enrollment access",
         "Instructor & tutor dashboards",
         "Department-level study analytics",
-        "Custom AASTU portal integrations",
+        "Custom University portal integrations",
         "Dedicated institution support manager",
       ],
       cta: "Contact Us",
@@ -58,7 +58,7 @@ export default function Pricing() {
       <div className="glow-bg glow-green absolute top-1/3 left-1/3 w-[600px] h-[600px] opacity-10 pointer-events-none -translate-y-1/2"></div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        
+
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-12 flex flex-col items-center gap-4">
           <span className="text-xs font-bold text-brand-primary uppercase tracking-widest bg-brand-primary/10 px-3 py-1 rounded-full border border-brand-primary/25">
@@ -75,17 +75,15 @@ export default function Pricing() {
           <div className="flex items-center gap-3 bg-brand-bg-darker border border-brand-border p-1.5 rounded-full mt-6">
             <button
               onClick={() => setIsAnnual(false)}
-              className={`text-xs font-semibold px-4 py-1.5 rounded-full transition-all ${
-                !isAnnual ? "bg-brand-primary/10 text-brand-primary" : "text-brand-text-muted hover:text-brand-text"
-              }`}
+              className={`text-xs font-semibold px-4 py-1.5 rounded-full transition-all ${!isAnnual ? "bg-brand-primary/10 text-brand-primary" : "text-brand-text-muted hover:text-brand-text"
+                }`}
             >
               Monthly
             </button>
             <button
               onClick={() => setIsAnnual(true)}
-              className={`text-xs font-semibold px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
-                isAnnual ? "bg-brand-primary/10 text-brand-primary" : "text-brand-text-muted hover:text-brand-text"
-              }`}
+              className={`text-xs font-semibold px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${isAnnual ? "bg-brand-primary/10 text-brand-primary" : "text-brand-text-muted hover:text-brand-text"
+                }`}
             >
               Annually
               <span className="text-[9px] bg-brand-primary text-brand-bg font-bold px-1.5 py-0.5 rounded-full border border-brand-bg">
@@ -100,11 +98,10 @@ export default function Pricing() {
           {plans.map((plan, idx) => (
             <div
               key={idx}
-              className={`glass-card rounded-2xl p-6 md:p-8 border flex flex-col justify-between text-left transition-all duration-300 ${
-                plan.highlight
+              className={`glass-card rounded-2xl p-6 md:p-8 border flex flex-col justify-between text-left transition-all duration-300 ${plan.highlight
                   ? "border-brand-primary bg-brand-dark-green/10 shadow-[0_10px_40px_rgba(152,201,135,0.1)] relative scale-105"
                   : "border-brand-border/25"
-              }`}
+                }`}
             >
               {plan.highlight && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-brand-primary text-brand-bg text-[10px] font-bold px-3 py-1 rounded-full border-2 border-brand-bg-darker flex items-center gap-1">
@@ -146,11 +143,10 @@ export default function Pricing() {
 
               {/* Action Button */}
               <button
-                className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 hover:scale-[1.01] ${
-                  plan.highlight
+                className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 hover:scale-[1.01] ${plan.highlight
                     ? "bg-brand-primary text-brand-bg hover:bg-brand-primary-hover shadow-lg shadow-brand-primary/25"
                     : "border border-brand-border bg-brand-card hover:bg-brand-border/15 text-brand-text"
-                }`}
+                  }`}
               >
                 {plan.cta}
                 {plan.highlight && <ArrowRight className="w-4 h-4" />}

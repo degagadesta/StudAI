@@ -3,15 +3,15 @@ import { ArrowRight, Sparkles } from "lucide-react";
 export default function CTA() {
   return (
     <section id="get-started" className="relative py-24 md:py-32 bg-brand-bg-darker overflow-hidden border-b border-brand-border/20">
-      
+
       {/* Immersive radial glows */}
       <div className="glow-bg glow-green absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] opacity-25 pointer-events-none -z-10 animate-pulse-glow"></div>
 
       <div className="max-w-5xl mx-auto px-6 relative z-10">
-        
+
         {/* Glowing Box */}
         <div className="relative glass-card border border-brand-primary/25 rounded-3xl p-8 md:p-14 overflow-hidden text-center shadow-2xl flex flex-col items-center bg-gradient-to-br from-brand-dark-green/30 to-brand-bg/5 backdrop-blur-xl">
-          
+
           {/* Subtle floating visual items inside box */}
           <div className="absolute top-4 left-6 opacity-30 animate-float hidden md:block">
             <Sparkles className="w-5 h-5 text-brand-primary" />
@@ -52,7 +52,7 @@ export default function CTA() {
 
           {/* Trust badge indicator */}
           <span className="text-[10px] uppercase font-bold text-brand-primary mt-8 block tracking-widest bg-brand-primary/10 px-3 py-1 rounded-full border border-brand-primary/15 animate-pulse">
-            AASTU Course Portal Active
+            Course Portal Active
           </span>
 
         </div>

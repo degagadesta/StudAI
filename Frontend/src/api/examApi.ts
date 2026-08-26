@@ -30,6 +30,24 @@ export interface Exam {
   curriculumCourse: any;
 }
 
+export interface Curriculum {
+  id: string;
+  label: string;
+}
+
+export interface CurriculumCourseItem {
+  id: string;
+  courseCode: string;
+  year: number;
+  semester: number;
+  creditHours: number | null;
+  course: {
+    id: string;
+    title: string;
+    description: string | null;
+  };
+}
+
 /**
  * Admin: Upload past exam
  */
@@ -53,6 +71,30 @@ export async function uploadPastExam(
     headers: { "Content-Type": "multipart/form-data" },
   });
 
+  return res.data.data;
+}
+
+/**
+ * Fetch curricula for a given department
+ */
+export async function getCurriculaByDepartment(
+  departmentId: string
+): Promise<Curriculum[]> {
+  const res = await api.get<{ success: boolean; data: Curriculum[] }>(
+    `/departments/${departmentId}/curricula`
+  );
+  return res.data.data;
+}
+
+/**
+ * Fetch all CurriculumCourse records for a given curriculum
+ */
+export async function getCurriculumCourses(
+  curriculumId: string
+): Promise<CurriculumCourseItem[]> {
+  const res = await api.get<{ success: boolean; data: CurriculumCourseItem[] }>(
+    `/curricula/${curriculumId}/courses`
+  );
   return res.data.data;
 }
 

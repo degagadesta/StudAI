@@ -1,48 +1,182 @@
-import { useState } from "react";
-import { Upload, Loader2, CheckCircle2, AlertCircle, Edit2, Save, X } from "lucide-react";
-import { uploadPastExam, getExamForReview, updateQuestion, finalizeExam } from "../api/examApi";
-import type { Exam, Question } from "../api/examApi";
+import { useState, useEffect } from "react";
+import { Upload, Loader2, CheckCircle2, AlertCircle, Edit2, Save, X, ChevronDown } from "lucide-react";
+import { uploadPastExam, getExamForReview, updateQuestion, finalizeExam, getCurriculaByDepartment, getCurriculumCourses } from "../api/examApi";
+import type { Exam, Question, Curriculum, CurriculumCourseItem } from "../api/examApi";
+import { getUniversities, getDepartments } from "../api/onboardingapi";
+import type { University, Department } from "../api/onboardingapi";
+
+const SELECT_CLS = "w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed appearance-none";
+
+function SelectField({
+  label, id, value, onChange, disabled, loading, error, children,
+}: {
+  label: string; id: string; value: string;
+  onChange: (v: string) => void; disabled?: boolean;
+  loading?: boolean; error?: string | null; children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="text-sm font-semibold text-slate-700">{label}</label>
+      <div className="relative">
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled || loading}
+          className={SELECT_CLS}
+        >
+          {children}
+        </select>
+        <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+          {loading
+            ? <Loader2 size={16} className="animate-spin text-slate-400" />
+            : <ChevronDown size={16} className="text-slate-400" />}
+        </div>
+      </div>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
 
 export default function AdminExamDashboard() {
   const [activeTab, setActiveTab] = useState<"upload" | "review">("upload");
 
-  // Upload state
+  // ─── Selector state ───────────────────────────────────────────────────────
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [curricula, setCurricula] = useState<Curriculum[]>([]);
+  const [allCourses, setAllCourses] = useState<CurriculumCourseItem[]>([]);
+
+  const [selectedUniversityId, setSelectedUniversityId] = useState("");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState("");
+  const [selectedCurriculumId, setSelectedCurriculumId] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState("");
+  const [curriculumCourseId, setCurriculumCourseId] = useState("");
+
+  const [loadingDepts, setLoadingDepts] = useState(false);
+  const [loadingCurricula, setLoadingCurricula] = useState(false);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+
+  const [deptError, setDeptError] = useState<string | null>(null);
+  const [curriculaError, setCurriculaError] = useState<string | null>(null);
+  const [coursesError, setCoursesError] = useState<string | null>(null);
+
+  // ─── Upload state ─────────────────────────────────────────────────────────
   const [file, setFile] = useState<File | null>(null);
   const [examYear, setExamYear] = useState("");
   const [examType, setExamType] = useState<"MID" | "FINAL">("MID");
-  const [curriculumCourseId, setCurriculumCourseId] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Review state
+  // ─── Review state ─────────────────────────────────────────────────────────
   const [exam, setExam] = useState<Exam | null>(null);
   const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<Question>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  // Upload handler
+  // ─── Derived selections ───────────────────────────────────────────────────
+  const availableYears = [...new Set(allCourses.map((c) => c.year))].sort();
+  const availableSemesters = [...new Set(
+    allCourses.filter((c) => c.year === Number(selectedYear)).map((c) => c.semester)
+  )].sort();
+  const filteredCourses = allCourses.filter(
+    (c) => c.year === Number(selectedYear) && c.semester === Number(selectedSemester)
+  );
+
+  // ─── Load universities on mount ───────────────────────────────────────────
+  useEffect(() => {
+    getUniversities().then(setUniversities).catch(() => {});
+  }, []);
+
+  // ─── Load departments when university changes ─────────────────────────────
+  useEffect(() => {
+    if (!selectedUniversityId) return;
+    setLoadingDepts(true);
+    setDeptError(null);
+    setDepartments([]);
+    getDepartments(selectedUniversityId)
+      .then(setDepartments)
+      .catch(() => setDeptError("Failed to load departments. Please try again."))
+      .finally(() => setLoadingDepts(false));
+  }, [selectedUniversityId]);
+
+  // ─── Load curricula when department changes ───────────────────────────────
+  useEffect(() => {
+    if (!selectedDepartmentId) return;
+    setLoadingCurricula(true);
+    setCurriculaError(null);
+    setCurricula([]);
+    getCurriculaByDepartment(selectedDepartmentId)
+      .then(setCurricula)
+      .catch(() => setCurriculaError("Failed to load curricula. Please try again."))
+      .finally(() => setLoadingCurricula(false));
+  }, [selectedDepartmentId]);
+
+  // ─── Load courses when curriculum changes ─────────────────────────────────
+  useEffect(() => {
+    if (!selectedCurriculumId) return;
+    setLoadingCourses(true);
+    setCoursesError(null);
+    setAllCourses([]);
+    getCurriculumCourses(selectedCurriculumId)
+      .then(setAllCourses)
+      .catch(() => setCoursesError("Failed to load courses. Please try again."))
+      .finally(() => setLoadingCourses(false));
+  }, [selectedCurriculumId]);
+
+  // ─── Cascade clear helpers ────────────────────────────────────────────────
+  const handleUniversityChange = (id: string) => {
+    setSelectedUniversityId(id);
+    setSelectedDepartmentId(""); setDepartments([]);
+    setSelectedCurriculumId(""); setCurricula([]);
+    setSelectedYear(""); setSelectedSemester("");
+    setAllCourses([]); setCurriculumCourseId("");
+  };
+  const handleDepartmentChange = (id: string) => {
+    setSelectedDepartmentId(id);
+    setSelectedCurriculumId(""); setCurricula([]);
+    setSelectedYear(""); setSelectedSemester("");
+    setAllCourses([]); setCurriculumCourseId("");
+  };
+  const handleCurriculumChange = (id: string) => {
+    setSelectedCurriculumId(id);
+    setSelectedYear(""); setSelectedSemester("");
+    setCurriculumCourseId("");
+  };
+  const handleYearChange = (y: string) => {
+    setSelectedYear(y); setSelectedSemester(""); setCurriculumCourseId("");
+  };
+  const handleSemesterChange = (s: string) => {
+    setSelectedSemester(s); setCurriculumCourseId("");
+  };
+
+  // ─── Upload handler ───────────────────────────────────────────────────────
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploadError(null);
     if (!file || !examYear || !curriculumCourseId) {
-      alert("Please fill all fields");
+      setUploadError("Please complete all fields and select a file before uploading.");
       return;
     }
-
     setIsUploading(true);
     try {
       await uploadPastExam(file, curriculumCourseId, parseInt(examYear), examType);
       setUploadSuccess(true);
       setFile(null);
       setExamYear("");
-      setTimeout(() => setUploadSuccess(false), 3000);
+      setCurriculumCourseId("");
+      setSelectedYear(""); setSelectedSemester("");
+      setTimeout(() => setUploadSuccess(false), 5000);
     } catch (err: any) {
-      alert(`Upload failed: ${err.response?.data?.message || err.message}`);
+      setUploadError(err.response?.data?.message || err.message || "Upload failed.");
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Load exam for review
+  // ─── Review handlers ──────────────────────────────────────────────────────
   const handleLoadExam = async (examId: string) => {
     try {
       const loadedExam = await getExamForReview(examId);
@@ -51,30 +185,18 @@ export default function AdminExamDashboard() {
       alert(`Failed to load exam: ${err.message}`);
     }
   };
-
-  // Edit question
   const startEdit = (question: Question) => {
     setEditingQuestion(question.id);
     setEditValues({ ...question });
   };
-
-  // Save question
   const handleSaveQuestion = async () => {
     if (!editingQuestion) return;
-
     setIsSaving(true);
     try {
       await updateQuestion(editingQuestion, editValues);
-      
       if (exam) {
-        setExam({
-          ...exam,
-          chunks: exam.chunks.map((q) =>
-            q.id === editingQuestion ? { ...q, ...editValues } : q
-          ),
-        });
+        setExam({ ...exam, chunks: exam.chunks.map((q) => q.id === editingQuestion ? { ...q, ...editValues } : q) });
       }
-      
       setEditingQuestion(null);
       setEditValues({});
     } catch (err: any) {
@@ -83,30 +205,19 @@ export default function AdminExamDashboard() {
       setIsSaving(false);
     }
   };
-
-  // Update question status directly (Approve/Reject)
   const handleUpdateStatus = async (questionId: string, status: "VERIFIED" | "REJECTED") => {
     try {
       await updateQuestion(questionId, { status });
       if (exam) {
-        setExam({
-          ...exam,
-          chunks: exam.chunks.map((q) =>
-            q.id === questionId ? { ...q, status } : q
-          ),
-        });
+        setExam({ ...exam, chunks: exam.chunks.map((q) => q.id === questionId ? { ...q, status } : q) });
       }
     } catch (err: any) {
       alert(`Failed to update status: ${err.message}`);
     }
   };
-
-  // Finalize exam
   const handleFinalizeExam = async () => {
     if (!exam) return;
-
     if (!window.confirm("Mark this exam as READY for students?")) return;
-
     try {
       const finalizedExam = await finalizeExam(exam.id);
       setExam(finalizedExam);
@@ -115,6 +226,8 @@ export default function AdminExamDashboard() {
       alert(`Finalization failed: ${err.message}`);
     }
   };
+
+  const canSubmit = !!file && !!examYear && !!curriculumCourseId && !isUploading;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
@@ -148,68 +261,142 @@ export default function AdminExamDashboard() {
         {/* Upload Tab */}
         {activeTab === "upload" && (
           <div className="bg-white rounded-2xl shadow-lg p-8">
-            <form onSubmit={handleUpload} className="space-y-6">
-              {/* File Upload */}
-              <label className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center hover:bg-blue-50 transition cursor-pointer block">
-                <Upload className="mx-auto mb-4 text-blue-600" size={48} />
-                <span className="text-lg font-semibold text-blue-600 block">
-                  Click to upload PDF or image
-                </span>
-                <input
-                  type="file"
-                  accept=".pdf,image/*"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="hidden"
-                />
-                {file && (
-                  <p className="text-sm text-slate-600 mt-2">Selected: {file.name}</p>
-                )}
-              </label>
+            <h2 className="text-xl font-bold text-slate-800 mb-6">Upload Past Exam</h2>
+            <form onSubmit={handleUpload} className="space-y-5">
 
-              {/* Form Fields */}
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Curriculum Course ID"
-                  value={curriculumCourseId}
-                  onChange={(e) => setCurriculumCourseId(e.target.value)}
-                  className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="number"
-                  placeholder="Exam Year (e.g., 2024)"
-                  value={examYear}
-                  onChange={(e) => setExamYear(e.target.value)}
-                  className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              {/* File Upload */}
+              <div>
+                <label className="text-sm font-semibold text-slate-700 block mb-1">Exam File</label>
+                <label className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center hover:bg-blue-50 transition cursor-pointer block">
+                  <Upload className="mx-auto mb-3 text-blue-500" size={40} />
+                  <span className="text-base font-semibold text-blue-600 block">
+                    {file ? file.name : "Click to upload PDF or image"}
+                  </span>
+                  <span className="text-xs text-slate-500 mt-1 block">PDF or image, max 50 MB</span>
+                  <input
+                    type="file"
+                    accept=".pdf,image/*"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                  />
+                </label>
               </div>
 
-              {/* Exam Type */}
-              <select
-                value={examType}
-                onChange={(e) => setExamType(e.target.value as "MID" | "FINAL")}
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="MID">Mid-term Exam</option>
-                <option value="FINAL">Final Exam</option>
-              </select>
+              {/* University */}
+              <SelectField label="University" id="university" value={selectedUniversityId} onChange={handleUniversityChange}>
+                <option value="">Select a university…</option>
+                {universities.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </SelectField>
 
-              {/* Submit Button */}
+              {/* Department */}
+              <SelectField
+                label="Department" id="department" value={selectedDepartmentId}
+                onChange={handleDepartmentChange}
+                disabled={!selectedUniversityId}
+                loading={loadingDepts} error={deptError}
+              >
+                <option value="">{!selectedUniversityId ? "Select a university first" : "Select a department…"}</option>
+                {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </SelectField>
+
+              {/* Curriculum */}
+              <SelectField
+                label="Curriculum" id="curriculum" value={selectedCurriculumId}
+                onChange={handleCurriculumChange}
+                disabled={!selectedDepartmentId}
+                loading={loadingCurricula} error={curriculaError}
+              >
+                <option value="">{!selectedDepartmentId ? "Select a department first" : "Select a curriculum…"}</option>
+                {curricula.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </SelectField>
+
+              {/* Year & Semester row */}
+              <div className="grid grid-cols-2 gap-4">
+                <SelectField
+                  label="Year" id="year" value={selectedYear}
+                  onChange={handleYearChange}
+                  disabled={!selectedCurriculumId || loadingCourses}
+                  loading={loadingCourses} error={coursesError}
+                >
+                  <option value="">{!selectedCurriculumId ? "Select a curriculum first" : "Select year…"}</option>
+                  {availableYears.map((y) => <option key={y} value={String(y)}>{y === 1 ? "1st Year" : y === 2 ? "2nd Year" : y === 3 ? "3rd Year" : `${y}th Year`}</option>)}
+                </SelectField>
+
+                <SelectField
+                  label="Semester" id="semester" value={selectedSemester}
+                  onChange={handleSemesterChange}
+                  disabled={!selectedYear}
+                >
+                  <option value="">{!selectedYear ? "Select a year first" : "Select semester…"}</option>
+                  {availableSemesters.map((s) => <option key={s} value={String(s)}>Semester {s}</option>)}
+                </SelectField>
+              </div>
+
+              {/* Course */}
+              <SelectField
+                label="Course" id="course" value={curriculumCourseId}
+                onChange={setCurriculumCourseId}
+                disabled={!selectedSemester || filteredCourses.length === 0}
+              >
+                <option value="">{!selectedSemester ? "Select year & semester first" : "Select a course…"}</option>
+                {filteredCourses.map((cc) => (
+                  <option key={cc.id} value={cc.id}>
+                    {cc.course.title} — {cc.courseCode}
+                  </option>
+                ))}
+              </SelectField>
+
+              {/* Exam Type & Exam Year row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="examType" className="text-sm font-semibold text-slate-700">Exam Type</label>
+                  <div className="relative">
+                    <select
+                      id="examType"
+                      value={examType}
+                      onChange={(e) => setExamType(e.target.value as "MID" | "FINAL")}
+                      className={SELECT_CLS}
+                    >
+                      <option value="MID">Mid-term Exam</option>
+                      <option value="FINAL">Final Exam</option>
+                    </select>
+                    <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="examYear" className="text-sm font-semibold text-slate-700">Exam Year</label>
+                  <input
+                    id="examYear"
+                    type="number"
+                    placeholder="e.g. 2024"
+                    min={2000}
+                    max={2100}
+                    value={examYear}
+                    onChange={(e) => setExamYear(e.target.value)}
+                    className="px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Error */}
+              {uploadError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+                  <AlertCircle size={16} />
+                  {uploadError}
+                </div>
+              )}
+
+              {/* Submit */}
               <button
                 type="submit"
-                disabled={isUploading || !file}
-                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                disabled={!canSubmit}
+                className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
               >
                 {isUploading ? (
-                  <>
-                    <Loader2 size={20} className="animate-spin" />
-                    Uploading...
-                  </>
+                  <><Loader2 size={20} className="animate-spin" />Uploading…</>
                 ) : (
-                  <>
-                    <Upload size={20} />
-                    Upload Exam
-                  </>
+                  <><Upload size={20} />Upload Exam</>
                 )}
               </button>
 

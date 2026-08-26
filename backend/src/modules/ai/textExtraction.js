@@ -57,7 +57,7 @@ export async function extractTextFromPDF(pdfBuffer) {
 export async function extractTextFromImage(imageBuffer, mimeType) {
   try {
     console.log(`[Image OCR] Processing image with Gemini Vision (${mimeType})`);
-    
+
     const prompt = `Extract all text content from this image. 
 If this is an exam or test document, extract the complete text including:
 - All questions
@@ -76,7 +76,7 @@ Return ONLY the extracted text, preserving the original structure and formatting
     };
 
     const result = await ai.models.generateContent({
-      model: "gemini-3.1-flash",
+      model: "gemini-3.1-flash-lite",
       contents: [
         {
           parts: [

@@ -267,7 +267,7 @@ export default function RegisterPage() {
           </p>
           <div className="flex items-center gap-2 text-xs text-inverse/50 mt-7">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-light" />
-            AASTU · Software Engineering
+
           </div>
         </div>
       </div>
@@ -318,8 +318,8 @@ export default function RegisterPage() {
                   placeholder="Abebe"
                   aria-invalid={!!errors.firstName}
                   className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.firstName
-                      ? "border-error focus:border-error focus:ring-error/15"
-                      : "border-default focus:border-accent focus:ring-accent/20"
+                    ? "border-error focus:border-error focus:ring-error/15"
+                    : "border-default focus:border-accent focus:ring-accent/20"
                     }`}
                 />
                 {errors.firstName && (
@@ -347,8 +347,8 @@ export default function RegisterPage() {
                   placeholder="Bikila"
                   aria-invalid={!!errors.lastName}
                   className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.lastName
-                      ? "border-error focus:border-error focus:ring-error/15"
-                      : "border-default focus:border-accent focus:ring-accent/20"
+                    ? "border-error focus:border-error focus:ring-error/15"
+                    : "border-default focus:border-accent focus:ring-accent/20"
                     }`}
                 />
                 {errors.lastName && (
@@ -377,8 +377,8 @@ export default function RegisterPage() {
                 placeholder="yourname@aastustudent.edu.et"
                 aria-invalid={!!errors.email}
                 className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.email
-                    ? "border-error focus:border-error focus:ring-error/15"
-                    : "border-default focus:border-accent focus:ring-accent/20"
+                  ? "border-error focus:border-error focus:ring-error/15"
+                  : "border-default focus:border-accent focus:ring-accent/20"
                   }`}
               />
               {errors.email && (
@@ -404,8 +404,8 @@ export default function RegisterPage() {
                 placeholder="Create a strong password"
                 aria-invalid={!!errors.password}
                 className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.password
-                    ? "border-error focus:border-error focus:ring-error/15"
-                    : "border-default focus:border-accent focus:ring-accent/20"
+                  ? "border-error focus:border-error focus:ring-error/15"
+                  : "border-default focus:border-accent focus:ring-accent/20"
                   }`}
               />
               <button
@@ -459,8 +459,8 @@ export default function RegisterPage() {
                 placeholder="Re-enter your password"
                 aria-invalid={!!errors.confirmPassword}
                 className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.confirmPassword
-                    ? "border-error focus:border-error focus:ring-error/15"
-                    : "border-default focus:border-accent focus:ring-accent/20"
+                  ? "border-error focus:border-error focus:ring-error/15"
+                  : "border-default focus:border-accent focus:ring-accent/20"
                   }`}
               />
               <button

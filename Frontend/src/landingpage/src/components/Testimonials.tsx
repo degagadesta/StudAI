@@ -14,12 +14,12 @@ export default function Testimonials() {
     },
     {
       name: "Kalkidan Tesfaye",
-      university: "AASTU · Civil Engineering",
+      university: "ASTU · Civil Engineering",
       quote: "Studying from 100-page lecture PDFs used to be overwhelming. The Smart Summaries extract core concepts in minutes, making study sessions highly focused.",
     },
     {
       name: "Henok Alemu",
-      university: "AASTU · Computer Science",
+      university: "AAU · Computer Science",
       quote: "I ask the AI Tutor questions late at night when I'm stuck, and the answers are grounded in our exact course slides. It feels like having a personal teaching assistant.",
     },
     {
@@ -40,7 +40,7 @@ export default function Testimonials() {
       <div className="glow-bg glow-green absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] opacity-10 pointer-events-none -z-10 animate-pulse-glow"></div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        
+
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16 flex flex-col items-center gap-4">
           <span className="text-xs font-bold text-brand-primary uppercase tracking-widest bg-brand-primary/10 px-3 py-1 rounded-full border border-brand-primary/25">
@@ -64,7 +64,7 @@ export default function Testimonials() {
                 <div className="w-8 h-8 rounded-lg bg-brand-primary/5 flex items-center justify-center text-brand-primary/40 group-hover:text-brand-primary group-hover:bg-brand-primary/10 transition-all duration-300 mb-4">
                   <Quote className="w-4.5 h-4.5" />
                 </div>
-                
+
                 {/* Quote Copy */}
                 <p className="text-xs sm:text-sm text-brand-text-muted leading-relaxed italic mb-6">
                   "{rev.quote}"

@@ -28,7 +28,23 @@ export async function uploadPastExam(
   // For now, store as simple reference (in production, upload to S3/Cloud Storage)
   const fileUrl = `/exams/${file.filename || Date.now()}_${file.originalname}`;
 
-  // Create PastExam record
+
+  const course = await prisma.curriculumCourse.findUnique({
+    where: {
+      id: curriculumCourseId,
+    },
+  });
+
+  console.log("[Exam] CurriculumCourse:", course);
+
+  if (!course) {
+    throw new AppError(
+      `CurriculumCourse not found: ${curriculumCourseId}`,
+      404
+    );
+  }
+
+
   const exam = await prisma.pastExam.create({
     data: {
       year: parseInt(examYear),
@@ -148,7 +164,7 @@ async function extractPdfContent(fileBuffer, mimeType) {
   try {
     // Detect if it's an image or PDF
     const isImage = mimeType && mimeType.startsWith("image/");
-    
+
     if (isImage) {
       console.log(`[Exam Processing] Detected image file (${mimeType}), using Gemini Vision OCR`);
       // Use Gemini Vision for image OCR

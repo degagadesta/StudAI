@@ -25,6 +25,17 @@ export const getDepartmentsByUniversity = async (universityId) => {
     });
 };
 
+export const getCurriculaByDepartment = async (departmentId) => {
+    const department = await prisma.department.findUnique({ where: { id: departmentId } });
+    if (!department) throw new AppError("Department not found", 404);
+
+    return prisma.curriculum.findMany({
+        where: { departmentId },
+        select: { id: true, label: true },
+        orderBy: { label: "asc" },
+    });
+};
+
 export const getDepartmentById = async (id) => {
     return prisma.department.findUnique({
         where: {

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { getDepartments, getDepartment } from "./department.controller.js";
+import { getDepartments, getDepartment, getCurricula } from "./department.controller.js";
 
 const router = Router();
 
@@ -12,6 +12,7 @@ const browseLimiter = rateLimit({
 });
 
 router.get("/university/:universityId", browseLimiter, getDepartments);
+router.get("/:departmentId/curricula", browseLimiter, getCurricula);
 router.get("/:id", browseLimiter, getDepartment);
 
 export default router;

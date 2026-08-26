@@ -1,5 +1,6 @@
 import * as departmentService from "./department.service.js";
 import { AppError } from "../../utils/AppError.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
 export const getDepartments = async (req, res, next) => {
     try {
@@ -38,3 +39,9 @@ export const getDepartment = async (req, res, next) => {
         next(error);
     }
 };
+
+export const getCurricula = asyncHandler(async (req, res) => {
+    const { departmentId } = req.params;
+    const curricula = await departmentService.getCurriculaByDepartment(departmentId);
+    return res.status(200).json({ success: true, data: curricula });
+});

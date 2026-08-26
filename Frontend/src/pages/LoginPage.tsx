@@ -196,7 +196,7 @@ export default function LoginPage() {
           </p>
           <div className="flex items-center gap-2 text-xs text-inverse/50 mt-7">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-light" />
-            AASTU · Software Engineering
+
           </div>
         </div>
       </div>
@@ -205,8 +205,8 @@ export default function LoginPage() {
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm border-l-2 border-[#B08D4F]/50 pl-7">
           <span className="inline-flex items-center gap-1.5 font-mono text-xs text-secondary bg-elevated border border-default px-2.5 py-1 rounded-full mb-6">
-            <b className="text-accent font-semibold">AASTU</b> → Software
-            Engineering
+            <b className="text-accent font-semibold">Stud</b>AI
+
           </span>
 
           <h2 className="font-serif text-3xl text-primary mb-1.5">

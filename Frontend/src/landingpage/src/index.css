@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-bg: #0c1510;
+  --color-brand-bg-darker: #050806;
+  --color-brand-primary: #98c987;
+  --color-brand-primary-hover: #b4dcb3;
+  --color-brand-secondary: #4f7e53;
+  --color-brand-dark-green: #1a3223;
+  --color-brand-card: rgba(22, 38, 28, 0.45);
+  --color-brand-card-hover: rgba(28, 48, 36, 0.65);
+  --color-brand-border: rgba(152, 201, 135, 0.15);
+  --color-brand-border-active: rgba(152, 201, 135, 0.35);
+  --color-brand-text: #f2f6f0;
+  --color-brand-text-muted: #9ab09e;
+  
+  --font-sans: "Outfit", "Inter", system-ui, sans-serif;
+  --font-display: "Outfit", system-ui, sans-serif;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-delayed: float-delayed 7s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 4s ease-in-out infinite;
+  --animate-pulse-glow-slow: pulse-glow-slow 8s ease-in-out infinite;
+  --animate-draw-line: draw-line 2.5s ease-in-out forwards;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(0.5deg); }
+  }
+  @keyframes float-delayed {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(8px) rotate(-0.5deg); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.15; transform: scale(1); }
+    50% { opacity: 0.25; transform: scale(1.15); }
+  }
+  @keyframes pulse-glow-slow {
+    0%, 100% { opacity: 0.1; transform: scale(1) translate(0, 0); }
+    50% { opacity: 0.18; transform: scale(1.2) translate(10px, -20px); }
+  }
+  @keyframes draw-line {
+    0% { stroke-dashoffset: 100; opacity: 0.2; }
+    50% { opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 0.5; }
+  }
+}
+
+/* Custom Reset and Utilities */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-text);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-brand-bg-darker);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-brand-dark-green);
+  border-radius: 4px;
+  border: 2px solid var(--color-brand-bg-darker);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-secondary);
+}
+
+/* Glassmorphism card utilities */
+.glass-card {
+  background: var(--color-brand-card);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--color-brand-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  background: var(--color-brand-card-hover);
+  border-color: var(--color-brand-border-active);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Premium text-wrap legibility */
+h1, h2, h3 {
+  text-wrap: balance;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Atmospheric green glow */
+.glow-bg {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: plus-lighter;
+}
+
+.glow-green {
+  background: radial-gradient(circle, var(--color-brand-primary) 0%, rgba(26, 50, 35, 0.2) 70%, transparent 100%);
+}
+
+/* Study Loop animated path */
+.path-line {
+  stroke-dasharray: 8;
+  animation: dash 30s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+/* Custom interactive input shadow focus */
+.custom-focus:focus {
+  outline: none;
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 2px rgba(152, 201, 135, 0.25);
+}

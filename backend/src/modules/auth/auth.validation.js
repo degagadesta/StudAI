@@ -12,7 +12,7 @@ export function validateRegister({ firstName, lastName, email, password }) {
     }
 
     if (!email || !isValidEmail(email)) {
-        errors.push("Valid email is required");
+        errors.push("Please enter a valid email address");
     }
 
     if (!password || password.length < 8) {
@@ -32,7 +32,7 @@ export function validateRegister({ firstName, lastName, email, password }) {
     }
 
     if (errors.length > 0) {
-        throw new AppError(errors.join(", "), 400);
+        throw new AppError(errors.join(". "), 400);
     }
 }
 
@@ -40,21 +40,21 @@ export function validateLogin({ email, password }) {
     const errors = [];
 
     if (!email || !isValidEmail(email)) {
-        errors.push("Valid email is required");
+        errors.push("Please enter a valid email address");
     }
 
     if (!password || !password.trim()) {
-        errors.push("Password is required");
+        errors.push("Please enter your password");
     }
 
     if (errors.length > 0) {
-        throw new AppError(errors.join(", "), 400);
+        throw new AppError(errors.join(". "), 400);
     }
 }
 
 export function validateEmail(email) {
     if (!email || !isValidEmail(email)) {
-        throw new AppError("Valid email is required", 400);
+        throw new AppError("Please enter a valid email address", 400);
     }
 }
 
@@ -62,7 +62,7 @@ export function validateResetPassword({ token, newPassword }) {
     const errors = [];
 
     if (!token || typeof token !== "string" || token.trim().length === 0) {
-        errors.push("Reset token is required");
+        errors.push("Reset link is invalid or expired");
     }
 
     if (!newPassword || newPassword.length < 8) {
@@ -82,17 +82,37 @@ export function validateResetPassword({ token, newPassword }) {
     }
 
     if (errors.length > 0) {
-        throw new AppError(errors.join(", "), 400);
+        throw new AppError(errors.join(". "), 400);
     }
 }
 
 export function validateRefreshToken(refreshToken) {
     if (!refreshToken || typeof refreshToken !== "string" || refreshToken.trim().length === 0) {
-        throw new AppError("Refresh token is required", 400);
+        throw new AppError("Session expired. Please log in again", 400);
     }
 }
 
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+}
+
+export function validateAccountDeletion({ password, confirmDelete }) {
+    const errors = [];
+
+    // Confirmation check
+    if (confirmDelete !== true && confirmDelete !== "true") {
+        errors.push("Please confirm account deletion by setting confirmDelete to true");
+    }
+
+    // Password validation (will be checked in service based on account type)
+    if (password !== undefined && password !== null && password !== "") {
+        if (typeof password !== "string" || password.length < 8) {
+            errors.push("Password must be at least 8 characters");
+        }
+    }
+
+    if (errors.length > 0) {
+        throw new AppError(errors.join(". "), 400);
+    }
 }

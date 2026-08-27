@@ -1,8 +1,45 @@
+// Triggering nodemon reload with updated Prisma client
 import { Router } from "express";
 import authRoutes from "../modules/auth/auth.routes.js";
+import universityRoutes from "../modules/university/university.routes.js";
+import departmentRoutes from "../modules/department/department.routes.js";
+import curriculumRoutes from "../modules/curriculum/curriculum.routes.js";
+import onboardingRoutes from "../modules/onboarding/onboarding.routes.js";
+import courseRoutes from "../modules/course/course.routes.js";
+import dashboardRoutes from "../modules/dashboard/dashboard.routes.js";
+import pdfRoutes from "../modules/pdf/pdf.routes.js";
+import examRoutes from "../modules/exam/exam.routes.js";
+import analyticsRoutes from "../modules/analytics/analytics.routes.js";
+import eventRoutes from "../modules/event/event.routes.js";
+import profileRoutes from "../modules/profile/profile.routes.js";
+import activityRoutes from "../modules/activity/activity.routes.js";
+import notificationRoutes from "../modules/notification/notification.routes.js";
+
+import highlightRoutes from "../modules/highlight/highlight.routes.js";
+import noteRoutes from "../modules/note/note.routes.js";
+import aiRoutes from "../modules/ai/ai.routes.js";
+import usageRoutes from "../modules/usage/usage.routes.js";
+import quizRoutes from "../modules/quiz/quiz.routes.js";
 
 const router = Router();
-
+router.use("/student/onboarding", onboardingRoutes);
+router.use("/departments", departmentRoutes);
+router.use("/curricula", curriculumRoutes);
+router.use("/universities", universityRoutes);
 router.use("/auth", authRoutes);
+router.use("/academic-profile", profileRoutes);
+router.use("/student/courses", courseRoutes);
+router.use("/student/dashboard", dashboardRoutes);
+router.use("/student/pdfs", pdfRoutes);
+router.use("/student/exams", examRoutes);
+router.use("/student/analytics", analyticsRoutes);
+router.use("/student/events", eventRoutes);
+router.use("/notifications", notificationRoutes);
+router.use("/activity", activityRoutes);
+router.use("/student", highlightRoutes);
+router.use("/student", noteRoutes);
+router.use("/student/ai", aiRoutes);
+router.use("/student/usage", usageRoutes);
+router.use("/student/quizzes", quizRoutes);
 
 export default router;

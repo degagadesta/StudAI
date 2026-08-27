@@ -1,0 +1,47 @@
+import * as departmentService from "./department.service.js";
+import { AppError } from "../../utils/AppError.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
+
+export const getDepartments = async (req, res, next) => {
+    try {
+        const { universityId } = req.params;
+
+        if (!universityId) {
+            throw new AppError("Please select a university", 400);
+        }
+
+        const departments = await departmentService.getDepartmentsByUniversity(
+            universityId
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: departments,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getDepartment = async (req, res, next) => {
+    try {
+        const department = await departmentService.getDepartmentById(req.params.id);
+
+        if (!department) {
+            throw new AppError("Department not found", 404);
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: department,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getCurricula = asyncHandler(async (req, res) => {
+    const { departmentId } = req.params;
+    const curricula = await departmentService.getCurriculaByDepartment(departmentId);
+    return res.status(200).json({ success: true, data: curricula });
+});

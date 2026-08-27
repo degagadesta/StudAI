@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "CourseMaterial" ADD COLUMN     "fileData" BYTEA,
+ADD COLUMN     "progress" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ALTER COLUMN "fileUrl" DROP NOT NULL;

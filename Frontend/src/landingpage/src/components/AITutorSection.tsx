@@ -50,9 +50,10 @@ export default function AITutorSection() {
       ]);
     }, 1500);
   };
-
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 2 || isTyping) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, isTyping]);
 
   return (

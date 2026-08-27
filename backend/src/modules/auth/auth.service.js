@@ -648,7 +648,7 @@ export async function deleteAccount(studentId, password) {
       await tx.student.delete({
         where: { id: studentId },
       });
-    });
+    }, { timeout: 15000 })
 
     // Clean up Supabase storage files asynchronously after transaction completes
     if (supabasePaths.length > 0) {

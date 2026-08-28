@@ -22,21 +22,10 @@ interface MonthlyActivityRaw {
   days: number;
 }
 
-interface CourseMaterialProgressRaw {
-  id: string;
-  fileName: string;
-  uploadDate: string;
-  progress: number; // 0-100
-  courseName: string;
-  courseId: string | null;
-  workspaceUrl: string | null; // null until workspace feature ships
-}
-
 interface AnalyticsResponseRaw {
   enrolledCourses: number;
   totalPdfsUploaded: number;
   totalEvents: number;
-  courseProgress: CourseMaterialProgressRaw[];
   activity: {
     daily: DailyActivityRaw[];
     weekly: WeeklyActivityRaw[];
@@ -66,12 +55,17 @@ export interface ActivityBreakdown {
 export interface MaterialProgressRow {
   id: string;
   fileName: string;
-  courseName: string;
+  courseName?: string;
   uploadedAt: string;
   progress: number;
-  // No workspace route yet — frontend should disable/hide the "View"
-  // action while this is null.
-  workspacePath: string | null;
+  workspacePath: string;
+}
+
+export interface MaterialsPage {
+  rows: MaterialProgressRow[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 // ── Normalization ────────────────────────────────────────────────────────
@@ -86,40 +80,30 @@ function normalizeActivity(
   };
 }
 
-function normalizeMaterials(
-  raw: CourseMaterialProgressRaw[],
-): MaterialProgressRow[] {
-  return raw.map((m) => ({
-    id: m.id,
-    fileName: m.fileName,
-    courseName: m.courseName,
-    uploadedAt: m.uploadDate,
-    progress: m.progress,
-    workspacePath: m.workspaceUrl,
-  }));
-}
-
 // ── Requests ─────────────────────────────────────────────────────────────
 
 export async function getAnalytics(): Promise<{
   summary: AnalyticsSummary;
   activity: ActivityBreakdown;
-  materials: MaterialProgressRow[];
 }> {
   const res = await api.get<{ success: boolean; data: AnalyticsResponseRaw }>(
-    "/student/analytics",
+    "/student/analytics"
   );
-  const {
-    enrolledCourses,
-    totalPdfsUploaded,
-    totalEvents,
-    courseProgress,
-    activity,
-  } = res.data.data;
+  const { enrolledCourses, totalPdfsUploaded, totalEvents, activity } =
+    res.data.data;
 
   return {
     summary: { enrolledCourses, totalPdfsUploaded, totalEvents },
     activity: normalizeActivity(activity),
-    materials: normalizeMaterials(courseProgress),
   };
+}
+
+export async function getMaterialsProgress(
+  page = 1,
+  limit = 8,
+): Promise<MaterialsPage> {
+  const res = await api.get<MaterialsPage>("/analytics/materials", {
+    params: { page, limit },
+  });
+  return res.data;
 }

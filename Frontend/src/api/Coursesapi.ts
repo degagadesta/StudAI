@@ -1,17 +1,12 @@
 import { api } from "./client";
 
 export interface AcademicProfile {
-  fullName?: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
+  fullName: string;
   university: string;
   department: string;
-  subscriptionPlan?: "FREE" | "STANDARD" | "PRO";
+  subscriptionPlan: "FREE" | "STANDARD" | "PRO";
   year: number;
   semester: number;
-  currentYear?: number;
-  currentSemester?: number;
 }
 
 export interface CoursePdf {
@@ -26,155 +21,46 @@ export interface Course {
   courseId: string; // generic Course id, for reference only
   code: string;
   name: string;
-  description: string | null;
-  creditHours?: number | null;
-  year?: number;
-  semester?: number;
-  pdfs?: CoursePdf[];
+  description: string;
+  pdfs: CoursePdf[];
   pdfCount: number;
-  isEnrolled?: boolean; // only present on catalog results
 }
-
-
 
 export async function getAcademicProfile(): Promise<AcademicProfile> {
-  const res = await api.get<{
-    success: boolean;
-    data: {
-      fullName: string;
-      university: string;
-      department: string;
-      year: number;
-      semester: number;
-    };
-  }>("/academic-profile");
-
-  console.log("[Coursesapi] getAcademicProfile response:", res.data);
-
-  // Transform backend response to match frontend interface
-  return {
-    fullName: res.data.data.fullName,
-    university: res.data.data.university,
-    department: res.data.data.department,
-    year: res.data.data.year,
-    semester: res.data.data.semester,
-    currentYear: res.data.data.year,
-    currentSemester: res.data.data.semester,
-  };
+  const res = await api.get<{ success: boolean; data: AcademicProfile }>(
+    "/academic-profile",
+  );
+  return res.data.data;
 }
 
-export async function getCourses(searchQuery?: string): Promise<Course[]> {
-  const params = searchQuery ? { search: searchQuery } : {};
+export async function getCourses(): Promise<Course[]> {
+  // Backend infers year/semester from the authenticated user's profile —
+  // no query params needed here.
   const res = await api.get<{ success: boolean; data: Course[] }>(
     "/student/courses",
-    { params },
-  );
-  // Ensure pdfs array exists and pdfCount is set
-  return res.data.data.map((course) => ({
-    ...course,
-    pdfs: course.pdfs || [],
-    pdfCount: course.pdfCount || (course.pdfs || []).length,
-  }));
-}
-export async function getAllCourses(searchQuery?: string): Promise<Course[]> {
-  const params = searchQuery ? { search: searchQuery } : {};
-  const res = await api.get<{ success: boolean; data: Course[] }>(
-    "/getAllNotes/student/courses",
-    { params },
   );
   return res.data.data;
 }
 
-export async function getAvailableCourses(
-  searchQuery?: string,
-): Promise<Course[]> {
-  const res = await api.get<{ success: boolean; data: Course[] }>(
-    "/student/courses/catalog",
-    { params: searchQuery?.trim() ? { search: searchQuery.trim() } : {} },
-  );
+export async function getAvailableCourses(): Promise<Course[]> {
+  // Fetches available department courses from the database
+  const res = await api.get<{ success: boolean; data: Course[] }>("/courses");
   return res.data.data;
 }
 
-export async function addCourseSelection(curriculumCourseId: string): Promise<{
-  success: boolean;
-  message: string;
-  data: {
-    selectionId: string;
-    course: {
-      courseCode: string;
-      title: string;
-      year: number;
-      semester: number;
-      creditHours: number | null;
-    };
-    currentSelections: number;
-    selectedAt: string;
-  };
-}> {
-  const res = await api.post("/student/courses/select", { curriculumCourseId });
-  return res.data;
+export async function deleteCourse(courseId: string): Promise<void> {
+  await api.delete(`/courses/${courseId}`);
 }
 
-export async function dropCourseSelection(curriculumCourseId: string): Promise<{
-  success: boolean;
-  message: string;
-  warning?: string;
-  data: {
-    droppedCourse: {
-      courseCode: string;
-      title: string;
-    };
-    deletedPDFs: number;
-    remainingSelections: number;
-  };
-}> {
-  const res = await api.delete(`/student/courses/select/${curriculumCourseId}`);
-  return res.data;
+export async function createCourse(courseId: string): Promise<void> {
+  await api.post(`/courses`, { courseId });
 }
 
-// Legacy aliases for backward compatibility
-export async function deleteCourse(curriculumCourseId: string): Promise<void> {
-  await dropCourseSelection(curriculumCourseId);
-}
-
-export async function createCourse(curriculumCourseId: string): Promise<void> {
-  await addCourseSelection(curriculumCourseId);
-}
-
-export async function updateAcademicProfile(updates: {
-  firstName?: string;
-  lastName?: string;
-  currentYear?: number;
-  currentSemester?: number;
-}): Promise<{
-  profile: AcademicProfile;
-  warning?: string;
-}> {
-  const res = await api.patch<{
-    success: boolean;
-    message: string;
-    data: {
-      id: string;
-      firstName: string;
-      lastName: string;
-      email: string;
-      currentYear?: number;
-      currentSemester?: number;
-      curriculumId?: string;
-      courseSelectionsCleared?: boolean;
-    };
-  }>("/academic-profile/profileUpdate", updates);
-
-  // After update, fetch the full profile again to get all data
-  const updatedProfile = await getAcademicProfile();
-
-  // Check if course selections were cleared
-  const warning = res.data.data.courseSelectionsCleared
-    ? "Year or semester changed. Your previous course selections have been cleared. Please select courses for your new academic period."
-    : undefined;
-
-  return {
-    profile: updatedProfile,
-    warning,
-  };
+export async function uploadCoursePdf(
+  courseId: string,
+  file: File,
+): Promise<void> {
+  const formData = new FormData();
+  formData.append("file", file);
+  await api.post(`/courses/${courseId}/pdfs`, formData);
 }

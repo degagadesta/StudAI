@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+// import {
+//   getAcademicProfile,
+//   getCourses,
+//   createCourse,
+//   type AcademicProfile,
+//   type Course,
+//   type CreateCoursePayload,
+// } from "../../api/Coursesapi";
+
 import {
   getAcademicProfile,
   getCourses,
-  addCourseSelection,
-  dropCourseSelection,
-  updateAcademicProfile,
+  createCourse,
   type AcademicProfile,
   type Course,
 } from "../api/Coursesapi";
-import { deleteAccount } from "../api/authApi";
+
 import SettingsSidebar from "../components/settings/SettingsSidebar";
 import DeleteAccountConfirm from "../components/settings/DeleteAccountConfirm";
 import ProfileTab from "../components/settings/tabs/ProfileTab";
@@ -18,11 +25,8 @@ import CourseTab from "../components/settings/tabs/CourseTab";
 import ThemeTab from "../components/settings/tabs/ThemeTab";
 import type { SubscriptionTier } from "../utils/PlanData";
 
-export type TabType = "profile" | "plan" | "course" | "theme";
-
 interface SettingsModalProps {
   isOpen: boolean;
-  initialTab?: TabType;
   onClose: () => void;
   onLogout?: () => void;
   onDeleteAccount?: () => void;
@@ -30,19 +34,11 @@ interface SettingsModalProps {
 
 export default function SettingsModal({
   isOpen,
-  initialTab,
   onClose,
   onLogout,
   onDeleteAccount,
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<TabType>(initialTab || "profile");
-
-  // Update active tab when initialTab prop changes
-  useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
+  const [activeTab, setActiveTab] = useState<TabType>("profile");
 
   // Profile
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
@@ -52,76 +48,77 @@ export default function SettingsModal({
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [requirePassword, setRequirePassword] = useState(false);
 
   // Plan
   const [currentPlan, setCurrentPlan] = useState<SubscriptionTier>("free");
 
   // Courses
+  const [autoLoadMaterials, setAutoLoadMaterials] = useState(true);
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
+  const [showAddCourse, setShowAddCourse] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [newName, setNewName] = useState("");
+  const [newCredits, setNewCredits] = useState("");
+  const [isCreatingCourse, setIsCreatingCourse] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  // Load profile when modal opens
   useEffect(() => {
     if (!isOpen) return;
-    loadProfile();
+    let isMounted = true;
+
+    (async () => {
+      setIsLoadingProfile(true);
+      setErrorMessage(null);
+      try {
+        const data = await getAcademicProfile();
+        if (isMounted) setProfile(data);
+      } catch (err: any) {
+        if (isMounted) {
+          console.error("Error loading academic profile:", err);
+          setErrorMessage(
+            err?.response?.data?.message ||
+              "Unable to load profile from server. Please check your connection.",
+          );
+        }
+      } finally {
+        if (isMounted) setIsLoadingProfile(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
   }, [isOpen]);
 
-  // Load courses when modal opens or when switching to course tab
   useEffect(() => {
     if (!isOpen) return;
-    if (activeTab === "course") {
-      loadCourses();
-    }
-  }, [isOpen, activeTab]);
+    let isMounted = true;
 
-  const loadProfile = async () => {
-    console.log('[SettingsModal] Loading profile...');
-    setIsLoadingProfile(true);
-    setErrorMessage(null);
-    try {
-      const data = await getAcademicProfile();
-      console.log('[SettingsModal] Profile loaded:', data);
-      setProfile(data);
-      // Set subscription plan if available in the profile
-      if (data.subscriptionPlan) {
-        setCurrentPlan(data.subscriptionPlan.toLowerCase() as SubscriptionTier);
+    (async () => {
+      setIsLoadingCourses(true);
+      setCoursesError(null);
+      try {
+        const data = await getCourses();
+        if (isMounted) setCourses(data);
+      } catch (err: any) {
+        if (isMounted) {
+          console.error("Error loading courses:", err);
+          setCoursesError(
+            err?.response?.data?.message ||
+              "Unable to load your courses. Please check your connection.",
+          );
+        }
+      } finally {
+        if (isMounted) setIsLoadingCourses(false);
       }
-      
-      // Determine if password is required for account deletion
-      // If user has Google sign-in only, password is not required
-      // This would need to be part of the profile response from backend
-      // For now, we'll assume password is required unless specified otherwise
-      setRequirePassword(true);
-    } catch (err: any) {
-      console.error("Error loading academic profile:", err);
-      setErrorMessage(
-        err?.response?.data?.message ||
-          "Unable to load profile from server. Please check your connection.",
-      );
-    } finally {
-      setIsLoadingProfile(false);
-    }
-  };
+    })();
 
-  const loadCourses = async () => {
-    setIsLoadingCourses(true);
-    setCoursesError(null);
-    try {
-      const data = await getCourses();
-      setCourses(data);
-    } catch (err: any) {
-      console.error("Error loading courses:", err);
-      setCoursesError(
-        err?.response?.data?.message ||
-          "Unable to load your courses. Please check your connection.",
-      );
-    } finally {
-      setIsLoadingCourses(false);
-    }
-  };
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   const handleLogout = () => {
     onClose();
@@ -133,93 +130,55 @@ export default function SettingsModal({
     }
   };
 
-  const handleConfirmDelete = async (password?: string) => {
+  const handleConfirmDelete = async () => {
     setIsDeleting(true);
-    setDeleteError(null);
-    
     try {
-      await deleteAccount(password);
-      
-      // Account deleted successfully
-      // Close modal and redirect to login
+      if (onDeleteAccount) await onDeleteAccount();
       onClose();
-      
-      // Clear any remaining local storage
-      localStorage.clear();
-      
-      // Redirect to login page
-      window.location.href = "/login";
-    } catch (error: any) {
+    } catch (error) {
       console.error("Failed to delete account:", error);
-      const errorMsg = error?.response?.data?.message || 
-                      error?.response?.data?.error ||
-                      "Failed to delete account. Please try again.";
-      setDeleteError(errorMsg);
-      alert(errorMsg);
     } finally {
       setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
-  const handleUpdateProfile = async (updates: {
-    firstName: string;
-    lastName: string;
-    currentYear: number;
-    currentSemester: number;
-  }) => {
-    try {
-      console.log('[SettingsModal] Updating profile with:', updates);
-      const result = await updateAcademicProfile(updates);
-      console.log('[SettingsModal] Update result:', result);
-      
-      await loadProfile(); // Refresh profile
-      
-      if (result.courseSelectionsCleared) {
-        window.dispatchEvent(new CustomEvent("courses:cleared"));
-      } else {
-        window.dispatchEvent(new CustomEvent("courses:updated"));
-      }
-
-      // Show warning if course selections were cleared
-      if (result.warning) {
-        alert(result.warning);
-      }
-    } catch (error: any) {
-      console.error("Failed to update profile:", error);
-      throw error; // Re-throw to let ProfileTab handle the error
-    }
+  const resetAddCourseForm = () => {
+    setNewCode("");
+    setNewName("");
+    setNewCredits("");
+    setCreateError(null);
   };
 
-  const handleAddCourse = async (curriculumCourseId: string) => {
-    try {
-      const result = await addCourseSelection(curriculumCourseId);
-      console.log("Course added:", result.message);
-      // Refresh courses to show the newly added course
-      await loadCourses();
-    } catch (error: any) {
-      console.error("Failed to add course:", error);
-      const errorMsg = error?.response?.data?.message || "Failed to add course";
-      alert(errorMsg);
-      throw error; // Re-throw so AddCourseModal knows it failed
-    }
-  };
+  const handleCreateCourse = async () => {
+    const code = newCode.trim();
+    const name = newName.trim();
+    const credits = Number(newCredits);
 
-  const handleRemoveCourse = async (curriculumCourseId: string) => {
+    if (!code) return setCreateError("Course code is required.");
+    if (!name) return setCreateError("Course name is required.");
+    if (!Number.isFinite(credits) || credits <= 0 || credits > 20) {
+      return setCreateError("Credits must be a number between 1 and 20.");
+    }
+
+    setIsCreatingCourse(true);
+    setCreateError(null);
     try {
-      const result = await dropCourseSelection(curriculumCourseId);
-      console.log("Course removed:", result.message);
-      // Refresh courses to update the list
-      await loadCourses();
-      
-      // Show warning about deleted PDFs if any
-      if (result.data.deletedPDFs > 0) {
-        alert(`Course dropped successfully. ${result.data.deletedPDFs} PDF${result.data.deletedPDFs > 1 ? 's' : ''} deleted.`);
-      }
-    } catch (error: any) {
-      console.error("Failed to remove course:", error);
-      const errorMsg = error?.response?.data?.message || "Failed to remove course";
-      alert(errorMsg);
-      throw error; // Re-throw so CourseTab knows it failed
+      // Note: The actual API signature needs updating - using courseId for now
+      await createCourse(code);
+      // Refresh courses list after creation
+      const updated = await getCourses();
+      setCourses(updated);
+      resetAddCourseForm();
+      setShowAddCourse(false);
+    } catch (err: any) {
+      console.error("Failed to create course:", err);
+      setCreateError(
+        err?.response?.data?.message ||
+          "Could not add this course. Please try again.",
+      );
+    } finally {
+      setIsCreatingCourse(false);
     }
   };
 
@@ -247,7 +206,6 @@ export default function SettingsModal({
                 errorMessage={errorMessage}
                 onLogout={handleLogout}
                 onRequestDelete={() => setShowDeleteConfirm(true)}
-                onUpdateProfile={handleUpdateProfile}
               />
             )}
 
@@ -261,12 +219,26 @@ export default function SettingsModal({
 
             {activeTab === "course" && (
               <CourseTab
+                autoLoadMaterials={autoLoadMaterials}
+                onToggleAutoLoad={setAutoLoadMaterials}
+                showAddCourse={showAddCourse}
+                onToggleAddCourse={() => setShowAddCourse((s) => !s)}
+                newCode={newCode}
+                newName={newName}
+                newCredits={newCredits}
+                onChangeCode={setNewCode}
+                onChangeName={setNewName}
+                onChangeCredits={setNewCredits}
+                createError={createError}
+                isCreatingCourse={isCreatingCourse}
+                onSaveCourse={handleCreateCourse}
+                onCancelAddCourse={() => {
+                  setShowAddCourse(false);
+                  resetAddCourseForm();
+                }}
                 isLoadingCourses={isLoadingCourses}
                 coursesError={coursesError}
                 courses={courses}
-                onAddCourse={handleAddCourse}
-                onRemoveCourse={handleRemoveCourse}
-                onRefreshCourses={loadCourses}
               />
             )}
 
@@ -287,11 +259,7 @@ export default function SettingsModal({
         {showDeleteConfirm && (
           <DeleteAccountConfirm
             isDeleting={isDeleting}
-            requirePassword={requirePassword}
-            onCancel={() => {
-              setShowDeleteConfirm(false);
-              setDeleteError(null);
-            }}
+            onCancel={() => setShowDeleteConfirm(false)}
             onConfirm={handleConfirmDelete}
           />
         )}

@@ -1,5 +1,5 @@
-import { useState, useEffect, type MouseEvent } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect, useMemo, MouseEvent } from "react";
+import { Link } from "react-router-dom";
 import {
   X,
   BookOpen,
@@ -13,17 +13,15 @@ import {
 } from "lucide-react";
 import {
   getCourses,
-  getAvailableCourses,
-  deleteCourse,
-  createCourse,
+  // getAvailableCourses,
+  // deleteCourse,
+  // createCourse,
   type Course,
 } from "../api/Coursesapi";
 import { getMaterials, type Material } from "../api/Materialsapi";
 import { getApiErrorMessage } from "../api/authApi";
-import { useSocket } from "../hooks/useSocket";
 
 export default function CoursesPage() {
-  const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,227 +59,52 @@ export default function CoursesPage() {
     fetchEnrolledCourses();
   }, []);
 
-  // Socket.IO listeners for real-time material status updates
-  useSocket<{ materialId: string; status: string }>(
-    "material:extracting",
-    (data) => {
-      setMaterials((prevMaterials) =>
-        prevMaterials.map((material) =>
-          material.id === data.materialId
-            ? { ...material, status: data.status as Material["status"] }
-            : material,
-        ),
-      );
-    },
-  );
-
-  useSocket<{ materialId: string; status: string }>(
-    "material:analyzing",
-    (data) => {
-      setMaterials((prevMaterials) =>
-        prevMaterials.map((material) =>
-          material.id === data.materialId
-            ? { ...material, status: data.status as Material["status"] }
-            : material,
-        ),
-      );
-    },
-  );
-
-  useSocket<{
-    materialId: string;
-    status: string;
-    numChunks: number;
-    numPages: number;
-  }>("material:ready", (data) => {
-    setMaterials((prevMaterials) =>
-      prevMaterials.map((material) =>
-        material.id === data.materialId
-          ? { ...material, status: data.status as Material["status"] }
-          : material,
-      ),
-    );
-  });
-
-  useSocket<{ materialId: string; status: string; error: string }>(
-    "material:failed",
-    (data) => {
-      setMaterials((prevMaterials) =>
-        prevMaterials.map((material) =>
-          material.id === data.materialId
-            ? { ...material, status: data.status as Material["status"] }
-            : material,
-        ),
-      );
-    },
-  );
-
-  // Listen for batch material deletions (e.g., when semester/year changes)
-  useSocket<{
-    trigger: string;
-    courseTitle?: string;
-    summary: {
-      totalDeleted: number;
-      totalFailed: number;
-      reason: string;
-    };
-  }>("materials:batch_deleted", (data) => {
-    console.log("[Coursepage] Materials batch deleted:", data);
-
-    if (data.trigger === "profile_update") {
-      // Refresh materials list after profile changes that delete materials
-      fetchMaterials(selectedCourse);
-
-      // Show notification if materials were deleted
-      if (data.summary.totalDeleted > 0) {
-        console.log(
-          `${data.summary.totalDeleted} materials were removed due to ${data.summary.reason}`,
-        );
-      }
-    } else if (data.trigger === "course_dropped") {
-      // Refresh both courses and materials after course drop
-      fetchEnrolledCourses();
-
-      if (selectedCourse && data.summary.totalDeleted > 0) {
-        // If the current course was dropped, clear materials
-        fetchMaterials(selectedCourse);
-      }
-
-      // Show notification
-      if (data.summary.totalDeleted > 0) {
-        const courseText = data.courseTitle
-          ? ` from "${data.courseTitle}"`
-          : "";
-        console.log(
-          `Course dropped. ${data.summary.totalDeleted} materials${courseText} were removed.`,
-        );
-      }
-    }
-  });
-
-  // Socket.IO listeners for real-time course updates
-  useSocket<{
-    curriculumCourseId: string;
-    courseName: string;
-    message: string;
-  }>("course:added", (data) => {
-    // Refresh courses list when a course is added
-    fetchEnrolledCourses();
-  });
-
-  useSocket<{
-    curriculumCourseId: string;
-    courseName: string;
-    deletedPDFs: number;
-    message: string;
-  }>("course:dropped", (data) => {
-    // Refresh courses list when a course is dropped
-    fetchEnrolledCourses();
-    // If current course was dropped, clear selection
-    if (
-      selectedCourse &&
-      (selectedCourse.id === data.curriculumCourseId ||
-        (selectedCourse as any).curriculumCourseId === data.curriculumCourseId)
-    ) {
-      setSelectedCourse(null);
-      setMaterials([]);
-    }
-  });
-
-  useSocket<{ reason: string; message: string }>("courses:cleared", () => {
-    console.log(
-      "[Coursepage] All enrolled courses cleared due to academic profile change",
-    );
-    setCourses([]);
-    setSelectedCourse(null);
-    setMaterials([]);
-  });
-
-  // Listen for local window events from SettingsModal when updated in same tab
-  useEffect(() => {
-    const handleCleared = () => {
-      console.log("[Coursepage] Window event: courses:cleared");
-      setCourses([]);
-      setSelectedCourse(null);
-      setMaterials([]);
-    };
-
-    const handleUpdated = () => {
-      console.log("[Coursepage] Window event: courses:updated");
-      fetchEnrolledCourses();
-    };
-
-    window.addEventListener("courses:cleared", handleCleared);
-    window.addEventListener("courses:updated", handleUpdated);
-
-    return () => {
-      window.removeEventListener("courses:cleared", handleCleared);
-      window.removeEventListener("courses:updated", handleUpdated);
-    };
-  }, []);
-
-  // Handle navigation from search results
-  useEffect(() => {
-    const state = location.state as { selectedCourse?: Course };
-    if (state?.selectedCourse) {
-      // Auto-select the course from search results
-      handleSelectCourse(state.selectedCourse);
-      // Clear the state so it doesn't persist on page refresh
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state]);
-
-  // Open modal — actual catalog fetch happens in the debounced effect below
-  const handleOpenAddModal = () => {
+  // Open modal and fetch department catalog from GET /courses
+  const handleOpenAddModal = async () => {
     setIsAddModalOpen(true);
     setVisibleCount(3);
     setSearchQuery("");
     setCatalogError(null);
+    setIsLoadingCatalog(true);
+
+    try {
+      const catalogData = await getAvailableCourses();
+      setDepartmentCatalog(catalogData || []);
+    } catch (err) {
+      setCatalogError(
+        getApiErrorMessage(err, "Could not fetch department courses."),
+      );
+    } finally {
+      setIsLoadingCatalog(false);
+    }
   };
 
-  // Debounced server-side catalog search whenever the query (or modal open state) changes
-  useEffect(() => {
-    if (!isAddModalOpen) return;
+  // Search filter and match prioritization
+  const filteredCatalog = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return departmentCatalog;
 
-    const controller = new AbortController();
-    setIsLoadingCatalog(true);
-    setCatalogError(null);
+    return [...departmentCatalog].sort((a, b) => {
+      const aNameMatch = a.name.toLowerCase().includes(query);
+      const aCodeMatch = a.code.toLowerCase().includes(query);
+      const bNameMatch = b.name.toLowerCase().includes(query);
+      const bCodeMatch = b.code.toLowerCase().includes(query);
 
-    const timer = setTimeout(async () => {
-      try {
-        const catalogData = await getAvailableCourses(searchQuery);
-        setDepartmentCatalog(catalogData || []);
-        setVisibleCount(3);
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          setCatalogError(
-            getApiErrorMessage(err, "Could not fetch department courses."),
-          );
-        }
-      } finally {
-        if (!controller.signal.aborted) setIsLoadingCatalog(false);
-      }
-    }, 300); // debounce so we don't hit the API on every keystroke
+      const aScore = (aNameMatch ? 2 : 0) + (aCodeMatch ? 1 : 0);
+      const bScore = (bNameMatch ? 2 : 0) + (bCodeMatch ? 1 : 0);
 
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [searchQuery, isAddModalOpen]);
+      return bScore - aScore;
+    });
+  }, [searchQuery, departmentCatalog]);
 
-  // Fetch materials for a given course
-  const fetchMaterials = async (course: Course | null) => {
-    if (!course) {
-      setMaterials([]);
-      return;
-    }
+  // Select course card to load materials
+  const handleSelectCourse = async (course: Course) => {
+    setSelectedCourse(course);
     setIsLoadingMaterials(true);
     try {
       const allMaterials = await getMaterials();
       const filtered = allMaterials.filter(
         (m) =>
-          m.courseId === course.id ||
-          m.curriculumCourseId === course.id ||
           m.courseName.toLowerCase().includes(course.name.toLowerCase()) ||
           m.courseName.toLowerCase().includes(course.code.toLowerCase()),
       );
@@ -295,13 +118,7 @@ export default function CoursesPage() {
     }
   };
 
-  // Select course card to load materials
-  const handleSelectCourse = async (course: Course) => {
-    setSelectedCourse(course);
-    await fetchMaterials(course);
-  };
-
-  // Unenroll / Drop course
+  // Unenroll / Delete course
   const handleDeleteCourse = async (e: MouseEvent, courseId: string) => {
     e.stopPropagation();
 
@@ -313,19 +130,14 @@ export default function CoursesPage() {
     try {
       await deleteCourse(courseId);
       setCourses((prev) => prev.filter((course) => course.id !== courseId));
-    } catch (err: any) {
-      if (err?.response?.status === 404) {
-        // Course is already gone from database, remove card from UI
-        setCourses((prev) => prev.filter((course) => course.id !== courseId));
-      } else {
-        setError(getApiErrorMessage(err, "Could not delete the course."));
-      }
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Could not delete the course."));
     } finally {
       setDeletingCourseId(null);
     }
   };
 
-  // Enroll course by posting curriculumCourseId to backend
+  // Enroll course by posting courseId to backend
   const handleAddCourse = async (catalogCourse: Course) => {
     const isAlreadyEnrolled = courses.some(
       (c) =>
@@ -343,15 +155,11 @@ export default function CoursesPage() {
     setSuccessMessage(null);
 
     try {
-      // POST /student/courses/select with { curriculumCourseId: catalogCourse.id }
+      // POST /courses with { courseId: catalogCourse.id }
       await createCourse(catalogCourse.id);
 
       // Refresh enrolled list from server
       await fetchEnrolledCourses();
-
-      // Refresh catalog to update isEnrolled status
-      const catalogData = await getAvailableCourses(searchQuery);
-      setDepartmentCatalog(catalogData || []);
 
       setSuccessMessage(`Successfully enrolled in "${catalogCourse.name}"!`);
       setTimeout(() => setSuccessMessage(null), 3500);
@@ -429,91 +237,36 @@ export default function CoursesPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {materials.map((m) => {
-                const isProcessing = m.status !== "READY";
-                const isFailed = m.status === "FAILED";
-
-                return (
-                  <Link
-                    key={m.id}
-                    to={isProcessing ? "#" : `/workspace/${m.id}`}
-                    onClick={(e) => {
-                      if (isProcessing) {
-                        e.preventDefault();
-                      }
-                    }}
-                    className={`group relative p-5 bg-surface border border-default rounded-xl transition-colors block ${
-                      isProcessing
-                        ? "cursor-not-allowed opacity-75"
-                        : "hover:border-accent cursor-pointer"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3 mb-4 pr-6">
-                      <div className="w-9 h-9 rounded-lg bg-elevated flex items-center justify-center shrink-0">
-                        {isProcessing ? (
-                          <Loader2
-                            size={17}
-                            className="text-accent animate-spin"
-                          />
-                        ) : (
-                          <FileText size={17} className="text-accent" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={`text-sm font-medium text-primary truncate ${
-                            !isProcessing && "group-hover:underline"
-                          }`}
-                        >
-                          {m.fileName}
-                        </p>
-                        <p className="text-xs text-muted">{m.courseName}</p>
-
-                        {/* Processing Status Badge */}
-                        {isProcessing && (
-                          <div className="mt-1.5">
-                            {m.status === "QUEUED" && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded">
-                                Queued
-                              </span>
-                            )}
-                            {m.status === "EXTRACTING" && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-yellow-50 text-yellow-700 rounded">
-                                Extracting...
-                              </span>
-                            )}
-                            {m.status === "ANALYZING" && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 rounded">
-                                Analyzing...
-                              </span>
-                            )}
-                            {m.status === "FAILED" && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-50 text-red-700 rounded">
-                                Failed
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
+              {materials.map((m) => (
+                <Link
+                  key={m.id}
+                  to={`/app/workspace/${m.id}`}
+                  className="group relative p-5 bg-surface border border-default rounded-xl hover:border-accent transition-colors cursor-pointer block"
+                >
+                  <div className="flex items-start gap-3 mb-4 pr-6">
+                    <div className="w-9 h-9 rounded-lg bg-elevated flex items-center justify-center shrink-0">
+                      <FileText size={17} className="text-accent" />
                     </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-primary truncate group-hover:underline">
+                        {m.fileName}
+                      </p>
+                      <p className="text-xs text-muted">{m.courseName}</p>
+                    </div>
+                  </div>
 
-                    {!isFailed && (
-                      <>
-                        <div className="flex items-center justify-between text-xs text-secondary mb-1.5">
-                          <span>Progress</span>
-                          <span>{m.progress}%</span>
-                        </div>
-                        <div className="h-1.5 bg-[#DCD2B4] rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-accent-secondary transition-all"
-                            style={{ width: `${m.progress}%` }}
-                          />
-                        </div>
-                      </>
-                    )}
-                  </Link>
-                );
-              })}
+                  <div className="flex items-center justify-between text-xs text-secondary mb-1.5">
+                    <span>Progress</span>
+                    <span>{m.progress}%</span>
+                  </div>
+                  <div className="h-1.5 bg-[#DCD2B4] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-accent-secondary transition-all"
+                      style={{ width: `${m.progress}%` }}
+                    />
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </div>
@@ -521,7 +274,7 @@ export default function CoursesPage() {
         /* Enrolled Course List View */
         <div>
           <h2 className="font-serif text-lg text-primary mb-4">
-            Courses enrolled
+            Courses this semester
           </h2>
 
           {isLoading ? (
@@ -571,7 +324,10 @@ export default function CoursesPage() {
                     className="p-1.5 text-muted hover:text-error hover:bg-error rounded-lg transition-colors cursor-pointer shrink-0 ml-2"
                   >
                     {deletingCourseId === course.id ? (
-                      <Loader2 size={16} className="animate-spin text-error" />
+                      <Loader2
+                        size={16}
+                        className="animate-spin text-error"
+                      />
                     ) : (
                       <X size={16} />
                     )}
@@ -637,21 +393,21 @@ export default function CoursesPage() {
               {isLoadingCatalog ? (
                 <div className="flex flex-col items-center justify-center py-8 text-secondary gap-2">
                   <Loader2 size={20} className="animate-spin text-accent" />
-                  <span className="text-xs">Loading department courses…</span>
+                  <span className="text-xs">
+                    Loading department courses from database…
+                  </span>
                 </div>
-              ) : departmentCatalog.length === 0 ? (
+              ) : filteredCatalog.length === 0 ? (
                 <p className="text-xs text-center text-muted py-8">
                   No department courses matching your query.
                 </p>
               ) : (
-                departmentCatalog.slice(0, visibleCount).map((catCourse) => {
-                  const isEnrolled =
-                    catCourse.isEnrolled ??
-                    courses.some(
-                      (c) =>
-                        c.id === catCourse.id ||
-                        c.code.toLowerCase() === catCourse.code.toLowerCase(),
-                    );
+                filteredCatalog.slice(0, visibleCount).map((catCourse) => {
+                  const isEnrolled = courses.some(
+                    (c) =>
+                      c.id === catCourse.id ||
+                      c.code.toLowerCase() === catCourse.code.toLowerCase(),
+                  );
 
                   return (
                     <div
@@ -707,7 +463,7 @@ export default function CoursesPage() {
             </div>
 
             {/* See More Expand */}
-            {!isLoadingCatalog && visibleCount < departmentCatalog.length && (
+            {!isLoadingCatalog && visibleCount < filteredCatalog.length && (
               <div className="p-3 border-t border-default/60 text-center bg-[#FAF7EE]">
                 <button
                   type="button"

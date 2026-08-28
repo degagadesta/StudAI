@@ -173,10 +173,9 @@ export default function RegisterPage() {
       const data = await googleSignIn(credentialResponse.credential);
       console.log('[RegisterPage Google] Sign-in response:', data);
       console.log('[RegisterPage Google] hasProfile value:', data.hasProfile);
-
-      // Set user with profile data from backend (saves 1 API call)
-      setUser(data.student, data.hasProfile, data.profile);
-
+      
+      setUser(data.student, data.hasProfile);
+      
       // Use centralized routing with onboarding check
       await routeAfterAuth(navigate, data.hasProfile);
     } catch (err) {
@@ -267,7 +266,7 @@ export default function RegisterPage() {
           </p>
           <div className="flex items-center gap-2 text-xs text-inverse/50 mt-7">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-light" />
-
+            AASTU · Software Engineering
           </div>
         </div>
       </div>
@@ -317,10 +316,11 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Abebe"
                   aria-invalid={!!errors.firstName}
-                  className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.firstName
-                    ? "border-error focus:border-error focus:ring-error/15"
-                    : "border-default focus:border-accent focus:ring-accent/20"
-                    }`}
+                  className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
+                    errors.firstName
+                      ? "border-error focus:border-error focus:ring-error/15"
+                      : "border-default focus:border-accent focus:ring-accent/20"
+                  }`}
                 />
                 {errors.firstName && (
                   <p className="mt-1.5 text-xs text-error">
@@ -346,10 +346,11 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="Bikila"
                   aria-invalid={!!errors.lastName}
-                  className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.lastName
-                    ? "border-error focus:border-error focus:ring-error/15"
-                    : "border-default focus:border-accent focus:ring-accent/20"
-                    }`}
+                  className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
+                    errors.lastName
+                      ? "border-error focus:border-error focus:ring-error/15"
+                      : "border-default focus:border-accent focus:ring-accent/20"
+                  }`}
                 />
                 {errors.lastName && (
                   <p className="mt-1.5 text-xs text-error">
@@ -376,10 +377,11 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 placeholder="yourname@aastustudent.edu.et"
                 aria-invalid={!!errors.email}
-                className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.email
-                  ? "border-error focus:border-error focus:ring-error/15"
-                  : "border-default focus:border-accent focus:ring-accent/20"
-                  }`}
+                className={`w-full px-3.5 py-2.5 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
+                  errors.email
+                    ? "border-error focus:border-error focus:ring-error/15"
+                    : "border-default focus:border-accent focus:ring-accent/20"
+                }`}
               />
               {errors.email && (
                 <p className="mt-1.5 text-xs text-error">{errors.email}</p>
@@ -403,10 +405,11 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 placeholder="Create a strong password"
                 aria-invalid={!!errors.password}
-                className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.password
-                  ? "border-error focus:border-error focus:ring-error/15"
-                  : "border-default focus:border-accent focus:ring-accent/20"
-                  }`}
+                className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
+                  errors.password
+                    ? "border-error focus:border-error focus:ring-error/15"
+                    : "border-default focus:border-accent focus:ring-accent/20"
+                }`}
               />
               <button
                 type="button"
@@ -458,10 +461,11 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 placeholder="Re-enter your password"
                 aria-invalid={!!errors.confirmPassword}
-                className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.confirmPassword
-                  ? "border-error focus:border-error focus:ring-error/15"
-                  : "border-default focus:border-accent focus:ring-accent/20"
-                  }`}
+                className={`w-full px-3.5 py-2.5 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
+                  errors.confirmPassword
+                    ? "border-error focus:border-error focus:ring-error/15"
+                    : "border-default focus:border-accent focus:ring-accent/20"
+                }`}
               />
               <button
                 type="button"

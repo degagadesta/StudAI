@@ -3,7 +3,6 @@ import { api } from "./client";
 export interface University {
   id: string;
   name: string;
-  shortName?: string;
   city?: string;
 }
 

@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { api, getAccessToken, setAccessToken, clearTokens } from "../api/client";
-import { activityTracker } from "../services/activityTracker";
-import type { StudentProfile } from "../api/authApi";
 
 interface User {
   id: string;
@@ -23,22 +21,15 @@ export function useAuth() {
     isLoading: true,
     hasProfile: false,
   });
-
+  
   // Prevent multiple simultaneous auth checks
   const isCheckingAuth = useRef(false);
   // Track the timestamp of the most recent explicit auth action (login, verify, etc.)
   const lastExplicitAuthTime = useRef<number>(0);
-  // Store profile setter callback (will be set by AuthContext)
-  const profileSetterRef = useRef<((profile: StudentProfile | null) => void) | null>(null);
-
-  // Method to register profile setter from context
-  const registerProfileSetter = useCallback((setter: (profile: StudentProfile | null) => void) => {
-    profileSetterRef.current = setter;
-  }, []);
 
   const checkAuth = useCallback(async (isExplicitAuth = false) => {
     console.log('[useAuth] checkAuth called, isExplicitAuth:', isExplicitAuth);
-
+    
     // If this is an explicit auth action (login, verify, google), update timestamp
     if (isExplicitAuth) {
       lastExplicitAuthTime.current = Date.now();
@@ -59,7 +50,7 @@ export function useAuth() {
         try {
           const response = await api.get<{ hasProfile: boolean; student: User }>("/auth/check-profile");
           console.log('[useAuth] Profile check response:', response.data);
-
+          
           // Only update state if not superseded by explicit auth
           if (isExplicitAuth || Date.now() < lastExplicitAuthTime.current + 1000) {
             setAuthState({
@@ -69,9 +60,6 @@ export function useAuth() {
               hasProfile: response.data.hasProfile,
             });
             console.log('[useAuth] Auth state updated, hasProfile:', response.data.hasProfile);
-
-            // Start activity tracking for authenticated user
-            activityTracker.start();
           } else {
             console.log('[useAuth] Skipping state update (superseded by explicit auth)');
           }
@@ -95,28 +83,25 @@ export function useAuth() {
         const response = await api.post("/auth/refresh", {});
         setAccessToken(response.data.accessToken);
         console.log('[useAuth] Refresh successful');
-
+        
         // Check if this refresh was superseded by explicit auth
         // If explicit auth happened less than 1 second ago, skip this update
         if (!isExplicitAuth && Date.now() < lastExplicitAuthTime.current + 1000) {
           console.log('[useAuth] Refresh superseded by recent explicit auth, skipping state update');
           return;
         }
-
+        
         // After refresh, check profile
         try {
           const profileResponse = await api.get<{ hasProfile: boolean; student: User }>("/auth/check-profile");
           console.log('[useAuth] Profile after refresh:', profileResponse.data);
-
+          
           setAuthState({
             user: profileResponse.data.student,
             isAuthenticated: true,
             isLoading: false,
             hasProfile: profileResponse.data.hasProfile,
           });
-
-          // Start activity tracking after successful refresh
-          activityTracker.start();
         } catch (error) {
           console.log('[useAuth] Profile check after refresh failed');
           setAuthState({
@@ -157,18 +142,10 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     try {
-      // Stop activity tracking before logout
-      await activityTracker.stop();
       await api.post("/auth/logout");
     } finally {
       clearTokens();
       lastExplicitAuthTime.current = Date.now();
-
-      // Clear profile cache on logout
-      if (profileSetterRef.current) {
-        profileSetterRef.current(null);
-      }
-
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -178,21 +155,10 @@ export function useAuth() {
     }
   }, []);
 
-  const setUser = useCallback((user: User | null, hasProfile?: boolean, profile?: StudentProfile | null) => {
-    console.log('[useAuth] setUser called, user:', user, 'hasProfile:', hasProfile, 'profile:', profile);
+  const setUser = useCallback((user: User | null, hasProfile?: boolean) => {
+    console.log('[useAuth] setUser called, user:', user, 'hasProfile:', hasProfile);
     // Mark this as an explicit auth action
     lastExplicitAuthTime.current = Date.now();
-
-    // Store profile in cache if provided
-    if (profile && profileSetterRef.current) {
-      console.log('[useAuth] Storing profile in cache');
-      profileSetterRef.current(profile);
-    } else if (!user && profileSetterRef.current) {
-      // Clear profile if user is being cleared
-      console.log('[useAuth] Clearing profile cache (no user)');
-      profileSetterRef.current(null);
-    }
-
     setAuthState((prev) => ({
       ...prev,
       user,
@@ -200,11 +166,6 @@ export function useAuth() {
       isLoading: false,
       hasProfile: hasProfile !== undefined ? hasProfile : prev.hasProfile,
     }));
-
-    // Start activity tracking when user is set (after login/register)
-    if (user) {
-      activityTracker.start();
-    }
   }, []);
 
   // Only run checkAuth once on mount
@@ -222,6 +183,5 @@ export function useAuth() {
     setUser,
     logout,
     checkAuth,
-    registerProfileSetter,
   };
 }

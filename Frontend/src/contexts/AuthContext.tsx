@@ -1,7 +1,5 @@
-import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { useProfileContext } from "./ProfileContext";
-import type { StudentProfile } from "../api/authApi";
 
 interface User {
   id: string;
@@ -14,7 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   hasProfile: boolean;
-  setUser: (user: User | null, hasProfile?: boolean, profile?: StudentProfile | null) => void;
+  setUser: (user: User | null, hasProfile?: boolean) => void;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -23,12 +21,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
-  const { setProfileFromAuth } = useProfileContext();
-
-  // Register profile setter with useAuth hook
-  useEffect(() => {
-    auth.registerProfileSetter(setProfileFromAuth);
-  }, [auth.registerProfileSetter, setProfileFromAuth]);
 
   return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }

@@ -13,14 +13,13 @@ import {
 import type { AcademicProfile } from "../../../api/Coursesapi";
 
 interface PlanTabProps {
-  currentPlan: SubscriptionTier;
-  onChangePlan: (tier: SubscriptionTier) => void;
   profile: AcademicProfile | null;
+  onUpgradeClick: (tier: SubscriptionTier) => void;
 }
 
-export default function PlanTab({ currentPlan, onChangePlan, profile }: PlanTabProps) {
-  // Use the currentPlan prop which is managed by the parent
-  const activePlan = normalizeSubscriptionTier(profile?.subscriptionPlan) || currentPlan;
+export default function PlanTab({ profile, onUpgradeClick }: PlanTabProps) {
+  // Active plan comes from the server, not from local UI state.
+  const currentPlan = normalizeSubscriptionTier(profile?.subscriptionPlan);
 
   return (
     <div className="space-y-4">
@@ -38,11 +37,11 @@ export default function PlanTab({ currentPlan, onChangePlan, profile }: PlanTabP
           <PlanCard
             key={plan.id}
             plan={plan}
-            currentPlan={activePlan}
+            currentPlan={currentPlan}
             displayName={
               plan.id === "free" ? profile?.subscriptionPlan : undefined
             }
-            onSelect={onChangePlan}
+            onSelect={onUpgradeClick}
           />
         ))}
       </div>

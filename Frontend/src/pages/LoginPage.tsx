@@ -100,9 +100,9 @@ export default function LoginPage() {
       const data = await login({ email, password, remember: values.remember });
       console.log('[LoginPage] Login response:', data);
       console.log('[LoginPage] hasProfile value:', data.hasProfile);
-
-      // Set user with profile data from backend (saves 1 API call)
-      setUser(data.student, data.hasProfile, data.profile);
+      
+      // Set user with hasProfile
+      setUser(data.student, data.hasProfile);
 
       // Use centralized routing with onboarding check
       const redirectParam = validateRedirectPath(searchParams.get("redirect"));
@@ -130,9 +130,8 @@ export default function LoginPage() {
       const data = await googleSignIn(credentialResponse.credential);
       console.log('[LoginPage Google] Sign-in response:', data);
       console.log('[LoginPage Google] hasProfile value:', data.hasProfile);
-
-      // Set user with profile data from backend (saves 1 API call)
-      setUser(data.student, data.hasProfile, data.profile);
+      
+      setUser(data.student, data.hasProfile);
 
       // Use centralized routing with onboarding check
       const redirectParam = validateRedirectPath(searchParams.get("redirect"));
@@ -196,7 +195,7 @@ export default function LoginPage() {
           </p>
           <div className="flex items-center gap-2 text-xs text-inverse/50 mt-7">
             <span className="w-1.5 h-1.5 rounded-full bg-accent-light" />
-
+            AASTU · Software Engineering
           </div>
         </div>
       </div>
@@ -205,8 +204,8 @@ export default function LoginPage() {
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm border-l-2 border-[#B08D4F]/50 pl-7">
           <span className="inline-flex items-center gap-1.5 font-mono text-xs text-secondary bg-elevated border border-default px-2.5 py-1 rounded-full mb-6">
-            <b className="text-accent font-semibold">Stud</b>AI
-
+            <b className="text-accent font-semibold">AASTU</b> → Software
+            Engineering
           </span>
 
           <h2 className="font-serif text-3xl text-primary mb-1.5">
@@ -246,10 +245,11 @@ export default function LoginPage() {
                 placeholder="yourname@aastustudent.edu.et"
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? "email-error" : undefined}
-                className={`w-full px-3.5 py-3 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.email
-                  ? "border-error focus:border-error focus:ring-error/15"
-                  : "border-default focus:border-accent focus:ring-accent/20"
-                  }`}
+                className={`w-full px-3.5 py-3 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
+                  errors.email
+                    ? "border-error focus:border-error focus:ring-error/15"
+                    : "border-default focus:border-accent focus:ring-accent/20"
+                }`}
               />
               {errors.email && (
                 <p id="email-error" className="mt-1.5 text-xs text-error">
@@ -278,10 +278,11 @@ export default function LoginPage() {
                 aria-describedby={
                   errors.password ? "password-error" : undefined
                 }
-                className={`w-full px-3.5 py-3 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${errors.password
-                  ? "border-error focus:border-error focus:ring-error/15"
-                  : "border-default focus:border-accent focus:ring-accent/20"
-                  }`}
+                className={`w-full px-3.5 py-3 pr-11 text-sm bg-surface border rounded-lg outline-none placeholder:text-muted focus:ring-4 ${
+                  errors.password
+                    ? "border-error focus:border-error focus:ring-error/15"
+                    : "border-default focus:border-accent focus:ring-accent/20"
+                }`}
               />
               <button
                 type="button"

@@ -7,41 +7,41 @@
 @layer base {
   :root {
     /* ========== LIGHT THEME (DEFAULT) ========== */
-
+    
     /* Backgrounds & Surfaces */
-    --color-bg-page: #f6f1e3;
-    --color-bg-surface: #fffdf7;
-    --color-bg-surface-hover: #f9f6ee;
-    --color-bg-elevated: #efe8d4;
-
+    --color-bg-page: #F6F1E3;
+    --color-bg-surface: #FFFDF7;
+    --color-bg-surface-hover: #F9F6EE;
+    --color-bg-elevated: #EFE8D4;
+    
     /* Text Colors */
-    --color-text-primary: #253d31;
-    --color-text-secondary: #5b6156;
-    --color-text-muted: #a9a18a;
-    --color-text-inverse: #f6f1e3;
-
+    --color-text-primary: #253D31;
+    --color-text-secondary: #5B6156;
+    --color-text-muted: #A9A18A;
+    --color-text-inverse: #F6F1E3;
+    
     /* Borders */
-    --color-border: #dcd2b4;
-    --color-border-hover: #8ca37e;
-
+    --color-border: #DCD2B4;
+    --color-border-hover: #8CA37E;
+    
     /* Primary Accent (Forest Green) */
-    --color-accent-primary: #253d31;
-    --color-accent-primary-hover: #2f4a3d;
-    --color-accent-primary-light: #8ca37e;
-    --color-accent-primary-bg: #efe8d4;
-
+    --color-accent-primary: #253D31;
+    --color-accent-primary-hover: #2F4A3D;
+    --color-accent-primary-light: #8CA37E;
+    --color-accent-primary-bg: #EFE8D4;
+    
     /* Secondary Accent (Warm tones) */
-    --color-accent-secondary: #8ca37e;
-    --color-accent-secondary-hover: #7a9168;
-
+    --color-accent-secondary: #8CA37E;
+    --color-accent-secondary-hover: #7A9168;
+    
     /* Status Colors */
-    --color-success: #8ca37e;
+    --color-success: #8CA37E;
     --color-success-bg: rgba(140, 163, 126, 0.2);
-    --color-error: #8b3a3a;
-    --color-error-bg: #f7e8e8;
-    --color-warning: #f2a93b;
+    --color-error: #8B3A3A;
+    --color-error-bg: #F7E8E8;
+    --color-warning: #F2A93B;
     --color-warning-bg: rgba(242, 169, 59, 0.15);
-
+    
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgba(37, 61, 49, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(37, 61, 49, 0.1);
@@ -51,41 +51,41 @@
 
   .dark {
     /* ========== DARK THEME ========== */
-
+    
     /* Backgrounds & Surfaces - Layered depth system */
-    --color-bg-page: #0d0f0d; /* Near-black with slight green tint */
-    --color-bg-surface: #151815; /* Charcoal-green, lighter than page */
-    --color-bg-surface-hover: #1c201c; /* Third layer for hover/nested */
-    --color-bg-elevated: #212521; /* Fourth layer for elevated cards */
-
+    --color-bg-page: #0D0F0D;          /* Near-black with slight green tint */
+    --color-bg-surface: #151815;        /* Charcoal-green, lighter than page */
+    --color-bg-surface-hover: #1C201C; /* Third layer for hover/nested */
+    --color-bg-elevated: #212521;       /* Fourth layer for elevated cards */
+    
     /* Text Colors - Warm and readable */
-    --color-text-primary: #f2f1ec; /* Warm off-white, not pure white */
-    --color-text-secondary: #8a8d87; /* Medium gray with warmth */
-    --color-text-muted: #5a5d58; /* Darker muted text */
-    --color-text-inverse: #0d0f0d; /* Dark text on light backgrounds */
-
+    --color-text-primary: #F2F1EC;      /* Warm off-white, not pure white */
+    --color-text-secondary: #8A8D87;    /* Medium gray with warmth */
+    --color-text-muted: #5A5D58;        /* Darker muted text */
+    --color-text-inverse: #0D0F0D;      /* Dark text on light backgrounds */
+    
     /* Borders - Subtle, low contrast */
-    --color-border: #2a2e2a; /* Visible but not prominent */
-    --color-border-hover: #3a3e3a; /* Slightly lighter on hover */
-
+    --color-border: #2A2E2A;            /* Visible but not prominent */
+    --color-border-hover: #3A3E3A;      /* Slightly lighter on hover */
+    
     /* Primary Accent - Vivid Green */
-    --color-accent-primary: #7ed957; /* Vivid yellow-leaning green */
-    --color-accent-primary-hover: #8fe168; /* Brighter on hover */
-    --color-accent-primary-light: #7ed957; /* Same as primary in dark */
+    --color-accent-primary: #7ED957;     /* Vivid yellow-leaning green */
+    --color-accent-primary-hover: #8FE168; /* Brighter on hover */
+    --color-accent-primary-light: #7ED957; /* Same as primary in dark */
     --color-accent-primary-bg: rgba(126, 217, 87, 0.15); /* Subtle green tint */
-
+    
     /* Secondary Accent - Warm Orange */
-    --color-accent-secondary: #f2a93b; /* Warm orange for highlights */
-    --color-accent-secondary-hover: #ffb84d; /* Brighter orange on hover */
-
+    --color-accent-secondary: #F2A93B;   /* Warm orange for highlights */
+    --color-accent-secondary-hover: #FFB84D; /* Brighter orange on hover */
+    
     /* Status Colors */
-    --color-success: #7ed957;
+    --color-success: #7ED957;
     --color-success-bg: rgba(126, 217, 87, 0.15);
-    --color-error: #e67e7e;
+    --color-error: #E67E7E;
     --color-error-bg: rgba(230, 126, 126, 0.15);
-    --color-warning: #f2a93b;
+    --color-warning: #F2A93B;
     --color-warning-bg: rgba(242, 169, 59, 0.15);
-
+    
     /* Shadows - Deeper and more dramatic in dark mode */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
@@ -97,9 +97,7 @@
   body {
     background-color: var(--color-bg-page);
     color: var(--color-text-primary);
-    transition:
-      background-color 0.3s ease,
-      color 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   /* Scrollbar styling for dark mode */
@@ -144,156 +142,82 @@
 
 @layer utilities {
   /* Background utilities */
-  .bg-page {
-    background-color: var(--color-bg-page);
-  }
-  .bg-surface {
-    background-color: var(--color-bg-surface);
-  }
-  .bg-surface-hover {
-    background-color: var(--color-bg-surface-hover);
-  }
-  .bg-elevated {
-    background-color: var(--color-bg-elevated);
-  }
-
+  .bg-page { background-color: var(--color-bg-page); }
+  .bg-surface { background-color: var(--color-bg-surface); }
+  .bg-surface-hover { background-color: var(--color-bg-surface-hover); }
+  .bg-elevated { background-color: var(--color-bg-elevated); }
+  
   /* Text utilities */
-  .text-primary {
-    color: var(--color-text-primary);
-  }
-  .text-secondary {
-    color: var(--color-text-secondary);
-  }
-  .text-muted {
-    color: var(--color-text-muted);
-  }
-  .text-inverse {
-    color: var(--color-text-inverse);
-  }
-
+  .text-primary { color: var(--color-text-primary); }
+  .text-secondary { color: var(--color-text-secondary); }
+  .text-muted { color: var(--color-text-muted); }
+  .text-inverse { color: var(--color-text-inverse); }
+  
   /* Border utilities */
-  .border-default {
-    border-color: var(--color-border);
-  }
-  .border-hover {
-    border-color: var(--color-border-hover);
-  }
-
+  .border-default { border-color: var(--color-border); }
+  .border-hover { border-color: var(--color-border-hover); }
+  
   /* Accent utilities */
-  .bg-accent {
-    background-color: var(--color-accent-primary);
-  }
-  .bg-accent-hover {
-    background-color: var(--color-accent-primary-hover);
-  }
-  .bg-accent-light {
-    background-color: var(--color-accent-primary-bg);
-  }
-  .text-accent {
-    color: var(--color-accent-primary);
-  }
-  .border-accent {
-    border-color: var(--color-accent-primary);
-  }
-
-  .bg-accent-secondary {
-    background-color: var(--color-accent-secondary);
-  }
-  .text-accent-secondary {
-    color: var(--color-accent-secondary);
-  }
-
+  .bg-accent { background-color: var(--color-accent-primary); }
+  .bg-accent-hover { background-color: var(--color-accent-primary-hover); }
+  .bg-accent-light { background-color: var(--color-accent-primary-bg); }
+  .text-accent { color: var(--color-accent-primary); }
+  .border-accent { border-color: var(--color-accent-primary); }
+  
+  .bg-accent-secondary { background-color: var(--color-accent-secondary); }
+  .text-accent-secondary { color: var(--color-accent-secondary); }
+  
   /* Status utilities */
-  .bg-success {
-    background-color: var(--color-success);
-  }
-  .bg-success-light {
-    background-color: var(--color-success-bg);
-  }
-  .text-success {
-    color: var(--color-success);
-  }
-
-  .bg-error {
-    background-color: var(--color-error-bg);
-  }
-  .text-error {
-    color: var(--color-error);
-  }
-  .border-error {
-    border-color: var(--color-error);
-  }
-
-  .bg-warning {
-    background-color: var(--color-warning-bg);
-  }
-  .text-warning {
-    color: var(--color-warning);
-  }
-  .border-warning {
-    border-color: var(--color-warning);
-  }
-
+  .bg-success { background-color: var(--color-success); }
+  .bg-success-light { background-color: var(--color-success-bg); }
+  .text-success { color: var(--color-success); }
+  
+  .bg-error { background-color: var(--color-error-bg); }
+  .text-error { color: var(--color-error); }
+  .border-error { border-color: var(--color-error); }
+  
+  .bg-warning { background-color: var(--color-warning-bg); }
+  .text-warning { color: var(--color-warning); }
+  .border-warning { border-color: var(--color-warning); }
+  
   /* Background for text colors (helper for preview) */
-  .bg-primary {
-    background-color: var(--color-text-primary);
-  }
-  .bg-secondary {
-    background-color: var(--color-text-secondary);
-  }
-
+  .bg-primary { background-color: var(--color-text-primary); }
+  .bg-secondary { background-color: var(--color-text-secondary); }
+  
   /* Ring colors for focus states */
-  .ring-accent {
-    --tw-ring-color: var(--color-accent-primary);
-  }
-  .ring-offset-page {
-    --tw-ring-offset-color: var(--color-bg-page);
-  }
-
+  .ring-accent { --tw-ring-color: var(--color-accent-primary); }
+  .ring-offset-page { --tw-ring-offset-color: var(--color-bg-page); }
+  
   /* Hover transitions */
-  .hover-surface:hover {
-    background-color: var(--color-bg-surface-hover);
-  }
-  .hover-accent:hover {
-    background-color: var(--color-accent-primary-hover);
-  }
-  .hover-border:hover {
-    border-color: var(--color-border-hover);
-  }
-
+  .hover-surface:hover { background-color: var(--color-bg-surface-hover); }
+  .hover-accent:hover { background-color: var(--color-accent-primary-hover); }
+  .hover-border:hover { border-color: var(--color-border-hover); }
+  
   /* Focus states */
   .focus-accent:focus {
     outline: 2px solid var(--color-accent-primary);
     outline-offset: 2px;
   }
-
+  
   .focus-ring:focus {
     box-shadow: 0 0 0 3px var(--color-accent-primary-bg);
   }
-
+  
   /* Placeholder text */
   .placeholder-muted::placeholder {
     color: var(--color-text-muted);
   }
-
+  
   /* Divider lines */
   .divide-default > * + * {
     border-top-color: var(--color-border);
   }
-
+  
   /* Shadow utilities with theme awareness */
-  .shadow-sm-theme {
-    box-shadow: var(--shadow-sm);
-  }
-  .shadow-md-theme {
-    box-shadow: var(--shadow-md);
-  }
-  .shadow-lg-theme {
-    box-shadow: var(--shadow-lg);
-  }
-  .shadow-xl-theme {
-    box-shadow: var(--shadow-xl);
-  }
+  .shadow-sm-theme { box-shadow: var(--shadow-sm); }
+  .shadow-md-theme { box-shadow: var(--shadow-md); }
+  .shadow-lg-theme { box-shadow: var(--shadow-lg); }
+  .shadow-xl-theme { box-shadow: var(--shadow-xl); }
 }
 
 /* ============================================
@@ -315,49 +239,49 @@
     fill: var(--color-accent-primary);
     fill-opacity: 0.2;
   }
-
+  
   .chart-fill-solid {
     fill: var(--color-accent-primary);
   }
-
+  
   /* Chart stroke/line with theme-aware accent */
   .chart-stroke {
     stroke: var(--color-accent-primary);
     stroke-width: 2px;
     fill: none;
   }
-
+  
   /* Secondary chart color (orange accent in dark mode) */
   .chart-fill-secondary {
     fill: var(--color-accent-secondary);
     fill-opacity: 0.2;
   }
-
+  
   .chart-stroke-secondary {
     stroke: var(--color-accent-secondary);
     stroke-width: 2px;
     fill: none;
   }
-
+  
   /* Grid lines for charts */
   .chart-grid {
     stroke: var(--color-border);
     stroke-width: 1px;
     stroke-dasharray: 4 4;
   }
-
+  
   /* Chart axis */
   .chart-axis {
     stroke: var(--color-border);
     stroke-width: 1px;
   }
-
+  
   /* Chart text labels */
   .chart-text {
     fill: var(--color-text-secondary);
     font-size: 12px;
   }
-
+  
   /* Tooltip styling */
   .chart-tooltip {
     background-color: var(--color-bg-elevated);
@@ -368,88 +292,3 @@
     box-shadow: var(--shadow-lg);
   }
 }
-
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Hide scrollbar for IE, Edge and Firefox */
-.no-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-
-/* Tiptap List Formatting Fix */
-.ProseMirror ul {
-  list-style-type: disc;
-  padding-left: 1.5rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.ProseMirror ol {
-  list-style-type: decimal;
-  padding-left: 1.5rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.ProseMirror li {
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
-}
-
-/* ============================================
-   PDF VIEWER - TEXT SELECTION FIX
-   ============================================ */
-
-/* Prevent text layer from interfering with selection */
-.react-pdf__Page__textContent {
-  user-select: text !important;
-  -webkit-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
-}
-
-.react-pdf__Page__textContent,
-.react-pdf__Page__textContent * {
-  user-select: text !important;
-  -webkit-user-select: text !important;
-}
-
-/* Ensure text layer spans maintain selection */
-.react-pdf__Page__textContent span {
-  user-select: text !important;
-  -webkit-user-select: text !important;
-}
-
-/* Highlight selection color in PDF viewer */
-.pdf-page-wrapper ::selection {
-  background-color: rgba(36, 87, 14, 0.4);
-  color: inherit;
-}
-
-/* ============================================
-   MATERIAL CARD - READY BADGE ANIMATION
-   ============================================ */
-
-@keyframes fade-out-scale {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  70% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.85);
-  }
-}
-
-.animate-fade-out {
-  animation: fade-out-scale 2s ease-in-out forwards;
-}
-

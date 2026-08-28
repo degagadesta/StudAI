@@ -26,17 +26,6 @@ const RANGE_CONFIG: Record<
     helper: "Days active, past 12 months",
   },
 };
-function formatTimeValue(value: number, unit: string): string {
-  if (unit !== "h") {
-    return `${value}${unit}`;
-  }
-  const totalMinutes = Math.round(value * 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  const formattedMinutes = minutes.toString().padStart(2, "0");
-  return `${hours}:${formattedMinutes}`;
-}
-
 function Bars({
   buckets,
   unit,
@@ -50,7 +39,7 @@ function Bars({
   const scaleMax = Math.max(max, ...buckets.map((b) => b.value));
 
   return (
-    <div className="relative flex items-end justify-between gap-2 h-100 mt-6">
+    <div className="relative flex items-end justify-between gap-2 h-48 mt-6">
       {buckets.map((b, i) => {
         const heightPct = (b.value / scaleMax) * 100;
         const isActive = hovered === i;
@@ -62,13 +51,15 @@ function Bars({
             onMouseLeave={() => setHovered(null)}
           >
             {isActive && (
-              <div className="absolute -top-9 bg-accent text-inverse text-xs font-mono px-2.5 py-1 rounded-lg whitespace-nowrap shadow-sm">
-                {formatTimeValue(b.value, unit)}
+              <div className="absolute -top-9 bg-accent text-inverse text-xs font-mono px-2.5 py-1 rounded-lg whitespace-nowrap">
+                {b.value}
+                {unit}
               </div>
             )}
             <div
-              className={`w-full rounded-lg transition-colors ${isActive ? "bg-accent-secondary" : "bg-elevated"
-                }`}
+              className={`w-full rounded-lg transition-colors ${
+                isActive ? "bg-accent-secondary" : "bg-elevated"
+              }`}
               style={{ height: `${Math.max(heightPct, 3)}%` }}
             />
             <span className="text-xs text-muted">{b.label}</span>
@@ -100,10 +91,11 @@ export default function ActivityBarChart({
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={`text-xs px-3 py-1 rounded-full transition-colors ${range === r
-                ? "bg-accent text-inverse"
-                : "text-secondary hover:text-primary"
-                }`}
+              className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                range === r
+                  ? "bg-accent text-inverse"
+                  : "text-secondary hover:text-primary"
+              }`}
             >
               {RANGE_CONFIG[r].label}
             </button>

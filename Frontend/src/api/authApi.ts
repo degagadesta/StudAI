@@ -197,26 +197,6 @@ export interface RegisterResponse {
   };
 }
 
-export interface StudentProfile {
-  id?: string;
-  studentId?: string;
-  curriculumId?: string;
-  currentYear: number;
-  currentSemester: number;
-  curriculum: {
-    id?: string;
-    name?: string;
-    department: {
-      id?: string;
-      name: string;
-      university: {
-        id?: string;
-        name: string;
-      };
-    };
-  };
-}
-
 export interface LoginPayload {
   email: string;
   password: string;
@@ -231,7 +211,6 @@ export interface LoginResponse {
     firstName: string;
   };
   hasProfile?: boolean;
-  profile?: StudentProfile | null;
 }
 
 export interface ForgotPasswordPayload {
@@ -261,7 +240,6 @@ export interface VerifyEmailResponse {
     email: string;
   };
   hasProfile: boolean;
-  profile?: StudentProfile | null;
 }
 
 export interface ApiErrorPayload {
@@ -360,37 +338,6 @@ export async function logout(): Promise<void> {
 export async function checkProfile(): Promise<{ hasProfile: boolean }> {
   const res = await api.get<{ hasProfile: boolean }>("/auth/check-profile");
   return res.data;
-}
-
-/**
- * Delete user account permanently
- * Requires password for non-Google users
- * Backend will clear tokens and delete all user data
- */
-export async function deleteAccount(password?: string): Promise<{
-  success: boolean;
-  message: string;
-}> {
-  try {
-    const res = await api.delete<{
-      success: boolean;
-      message: string;
-    }>("/auth/account", {
-      data: {
-        password,
-        confirmDelete: true,
-      },
-    });
-
-    // Clear tokens after successful deletion
-    clearTokens();
-
-    return res.data;
-  } catch (error) {
-    // Clear tokens even if deletion fails (for security)
-    clearTokens();
-    throw error;
-  }
 }
 
 /**

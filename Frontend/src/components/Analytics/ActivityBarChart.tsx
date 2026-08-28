@@ -50,7 +50,7 @@ function Bars({
   const scaleMax = Math.max(max, ...buckets.map((b) => b.value));
 
   return (
-    <div className="relative flex items-end justify-between gap-2 h-100 mt-6">
+    <div className="relative flex items-end justify-between gap-2 h-70 mt-6">
       {buckets.map((b, i) => {
         const heightPct = (b.value / scaleMax) * 100;
         const isActive = hovered === i;

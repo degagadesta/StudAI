@@ -14,7 +14,8 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { OnboardingRoute } from "./components/OnboardingRoute";
 import NotificationToast from "./components/NotificationToast";
 
-import LandingPage from "./pages/LandingPage";
+// Temporarily commented out landing page due to missing assets
+// import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";

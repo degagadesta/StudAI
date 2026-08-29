@@ -15,7 +15,7 @@ export default defineConfig({
       }
     },
     sourcemap: false,
-    minify: 'esbuild'
+    minify: true // Use default minifier instead of esbuild
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'axios']

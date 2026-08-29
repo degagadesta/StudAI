@@ -81,8 +81,11 @@ export default function App() {
             <AuthProvider>
               <SocketProvider>
                 <Routes>
-                  {/* Landing Page Route */}
-                  <Route path="/" element={<LandingPage />} />
+                  {/* Landing Page Route - Temporarily commented out due to missing assets */}
+                  {/* <Route path="/" element={<LandingPage />} /> */}
+
+                  {/* Redirect root to login for now */}
+                  <Route path="/" element={<Navigate to="/login" replace />} />
 
                   {/* Public Authentication Routes */}
                   <Route path="/login" element={<LoginPage />} />

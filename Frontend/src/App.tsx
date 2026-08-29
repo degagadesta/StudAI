@@ -14,7 +14,8 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { OnboardingRoute } from "./components/OnboardingRoute";
 import NotificationToast from "./components/NotificationToast";
 
-import LandingPage from "./pages/LandingPage";
+// Temporarily commented out landing page due to missing assets
+// import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -80,8 +81,11 @@ export default function App() {
             <AuthProvider>
               <SocketProvider>
                 <Routes>
-                  {/* Landing Page Route */}
-                  <Route path="/" element={<LandingPage />} />
+                  {/* Landing Page Route - Temporarily commented out due to missing assets */}
+                  {/* <Route path="/" element={<LandingPage />} /> */}
+
+                  {/* Redirect root to login for now */}
+                  <Route path="/" element={<Navigate to="/login" replace />} />
 
                   {/* Public Authentication Routes */}
                   <Route path="/login" element={<LoginPage />} />
@@ -140,7 +144,7 @@ export default function App() {
                     <Route path="courses" element={<CoursesPage />} />
                     <Route path="schedule" element={<SchedulePage />} />
                     <Route path="profile" element={<ProfilePage />} />
-                    <Route path="notifications" element={<NotificationsModal/>}/>
+                    <Route path="notifications" element={<NotificationsModal />} />
                     {/* <Route path="notifications" element={<NotificationsPage />} /> */}
                     <Route path="settings" element={<SettingsModalWrapper />} />
                   </Route>

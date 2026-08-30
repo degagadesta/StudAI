@@ -14,8 +14,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { OnboardingRoute } from "./components/OnboardingRoute";
 import NotificationToast from "./components/NotificationToast";
 
-// Temporarily commented out landing page due to missing assets
-// import LandingPage from "./pages/LandingPage";
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -81,11 +80,8 @@ export default function App() {
             <AuthProvider>
               <SocketProvider>
                 <Routes>
-                  {/* Landing Page Route - Temporarily commented out due to missing assets */}
-                  {/* <Route path="/" element={<LandingPage />} /> */}
-
-                  {/* Redirect root to login for now */}
-                  <Route path="/" element={<Navigate to="/login" replace />} />
+                  {/* Landing Page Route */}
+                  <Route path="/" element={<LandingPage />} />
 
                   {/* Public Authentication Routes */}
                   <Route path="/login" element={<LoginPage />} />

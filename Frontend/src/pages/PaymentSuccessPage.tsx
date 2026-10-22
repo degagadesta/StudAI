@@ -29,17 +29,26 @@ export default function PaymentSuccessPage() {
     try {
       setIsVerifying(true);
       const result = await verifyPayment(txRef);
+      
+      console.log("[PaymentSuccess] Verification result:", result);
+      console.log("[PaymentSuccess] Payment status:", result.payment.status);
+      console.log("[PaymentSuccess] Success flag:", result.success);
+      
       setPaymentData(result);
       setError(null);
 
       // If payment was successful, show celebration and reload
-      if (result.success) {
+      if (result.success || result.payment.status === "SUCCESS") {
+        console.log("[PaymentSuccess] Payment successful! Showing celebration");
         setShowCelebration(true);
         
-        // Reload after 4 seconds to refresh user session
+        // Reload after 5 seconds to refresh user session
         setTimeout(() => {
+          console.log("[PaymentSuccess] Redirecting to dashboard");
           window.location.href = "/app";
-        }, 4000);
+        }, 5000);
+      } else {
+        console.warn("[PaymentSuccess] Payment not successful:", result);
       }
     } catch (err: any) {
       console.error("Payment verification failed:", err);
@@ -99,7 +108,17 @@ export default function PaymentSuccessPage() {
 
   const { payment } = paymentData;
 
-  if (!paymentData.success) {
+  // Check if payment was actually successful
+  // Accept both the success flag and the payment status
+  const isPaymentSuccessful = paymentData.success === true || 
+                               payment.status === "SUCCESS" || 
+                               payment.status === "success";
+
+  console.log("[PaymentSuccess] Rendering - isPaymentSuccessful:", isPaymentSuccessful);
+  console.log("[PaymentSuccess] paymentData.success:", paymentData.success);
+  console.log("[PaymentSuccess] payment.status:", payment.status);
+
+  if (!isPaymentSuccessful) {
     return (
       <div className="min-h-screen bg-page flex items-center justify-center p-6">
         <div className="bg-surface border border-default rounded-xl p-8 max-w-md w-full text-center">
@@ -272,7 +291,7 @@ export default function PaymentSuccessPage() {
         <div className="px-8 pb-6">
           <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center">
             <p className="text-xs text-accent font-medium">
-              🚀 Redirecting you to dashboard in a few seconds...
+              🚀 Redirecting you to dashboard in 5 seconds...
             </p>
           </div>
         </div>

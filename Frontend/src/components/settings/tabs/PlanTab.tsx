@@ -37,8 +37,11 @@ export default function PlanTab({ currentPlan, onChangePlan, profile }: PlanTabP
         <h3 className="font-serif text-xl text-primary">
           Subscription Plans
         </h3>
-        <p className="text-xs text-secondary mt-0.5 mb-4">
+        <p className="text-xs text-secondary mt-0.5 mb-2">
           Choose the plan that fits your study workload and resource needs.
+        </p>
+        <p className="text-xs text-accent font-medium mb-4">
+          💡 Save up to 33% with annual billing on Student and Pro plans
         </p>
 
         <div className="grid grid-cols-3 gap-3.5">

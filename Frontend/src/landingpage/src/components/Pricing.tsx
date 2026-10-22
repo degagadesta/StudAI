@@ -57,7 +57,10 @@ export default function Pricing() {
       billing: isAnnual ? "Billed annually (2,400 ETB/yr) • Save 20%" : "Billed monthly",
       desc: "For serious exam preparation",
       features: [
-        "Unlimited everything",
+        "Unlimited PDF uploads",
+        "Unlimited AI chat messages",
+        "Unlimited flashcards & summaries",
+        "Unlimited active courses",
         "Priority AI responses",
         "Advanced analytics & predictions",
         "Create study groups",

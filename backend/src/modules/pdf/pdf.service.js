@@ -60,7 +60,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
   }
 
   // 4. Check upload limit using new usage tracking system
-  await assertWithinLimit(studentId, student.subscriptionPlan, "PDF_UPLOAD");
+  await assertWithinLimit(studentId, student.subscriptionPlan, "PDF_UPLOADS");
 
   // 5. Make sure onboarding/profile is completed
   const profile = await prisma.studentProfile.findUnique({
@@ -184,7 +184,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
   }
 
   // 9. Record PDF upload usage
-  await recordUsage(studentId, "PDF_UPLOAD", {
+  await recordUsage(studentId, "PDF_UPLOADS", {
     materialId: pdf.id,
   });
 

@@ -142,12 +142,18 @@ export async function getUsageSummary(studentId) {
       where: { studentId, feature: "FLASHCARDS", createdAt: { gte: periodStart } },
     }),
     prisma.usageLog.count({
-      where: { studentId, feature: "CHAT_MESSAGE", createdAt: { gte: periodStart } },
+      where: { studentId, feature: "CHAT_MESSAGES", createdAt: { gte: periodStart } },
     }),
     prisma.usageLog.count({
       where: { studentId, feature: "NOTES_GENERATION", createdAt: { gte: periodStart } },
     }),
     prisma.usageLog.count({
+      where: { studentId, feature: "QUIZ_GENERATION", createdAt: { gte: periodStart } },
+    }),
+    prisma.usageLog.count({
+      where: { studentId, feature: "PDF_UPLOADS", createdAt: { gte: periodStart } },
+    }),
+  ]);
       where: { studentId, feature: "QUIZ_GENERATION", createdAt: { gte: periodStart } },
     }),
     prisma.usageLog.count({

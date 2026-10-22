@@ -1,6 +1,7 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
 import { generateStructured } from "../../lib/geminiClient.js";
+import { assertWithinLimit, recordUsage } from "../usage/usage.service.js";
 import { Type } from "@google/genai";
 
 const quizGenerationSchema = {
@@ -34,6 +35,18 @@ const quizGenerationSchema = {
  */
 export async function generateQuizFromMaterial(materialId, difficulty, count = 5, studentId) {
   console.log(`[Quiz Service] Generating quiz for material: ${materialId}`);
+
+  // Check usage limits
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { subscriptionPlan: true },
+  });
+
+  if (!student) {
+    throw new AppError("Student not found", 404);
+  }
+
+  await assertWithinLimit(studentId, student.subscriptionPlan, "QUIZ_GENERATION");
 
   // Fetch course material
   const material = await prisma.courseMaterial.findUnique({
@@ -150,6 +163,11 @@ Return the result as JSON matching the schema.`;
         ...newQuiz,
         questions: createdQuestions,
       };
+    });
+
+    // Record usage
+    await recordUsage(studentId, "QUIZ_GENERATION", {
+      materialId,
     });
 
     return quiz;

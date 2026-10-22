@@ -1,12 +1,8 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
-import {
-  SUBSCRIPTION_LIMITS,
-  canUploadMore,
-} from "../../lib/subscriptionLimits.js";
+import { assertWithinLimit, recordUsage } from "../usage/usage.service.js";
 import { processMaterialAsync } from "../ai/materialProcessing.service.js";
 import { uploadPDFToStorage, downloadPDFFromStorage, deletePDFFromStorage } from "../../lib/supabase.js";
-
 import { emitToStudent } from "../../lib/socket.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -55,6 +51,7 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     },
     select: {
       subscriptionPlan: true,
+      subscriptionExpiresAt: true,
     },
   });
 
@@ -62,27 +59,8 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     throw new AppError("Account not found. Please log in again", 404);
   }
 
-  // 4. Check upload limit for the last 24 hours
-  // Deleted PDFs are also counted because we don't filter by status.
-  const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-  const uploadedInLast24h = await prisma.courseMaterial.count({
-    where: {
-      uploadedBy: studentId,
-      createdAt: {
-        gte: last24Hours,
-      },
-    },
-  });
-
-  if (!canUploadMore(student.subscriptionPlan, uploadedInLast24h)) {
-    const limit = SUBSCRIPTION_LIMITS[student.subscriptionPlan];
-
-    throw new AppError(
-      `You've reached your daily upload limit. Your ${student.subscriptionPlan} plan allows ${limit} PDF uploads per day. Try again tomorrow or upgrade your plan`,
-      403,
-    );
-  }
+  // 4. Check upload limit using new usage tracking system
+  await assertWithinLimit(studentId, student.subscriptionPlan, "PDF_UPLOAD");
 
   // 5. Make sure onboarding/profile is completed
   const profile = await prisma.studentProfile.findUnique({
@@ -205,11 +183,16 @@ export async function uploadPDF(studentId, curriculumCourseId, file) {
     throw new AppError("Failed to save storage path in database", 500);
   }
 
-  // 9. Start background processing (non-blocking)
+  // 9. Record PDF upload usage
+  await recordUsage(studentId, "PDF_UPLOAD", {
+    materialId: pdf.id,
+  });
+
+  // 10. Start background processing (non-blocking)
   console.log(`[Upload] Starting background processing for material ${pdf.id}`);
   processMaterialAsync(pdf.id);
 
-  // 10. Return metadata only
+  // 11. Return metadata only
   return {
     id: pdf.id,
     fileName: pdf.title,

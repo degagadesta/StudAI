@@ -1,10 +1,5 @@
 import PlanCard from "../PlanCard";
-// import {
-//   PLANS,
-//   normalizeSubscriptionTier,
-//   type SubscriptionTier,
-// } from "../../../data/planData";
-
+import UsageDisplay from "../../UsageDisplay";
 import {
   PLANS,
   normalizeSubscriptionTier,
@@ -13,37 +8,55 @@ import {
 import type { AcademicProfile } from "../../../api/Coursesapi";
 
 interface PlanTabProps {
+  currentPlan: SubscriptionTier;
+  onChangePlan: (tier: SubscriptionTier) => void;
   profile: AcademicProfile | null;
-  onUpgradeClick: (tier: SubscriptionTier) => void;
 }
 
-export default function PlanTab({ profile, onUpgradeClick }: PlanTabProps) {
-  // Active plan comes from the server, not from local UI state.
-  const currentPlan = normalizeSubscriptionTier(profile?.subscriptionPlan);
+export default function PlanTab({ currentPlan, onChangePlan, profile }: PlanTabProps) {
+  // Use the currentPlan prop which is managed by the parent
+  const activePlan = normalizeSubscriptionTier(profile?.subscriptionPlan) || currentPlan;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Current Usage Section */}
       <div>
+        <h3 className="font-serif text-xl text-primary mb-3">
+          Current Usage
+        </h3>
+        <UsageDisplay
+          onUpgradeClick={() => {
+            // Scroll to plans section
+            document.getElementById("plans-section")?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      </div>
+
+      {/* Plans Section */}
+      <div id="plans-section">
         <h3 className="font-serif text-xl text-primary">
           Subscription Plans
         </h3>
-        <p className="text-xs text-secondary mt-0.5">
+        <p className="text-xs text-secondary mt-0.5 mb-2">
           Choose the plan that fits your study workload and resource needs.
         </p>
-      </div>
+        <p className="text-xs text-accent font-medium mb-4">
+          💡 Save up to 33% with annual billing on Student and Pro plans
+        </p>
 
-      <div className="grid grid-cols-3 gap-3.5 pt-1">
-        {PLANS.map((plan) => (
-          <PlanCard
-            key={plan.id}
-            plan={plan}
-            currentPlan={currentPlan}
-            displayName={
-              plan.id === "free" ? profile?.subscriptionPlan : undefined
-            }
-            onSelect={onUpgradeClick}
-          />
-        ))}
+        <div className="grid grid-cols-3 gap-3.5">
+          {PLANS.map((plan) => (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              currentPlan={activePlan}
+              displayName={
+                plan.id === "free" ? profile?.subscriptionPlan : undefined
+              }
+              onSelect={onChangePlan}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

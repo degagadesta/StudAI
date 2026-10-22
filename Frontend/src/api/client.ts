@@ -109,12 +109,19 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         clearTokens();
         
-        // Only redirect if we're not already on a public auth page
-        const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+        // Only redirect to /login when the user is on a route that requires auth.
+        // "/" is the public landing page — never redirect from there.
+        // Auth pages (/login, /register, etc.) also must not redirect.
         const currentPath = typeof window !== "undefined" ? window.location.pathname : '';
-        const isOnPublicPage = publicPaths.some(path => currentPath.includes(path));
-        
-        if (typeof window !== "undefined" && !isOnPublicPage) {
+        const isPublicPath =
+          currentPath === '/' ||
+          currentPath.startsWith('/login') ||
+          currentPath.startsWith('/register') ||
+          currentPath.startsWith('/forgot-password') ||
+          currentPath.startsWith('/reset-password') ||
+          currentPath.startsWith('/verify-email');
+
+        if (typeof window !== "undefined" && !isPublicPath) {
           window.location.href = "/login";
         }
         return Promise.reject(refreshError);

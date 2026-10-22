@@ -99,6 +99,7 @@ model Student {
   refreshTokenExpiresAt      DateTime?
   refreshToken               String?
   subscriptionPlan           subscriptionPlan  @default(FREE)
+  subscriptionExpiresAt      DateTime?
   activityLogs               ActivityLog[]
   activitySessions           ActivitySession[]
   chatSessions               ChatSession[]
@@ -113,6 +114,8 @@ model Student {
   UsageLog                   UsageLog[]
   weakTopics                 WeakTopic[]
   courseMaterials            CourseMaterial[]
+  payments                   Payment[]
+  subscriptionHistory        SubscriptionHistory[]
 }
 
 model StudentProfile {
@@ -452,6 +455,7 @@ model StudentCourseSelection {
 
 enum subscriptionPlan {
   FREE
+  STUDENT
   PRO
   STANDARD
 }
@@ -459,8 +463,28 @@ enum subscriptionPlan {
 enum UsageFeature {
   SUMMARY
   FLASHCARDS
-  CHAT_MESSAGE
+  CHAT_MESSAGES
   NOTES_GENERATION
+  QUIZ_GENERATION
+  PDF_UPLOADS
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  CHAPA
+  MANUAL
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
 }
 
 enum MaterialStatus {
@@ -514,4 +538,45 @@ enum ChunkStatus {
 enum ChatRole {
   USER
   ASSISTANT
+}
+
+model Payment {
+  id              String          @id @default(uuid())
+  studentId       String
+  amount          Float
+  currency        String          @default("ETB")
+  status          PaymentStatus   @default(PENDING)
+  provider        PaymentProvider @default(CHAPA)
+  transactionRef  String          @unique
+  chapaReference  String?
+  planUpgraded    subscriptionPlan
+  billingCycle    BillingCycle
+  metadata        Json?
+  providerResponse Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  completedAt     DateTime?
+  student         Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([status])
+  @@index([transactionRef])
+  @@index([createdAt])
+}
+
+model SubscriptionHistory {
+  id              String           @id @default(uuid())
+  studentId       String
+  previousPlan    subscriptionPlan
+  newPlan         subscriptionPlan
+  changedAt       DateTime         @default(now())
+  expiresAt       DateTime?
+  reason          String?
+  paymentId       String?
+  isActive        Boolean          @default(true)
+  student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([isActive])
+  @@index([changedAt])
 }

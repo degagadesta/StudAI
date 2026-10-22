@@ -1,53 +1,74 @@
 import { useState } from "react";
 import { Check, Sparkles, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(true);
+  const navigate = useNavigate();
+
+  const handlePlanSelect = (planName: string) => {
+    if (planName === "Free") {
+      // Navigate to signup for free plan
+      navigate("/register");
+    } else {
+      // Navigate to checkout for paid plans
+      const planId = planName.toLowerCase(); // "Student" -> "student", "Pro" -> "pro"
+      navigate(`/checkout?plan=${planId}`);
+    }
+  };
 
   const plans = [
     {
       name: "Free",
       price: "0 ETB",
-      desc: "For students getting started.",
+      desc: "Perfect for trying StudAI",
       features: [
-        "1 active course workspace",
-        "Limited AI tutor chat (50 msgs/mo)",
-        "Basic flashcards builder",
-        "Basic daily study planner",
+        "5 PDF uploads per month",
+        "100 AI chat messages/month",
+        "50 flashcards per month",
+        "2 active courses",
+        "Basic study features",
       ],
       cta: "Get Started Free",
       highlight: false,
     },
     {
-      name: "Premium",
-      price: isAnnual ? "69 ETB" : "99 ETB",
+      name: "Student",
+      price: isAnnual ? "100 ETB" : "149 ETB",
       suffix: "/ month",
-      billing: isAnnual ? "Billed annually (828 ETB/yr) • Save 30%" : "Billed monthly",
-      desc: "For serious exam preparation.",
+      billing: isAnnual ? "Billed annually (1,200 ETB/yr) • Save 33%" : "Billed monthly",
+      desc: "Perfect for active students",
       features: [
-        "Unlimited active courses",
-        "Unlimited AI tutor chat & summaries",
-        "Unlimited practice quizzes",
-        "Full Exam Intelligence™ database",
-        "Access to previous exams solved",
-        "Personalized study planner & timer",
-        "Weakness tracking & analytics dashboard",
+        "25 PDF uploads per month",
+        "1,000 AI chat messages/month",
+        "Unlimited flashcards & summaries",
+        "6 active courses",
+        "Full exam intelligence database",
+        "Advanced study timer & analytics",
+        "Export & study group features",
       ],
-      cta: "Start Premium",
+      cta: "Start Student Plan",
       highlight: true,
     },
     {
-      name: "Institution",
-      price: "Custom",
-      desc: "For universities & departments.",
+      name: "Pro",
+      price: isAnnual ? "200 ETB" : "249 ETB",
+      suffix: "/ month",
+      billing: isAnnual ? "Billed annually (2,400 ETB/yr) • Save 20%" : "Billed monthly",
+      desc: "For serious exam preparation",
       features: [
-        "Bulk student enrollment access",
-        "Instructor & tutor dashboards",
-        "Department-level study analytics",
-        "Custom University portal integrations",
-        "Dedicated institution support manager",
+        "Unlimited PDF uploads",
+        "Unlimited AI chat messages",
+        "Unlimited flashcards & summaries",
+        "Unlimited active courses",
+        "Priority AI responses",
+        "Advanced analytics & predictions",
+        "Create study groups",
+        "Custom exam generation",
+        "Offline mode",
+        "24/7 priority support",
       ],
-      cta: "Contact Us",
+      cta: "Go Pro",
       highlight: false,
     },
   ];
@@ -143,6 +164,7 @@ export default function Pricing() {
 
               {/* Action Button */}
               <button
+                onClick={() => handlePlanSelect(plan.name)}
                 className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 hover:scale-[1.01] ${plan.highlight
                     ? "bg-brand-primary text-brand-bg hover:bg-brand-primary-hover shadow-lg shadow-brand-primary/25"
                     : "border border-brand-border bg-brand-card hover:bg-brand-border/15 text-brand-text"

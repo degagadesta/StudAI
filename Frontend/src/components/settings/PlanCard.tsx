@@ -1,4 +1,5 @@
 import { CheckCircle2, Zap, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 // import type { PlanConfig, SubscriptionTier } from "./planData";
 import type { PlanConfig, SubscriptionTier } from "../../utils/PlanData";
 
@@ -15,7 +16,23 @@ export default function PlanCard({
   displayName,
   onSelect,
 }: PlanCardProps) {
+  const navigate = useNavigate();
   const isActive = currentPlan === plan.id;
+
+  const handleUpgrade = () => {
+    if (plan.id === "free" || isActive) return;
+    
+    // Navigate to checkout page with the selected plan
+    navigate(`/checkout?plan=${plan.id}`);
+  };
+
+  // Calculate yearly savings
+  const hasYearlySavings = plan.priceYearly && plan.id !== "free";
+  const monthlyCost = parseInt(plan.price.replace(/[^\d]/g, ''));
+  const yearlyCost = plan.priceYearly ? parseInt(plan.priceYearly.replace(/[^\d]/g, '')) : 0;
+  const savingsPercent = hasYearlySavings 
+    ? Math.round(((monthlyCost * 12 - yearlyCost) / (monthlyCost * 12)) * 100)
+    : 0;
 
   if (plan.unlimited) {
     return (
@@ -30,20 +47,30 @@ export default function PlanCard({
               <Sparkles size={15} className="text-[#DCD2B4]" />
               {plan.name}
             </span>
-            {plan.badge && (
+            {plan.badge && !isActive && (
               <span className="px-2 py-0.5 text-[10px] font-medium bg-elevated text-primary rounded-full">
                 {plan.badge}
               </span>
             )}
+            {isActive && (
+              <span className="px-2 py-0.5 text-[10px] font-medium bg-accent text-inverse rounded-full">
+                Current
+              </span>
+            )}
           </div>
-          <p className="text-lg font-bold text-[#FFFDF7] mb-3">
+          <p className="text-lg font-bold text-[#FFFDF7] mb-1">
             {plan.price}{" "}
             <span className="text-xs font-normal text-[#DCD2B4]">
               {plan.priceSuffix}
             </span>
           </p>
+          {hasYearlySavings && (
+            <p className="text-[10px] text-[#98C987] font-medium mb-2">
+              or {plan.priceYearly}/year (save {savingsPercent}%)
+            </p>
+          )}
 
-          <div className="border-t border-default/20 pt-3 space-y-2">
+          <div className="border-t border-default/20 pt-3 mt-2 space-y-2">
             <p className="text-xs text-[#EFE8D4] font-medium">
               Everything Unlimited:
             </p>
@@ -61,7 +88,7 @@ export default function PlanCard({
         <button
           type="button"
           disabled={isActive}
-          onClick={() => onSelect(plan.id)}
+          onClick={handleUpgrade}
           className={`w-full mt-4 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
             isActive
               ? "bg-elevated text-primary cursor-default font-semibold"
@@ -85,7 +112,7 @@ export default function PlanCard({
       <div>
         <div className="flex items-center justify-between mb-2">
           <span className="font-serif text-base text-primary flex items-center gap-1">
-            {plan.id === "standard" && (
+            {plan.id === "student" && (
               <Zap size={15} className="text-[#1E5652]" />
             )}
             {displayName ?? plan.name}
@@ -95,21 +122,31 @@ export default function PlanCard({
               Current
             </span>
           )}
+          {plan.popular && !isActive && (
+            <span className="px-2 py-0.5 text-[10px] font-medium bg-[#1E5652] text-inverse rounded-full">
+              Popular
+            </span>
+          )}
         </div>
-        <p className="text-lg font-bold text-primary mb-3">
+        <p className="text-lg font-bold text-primary mb-1">
           {plan.price}{" "}
           <span className="text-xs font-normal text-secondary">
             {plan.priceSuffix}
           </span>
         </p>
+        {hasYearlySavings && (
+          <p className="text-[10px] text-accent font-medium mb-2">
+            or {plan.priceYearly}/year (save {savingsPercent}%)
+          </p>
+        )}
 
-        <ul className="text-xs text-secondary space-y-2 border-t border-default/50 pt-3">
+        <ul className="text-xs text-secondary space-y-2 border-t border-default/50 pt-3 mt-2">
           {plan.features.map((f) => (
             <li key={f.label} className="flex items-start gap-1.5">
               <CheckCircle2
                 size={14}
                 className={`shrink-0 mt-0.5 ${
-                  plan.id === "standard" ? "text-[#1E5652]" : "text-accent"
+                  plan.id === "student" ? "text-[#1E5652]" : "text-accent"
                 }`}
               />
               <span>
@@ -128,7 +165,7 @@ export default function PlanCard({
       <button
         type="button"
         disabled={isActive || plan.id === "free"} // no "switch to free" self-serve for now
-        onClick={() => onSelect(plan.id)}
+        onClick={handleUpgrade}
         className={`w-full mt-4 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
           isActive
             ? "bg-elevated text-primary cursor-default"

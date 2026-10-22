@@ -37,16 +37,11 @@ export default function PaymentSuccessPage() {
       setPaymentData(result);
       setError(null);
 
-      // If payment was successful, show celebration and reload
+      // If payment was successful, show celebration (NO auto-redirect)
       if (result.success || result.payment.status === "SUCCESS") {
         console.log("[PaymentSuccess] Payment successful! Showing celebration");
         setShowCelebration(true);
-        
-        // Reload after 5 seconds to refresh user session
-        setTimeout(() => {
-          console.log("[PaymentSuccess] Redirecting to dashboard");
-          window.location.href = "/app";
-        }, 5000);
+        // User must click "Go to Dashboard" button to navigate
       } else {
         console.warn("[PaymentSuccess] Payment not successful:", result);
       }
@@ -277,22 +272,13 @@ export default function PaymentSuccessPage() {
               <span>Download Receipt</span>
             </button>
             <button
-              onClick={() => navigate("/app")}
+              onClick={() => window.location.href = "/app"}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-accent text-inverse hover:bg-accent-hover rounded-lg text-sm font-semibold transition-all hover:scale-[1.02]"
             >
               <Rocket size={16} />
               <span>Start Learning Now</span>
               <ArrowRight size={16} />
             </button>
-          </div>
-        </div>
-
-        {/* Automatic Redirect Notice */}
-        <div className="px-8 pb-6">
-          <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center">
-            <p className="text-xs text-accent font-medium">
-              🚀 Redirecting you to dashboard in 5 seconds...
-            </p>
           </div>
         </div>
 

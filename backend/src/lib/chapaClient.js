@@ -102,19 +102,20 @@ export async function verifyPayment(txRef) {
 
     return {
       success: true,
-      status: "success",
+      status: "success", // Chapa returns lowercase "success"
       amount: 149.00, // Mock amount
       currency: "ETB",
       email: "test@example.com",
       firstName: "Test",
       lastName: "User",
       txRef: txRef,
-      reference: `mock-ref-${Date.now()}`,
+      reference: `mock-chapa-ref-${Date.now()}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       raw: {
         status: "success",
         message: "Mock payment successful",
+        tx_ref: txRef,
       },
     };
   }

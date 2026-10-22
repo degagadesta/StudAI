@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { CheckCircle, Loader2, Sparkles, ArrowRight, Download } from "lucide-react";
+import { CheckCircle, Loader2, Sparkles, ArrowRight, Download, Rocket } from "lucide-react";
 import { verifyPayment, type PaymentVerifyResponse } from "../api/paymentApi";
 
 export default function PaymentSuccessPage() {
@@ -11,6 +11,7 @@ export default function PaymentSuccessPage() {
   const [isVerifying, setIsVerifying] = useState(true);
   const [paymentData, setPaymentData] = useState<PaymentVerifyResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     if (!txRef) {
@@ -31,12 +32,14 @@ export default function PaymentSuccessPage() {
       setPaymentData(result);
       setError(null);
 
-      // If payment was successful, refresh user session to get new plan
+      // If payment was successful, show celebration and reload
       if (result.success) {
-        // Trigger auth context refresh or reload
+        setShowCelebration(true);
+        
+        // Reload after 4 seconds to refresh user session
         setTimeout(() => {
-          window.location.reload();
-        }, 3000);
+          window.location.href = "/app";
+        }, 4000);
       }
     } catch (err: any) {
       console.error("Payment verification failed:", err);
@@ -129,18 +132,36 @@ export default function PaymentSuccessPage() {
   }
 
   return (
-    <div className="min-h-screen bg-page flex items-center justify-center p-6">
-      <div className="bg-surface border border-default rounded-xl overflow-hidden max-w-2xl w-full">
+    <div className="min-h-screen bg-page flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Celebration Animation */}
+      {showCelebration && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Rocket 
+              size={100} 
+              className="text-accent animate-bounce"
+              style={{
+                animation: "bounce 1s ease-in-out infinite, rocket-launch 2s ease-out"
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="bg-surface border border-default rounded-xl overflow-hidden max-w-2xl w-full relative z-10">
         {/* Success Header */}
         <div className="bg-gradient-to-br from-accent/10 to-accent/5 border-b border-default p-8 text-center">
           <div className="w-20 h-20 bg-accent/20 border-2 border-accent rounded-full flex items-center justify-center mx-auto mb-4 animate-in zoom-in duration-300">
             <CheckCircle size={48} className="text-accent" />
           </div>
           <h1 className="text-3xl font-serif font-bold text-primary mb-2">
-            Payment Successful! 🎉
+            🎉 Payment Successful! 🎉
           </h1>
+          <p className="text-base font-semibold text-accent mb-1">
+            Welcome to {payment.plan} Plan!
+          </p>
           <p className="text-sm text-secondary">
-            Welcome to {payment.plan} Plan! Your subscription is now active.
+            Your subscription is now active. Get ready to study smarter!
           </p>
         </div>
 
@@ -238,11 +259,21 @@ export default function PaymentSuccessPage() {
             </button>
             <button
               onClick={() => navigate("/app")}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-accent text-inverse hover:bg-accent-hover rounded-lg text-sm font-semibold transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-accent text-inverse hover:bg-accent-hover rounded-lg text-sm font-semibold transition-all hover:scale-[1.02]"
             >
-              <span>Go to Dashboard</span>
+              <Rocket size={16} />
+              <span>Start Learning Now</span>
               <ArrowRight size={16} />
             </button>
+          </div>
+        </div>
+
+        {/* Automatic Redirect Notice */}
+        <div className="px-8 pb-6">
+          <div className="bg-accent/10 border border-accent/20 rounded-lg p-3 text-center">
+            <p className="text-xs text-accent font-medium">
+              🚀 Redirecting you to dashboard in a few seconds...
+            </p>
           </div>
         </div>
 

@@ -154,12 +154,6 @@ export async function getUsageSummary(studentId) {
       where: { studentId, feature: "PDF_UPLOADS", createdAt: { gte: periodStart } },
     }),
   ]);
-      where: { studentId, feature: "QUIZ_GENERATION", createdAt: { gte: periodStart } },
-    }),
-    prisma.usageLog.count({
-      where: { studentId, feature: "PDF_UPLOAD", createdAt: { gte: periodStart } },
-    }),
-  ]);
 
   // Count active courses
   const activeCourses = await prisma.studentCourseSelection.count({

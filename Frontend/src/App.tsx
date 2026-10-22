@@ -37,6 +37,11 @@ import SettingsModal from "./pages/SettingsModal";
 import AdminExamDashboard from "./pages/AdminExamDashboard";
 import ExamPracticePage from "./pages/ExamPracticePage";
 
+// Payment routes
+import CheckoutPage from "./pages/CheckoutPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import PaymentFailurePage from "./pages/PaymentFailurePage";
+
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 // Wrapper component to safely adapt SettingsModal to React Router navigation
@@ -90,6 +95,11 @@ export default function App() {
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/verify-email" element={<VerifyEmail />} />
                   <Route path="/workspace/:id" element={<WorkspacePage />} />
+
+                  {/* Payment Routes */}
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/payment/success" element={<PaymentSuccessPage />} />
+                  <Route path="/payment/failure" element={<PaymentFailurePage />} />
 
                   {/* Protected Onboarding Flow - Uses OnboardingRoute instead of ProtectedRoute */}
                   <Route

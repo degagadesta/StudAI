@@ -41,6 +41,7 @@ export const env = {
   // Chapa Payment Configuration
   chapaSecretKey: process.env.CHAPA_SECRET_KEY,
   chapaWebhookSecret: process.env.CHAPA_WEBHOOK_SECRET,
+  paymentMode: process.env.PAYMENT_MODE || "live", // "mock" or "live"
 };
 
 // Alias for backward compatibility

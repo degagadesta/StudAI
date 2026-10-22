@@ -4,17 +4,23 @@ import { config } from "../config/env.js";
 /**
  * Chapa Payment Client
  * Supports both sandbox and production environments
+ * Also supports mock mode for testing without API calls
  */
 
 const chapaSecretKey = config.CHAPA_SECRET_KEY;
 const chapaWebhookSecret = config.CHAPA_WEBHOOK_SECRET;
+const paymentMode = config.paymentMode || "live";
 
-if (!chapaSecretKey) {
+if (!chapaSecretKey && paymentMode !== "mock") {
   console.warn("⚠️  CHAPA_SECRET_KEY is not set. Payment features will not work.");
 }
 
+if (paymentMode === "mock") {
+  console.log("🧪 [Chapa] Running in MOCK mode - payments will be simulated");
+}
+
 // Initialize Chapa client
-const chapa = new Chapa({
+const chapa = paymentMode === "mock" ? null : new Chapa({
   secretKey: chapaSecretKey || "CHASECK_TEST-placeholder",
 });
 
@@ -36,6 +42,26 @@ export async function initializePayment(paymentData) {
     customization = {},
   } = paymentData;
 
+  // Mock mode - simulate successful payment initialization
+  if (paymentMode === "mock") {
+    console.log("🧪 [Chapa Mock] Simulating payment initialization:", {
+      amount,
+      currency,
+      email,
+      txRef,
+    });
+
+    // Simulate Chapa checkout URL with mock payment page
+    const mockCheckoutUrl = `${config.frontendUrl}/mock-payment?tx_ref=${txRef}&amount=${amount}&email=${email}`;
+
+    return {
+      success: true,
+      checkoutUrl: mockCheckoutUrl,
+      txRef: txRef,
+    };
+  }
+
+  // Real Chapa API mode
   try {
     const response = await chapa.initialize({
       amount: amount.toString(),
@@ -70,6 +96,30 @@ export async function initializePayment(paymentData) {
  * @returns {Promise<Object>} Payment verification details
  */
 export async function verifyPayment(txRef) {
+  // Mock mode - simulate successful payment verification
+  if (paymentMode === "mock") {
+    console.log("🧪 [Chapa Mock] Simulating payment verification for:", txRef);
+
+    return {
+      success: true,
+      status: "success",
+      amount: 149.00, // Mock amount
+      currency: "ETB",
+      email: "test@example.com",
+      firstName: "Test",
+      lastName: "User",
+      txRef: txRef,
+      reference: `mock-ref-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      raw: {
+        status: "success",
+        message: "Mock payment successful",
+      },
+    };
+  }
+
+  // Real Chapa API mode
   try {
     const response = await chapa.verify({ tx_ref: txRef });
 

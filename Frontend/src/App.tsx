@@ -41,6 +41,7 @@ import ExamPracticePage from "./pages/ExamPracticePage";
 import CheckoutPage from "./pages/CheckoutPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailurePage from "./pages/PaymentFailurePage";
+import MockPaymentPage from "./pages/MockPaymentPage";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
@@ -100,6 +101,7 @@ export default function App() {
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/payment/success" element={<PaymentSuccessPage />} />
                   <Route path="/payment/failure" element={<PaymentFailurePage />} />
+                  <Route path="/mock-payment" element={<MockPaymentPage />} />
 
                   {/* Protected Onboarding Flow - Uses OnboardingRoute instead of ProtectedRoute */}
                   <Route

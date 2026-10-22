@@ -1,4 +1,4 @@
-import client from "./client";
+import { api } from "./client";
 
 export interface PaymentInitResponse {
   paymentId: string;
@@ -62,7 +62,7 @@ export async function initializePayment(
   plan: "STUDENT" | "PRO",
   billingCycle: "MONTHLY" | "YEARLY"
 ): Promise<PaymentInitResponse> {
-  const response = await client.post("/payment/initialize", {
+  const response = await api.post("/payment/initialize", {
     plan,
     billingCycle,
   });
@@ -75,7 +75,7 @@ export async function initializePayment(
 export async function verifyPayment(
   txRef: string
 ): Promise<PaymentVerifyResponse> {
-  const response = await client.get(`/payment/verify/${txRef}`);
+  const response = await api.get(`/payment/verify/${txRef}`);
   return response.data.data;
 }
 
@@ -83,7 +83,7 @@ export async function verifyPayment(
  * Get payment history
  */
 export async function getPaymentHistory(): Promise<PaymentHistory[]> {
-  const response = await client.get("/payment/history");
+  const response = await api.get("/payment/history");
   return response.data.data;
 }
 
@@ -91,7 +91,7 @@ export async function getPaymentHistory(): Promise<PaymentHistory[]> {
  * Get subscription history
  */
 export async function getSubscriptionHistory(): Promise<SubscriptionHistory[]> {
-  const response = await client.get("/payment/subscription-history");
+  const response = await api.get("/payment/subscription-history");
   return response.data.data;
 }
 
@@ -99,6 +99,6 @@ export async function getSubscriptionHistory(): Promise<SubscriptionHistory[]> {
  * Get available plans with pricing
  */
 export async function getPlans(): Promise<PlanInfo[]> {
-  const response = await client.get("/payment/plans");
+  const response = await api.get("/payment/plans");
   return response.data.data;
 }

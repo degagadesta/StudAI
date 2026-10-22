@@ -1,8 +1,21 @@
 import { useState } from "react";
 import { Check, Sparkles, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(true);
+  const navigate = useNavigate();
+
+  const handlePlanSelect = (planName: string) => {
+    if (planName === "Free") {
+      // Navigate to signup for free plan
+      navigate("/register");
+    } else {
+      // Navigate to checkout for paid plans
+      const planId = planName.toLowerCase(); // "Student" -> "student", "Pro" -> "pro"
+      navigate(`/checkout?plan=${planId}`);
+    }
+  };
 
   const plans = [
     {
@@ -148,6 +161,7 @@ export default function Pricing() {
 
               {/* Action Button */}
               <button
+                onClick={() => handlePlanSelect(plan.name)}
                 className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-300 hover:scale-[1.01] ${plan.highlight
                     ? "bg-brand-primary text-brand-bg hover:bg-brand-primary-hover shadow-lg shadow-brand-primary/25"
                     : "border border-brand-border bg-brand-card hover:bg-brand-border/15 text-brand-text"

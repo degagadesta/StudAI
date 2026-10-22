@@ -36,7 +36,7 @@ export default function CTA() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center gap-4 justify-center w-full sm:w-auto">
             <a
-              href="/login"
+              href="/register"
               className="group flex items-center justify-center gap-2 bg-brand-primary text-brand-bg hover:bg-brand-primary-hover font-bold text-xs sm:text-sm px-7 py-3.5 rounded-full transition-all duration-300 shadow-[0_6px_25px_-5px_rgba(152,201,135,0.4)] hover:scale-[1.01] w-full sm:w-auto"
             >
               Get Started Free

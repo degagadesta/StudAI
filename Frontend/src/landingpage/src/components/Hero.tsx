@@ -31,7 +31,7 @@ export default function Hero() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center gap-4.5 justify-center mb-6">
             <a
-              href="/login"
+              href="/register"
               className="group flex items-center gap-2 bg-brand-primary text-brand-bg hover:bg-brand-primary-hover font-bold px-7 py-3.5 rounded-full shadow-[0_8px_30px_-5px_rgba(152,201,135,0.45)] hover:shadow-[0_8px_35px_-2px_rgba(152,201,135,0.6)] hover:scale-[1.02] transition-all duration-300 w-full sm:w-auto justify-center"
             >
               Get Started Free

@@ -1,4 +1,5 @@
 import { CheckCircle2, Zap, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 // import type { PlanConfig, SubscriptionTier } from "./planData";
 import type { PlanConfig, SubscriptionTier } from "../../utils/PlanData";
 
@@ -15,7 +16,15 @@ export default function PlanCard({
   displayName,
   onSelect,
 }: PlanCardProps) {
+  const navigate = useNavigate();
   const isActive = currentPlan === plan.id;
+
+  const handleUpgrade = () => {
+    if (plan.id === "free" || isActive) return;
+    
+    // Navigate to checkout page with the selected plan
+    navigate(`/checkout?plan=${plan.id}`);
+  };
 
   if (plan.unlimited) {
     return (
@@ -61,7 +70,7 @@ export default function PlanCard({
         <button
           type="button"
           disabled={isActive}
-          onClick={() => onSelect(plan.id)}
+          onClick={handleUpgrade}
           className={`w-full mt-4 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
             isActive
               ? "bg-elevated text-primary cursor-default font-semibold"
@@ -128,7 +137,7 @@ export default function PlanCard({
       <button
         type="button"
         disabled={isActive || plan.id === "free"} // no "switch to free" self-serve for now
-        onClick={() => onSelect(plan.id)}
+        onClick={handleUpgrade}
         className={`w-full mt-4 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
           isActive
             ? "bg-elevated text-primary cursor-default"

@@ -1,4 +1,4 @@
-import client from "./client";
+import { api } from "./client";
 
 export interface UsageLimit {
   used: number;
@@ -32,7 +32,7 @@ export interface FeatureAccessResponse {
  * Get current usage summary
  */
 export async function getUsageSummary(): Promise<UsageSummary> {
-  const response = await client.get("/student/usage/summary");
+  const response = await api.get("/student/usage/summary");
   return response.data.data;
 }
 
@@ -42,7 +42,7 @@ export async function getUsageSummary(): Promise<UsageSummary> {
 export async function checkFeatureAccess(
   feature: string
 ): Promise<FeatureAccessResponse> {
-  const response = await client.get(`/student/usage/check/${feature}`);
+  const response = await api.get(`/student/usage/check/${feature}`);
   return response.data.data;
 }
 

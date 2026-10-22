@@ -463,10 +463,10 @@ enum subscriptionPlan {
 enum UsageFeature {
   SUMMARY
   FLASHCARDS
-  CHAT_MESSAGE
+  CHAT_MESSAGES
   NOTES_GENERATION
   QUIZ_GENERATION
-  PDF_UPLOAD
+  PDF_UPLOADS
 }
 
 enum PaymentStatus {

@@ -37,4 +37,11 @@ export const env = {
   // Supabase Configuration
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+
+  // Chapa Payment Configuration
+  chapaSecretKey: process.env.CHAPA_SECRET_KEY,
+  chapaWebhookSecret: process.env.CHAPA_WEBHOOK_SECRET,
 };
+
+// Alias for backward compatibility
+export const config = env;

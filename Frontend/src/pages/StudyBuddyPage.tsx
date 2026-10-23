@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Plus, UsersRound, X } from "lucide-react";
+import { Check, Copy, Plus, UsersRound, X } from "lucide-react";
 import { getCourses, type Course } from "../api/Coursesapi";
 import { getApiErrorMessage } from "../api/authApi";
 
@@ -9,11 +9,24 @@ interface StudyGroup {
   description: string;
   courseId: string;
   courseName: string;
+  shareCode: string;
+}
+
+function createShareCode(): string {
+  const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const randomValues = new Uint8Array(6);
+  crypto.getRandomValues(randomValues);
+  return Array.from(randomValues, (value) =>
+    characters.charAt(value % characters.length),
+  ).join("");
 }
 
 export default function StudyBuddyPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [groups, setGroups] = useState<StudyGroup[]>([]);
+  const [createdGroup, setCreatedGroup] = useState<StudyGroup | null>(null);
+  const [isCodeCopied, setIsCodeCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
@@ -63,11 +76,37 @@ export default function StudyBuddyPage() {
       return;
     }
 
-    setGroups((currentGroups) => [
-      ...currentGroups,
-      { id: Date.now(), name, description, courseId, courseName: course.name },
-    ]);
+    const newGroup = {
+      id: Date.now(),
+      name,
+      description,
+      courseId,
+      courseName: course.name,
+      shareCode: createShareCode(),
+    };
+    setGroups((currentGroups) => [...currentGroups, newGroup]);
+    setCreatedGroup(newGroup);
+  };
+
+  const closeCreateDialog = () => {
     setIsCreateDialogOpen(false);
+    setCreatedGroup(null);
+    setIsCodeCopied(false);
+    setCopyError(null);
+  };
+
+  const handleCopyCode = async () => {
+    if (!createdGroup) {
+      return;
+    }
+
+    setCopyError(null);
+    try {
+      await navigator.clipboard.writeText(createdGroup.shareCode);
+      setIsCodeCopied(true);
+    } catch {
+      setCopyError("Could not copy the code. Please copy it manually.");
+    }
   };
 
   return (
@@ -79,7 +118,12 @@ export default function StudyBuddyPage() {
         </div>
         <button
           type="button"
-          onClick={() => setIsCreateDialogOpen(true)}
+          onClick={() => {
+            setCreatedGroup(null);
+            setIsCodeCopied(false);
+            setCopyError(null);
+            setIsCreateDialogOpen(true);
+          }}
           className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-inverse transition-colors hover:opacity-90"
         >
           <Plus size={17} />
@@ -129,7 +173,7 @@ export default function StudyBuddyPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
-              setIsCreateDialogOpen(false);
+              closeCreateDialog();
             }
           }}
         >
@@ -145,22 +189,64 @@ export default function StudyBuddyPage() {
                   id="create-study-group-title"
                   className="font-serif text-2xl text-primary"
                 >
-                  Create a study group
+                  {createdGroup ? "Study group created!" : "Create a study group"}
                 </h2>
                 <p className="mt-1 text-sm text-secondary">
-                  Give your group a name and a short description.
+                  {createdGroup
+                    ? "Share this code with your buddies so they can join."
+                    : "Give your group a name and a short description."}
                 </p>
               </div>
               <button
                 type="button"
                 aria-label="Close dialog"
-                onClick={() => setIsCreateDialogOpen(false)}
+                onClick={closeCreateDialog}
                 className="rounded-lg p-2 text-muted transition-colors hover:bg-elevated hover:text-primary"
               >
                 <X size={18} />
               </button>
             </div>
 
+            {createdGroup ? (
+              <div className="space-y-5">
+                <div className="rounded-2xl border border-default bg-page p-5 text-center">
+                  <p className="text-sm font-medium text-secondary">
+                    Share this with your buddies
+                  </p>
+                  <div className="mt-3 flex items-center justify-center gap-3">
+                    <code className="font-mono text-2xl font-semibold tracking-[0.2em] text-primary">
+                      {createdGroup.shareCode}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={handleCopyCode}
+                      aria-label={isCodeCopied ? "Code copied" : "Copy share code"}
+                      title={isCodeCopied ? "Copied" : "Copy code"}
+                      className="rounded-lg p-2 text-muted transition-colors hover:bg-elevated hover:text-primary"
+                    >
+                      {isCodeCopied ? <Check size={18} /> : <Copy size={18} />}
+                    </button>
+                  </div>
+                  {copyError && (
+                    <p role="alert" className="mt-2 text-sm text-error">
+                      {copyError}
+                    </p>
+                  )}
+                  {isCodeCopied && (
+                    <p role="status" className="mt-2 text-sm text-accent">
+                      Code copied
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={closeCreateDialog}
+                  className="w-full rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-inverse transition-colors hover:opacity-90"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleCreateGroup} className="space-y-4">
               <div>
                 <label
@@ -240,7 +326,7 @@ export default function StudyBuddyPage() {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsCreateDialogOpen(false)}
+                  onClick={closeCreateDialog}
                   className="rounded-xl border border-default px-4 py-2.5 text-sm font-medium text-secondary transition-colors hover:bg-elevated"
                 >
                   Cancel
@@ -254,6 +340,7 @@ export default function StudyBuddyPage() {
                 </button>
               </div>
             </form>
+            )}
           </section>
         </div>
       )}

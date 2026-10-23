@@ -28,6 +28,7 @@ import StartStudyingPage from "./pages/StartStudyingPage";
 import CoursesPage from "./pages/Coursepage";
 import WorkspacePage from "./pages/workspacepage";
 import SchedulePage from "./pages/Schedulepage";
+import StudyBuddyPage from "./pages/StudyBuddyPage";
 import ProfilePage from "./pages/Profilepage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import NotificationsModal from "./pages/NotificationsModal";
@@ -151,6 +152,7 @@ export default function App() {
                     <Route path="analytics" element={<AnalyticsPage />} />
                     <Route path="courses" element={<CoursesPage />} />
                     <Route path="schedule" element={<SchedulePage />} />
+                    <Route path="study-buddy" element={<StudyBuddyPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="notifications" element={<NotificationsModal />} />
                     {/* <Route path="notifications" element={<NotificationsPage />} /> */}

@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   BookOpen,
   Calendar,
+  UsersRound,
   LogOut,
   User,
 } from "lucide-react";
@@ -14,6 +15,7 @@ const NAV_ITEMS = [
   { to: "/app/analytics", label: "Analytics", icon: LayoutDashboard },
   { to: "/app/courses", label: "Courses", icon: BookOpen },
   { to: "/app/schedule", label: "Schedule", icon: Calendar },
+  { to: "/app/study-buddy", label: "Study Buddy", icon: UsersRound },
 ];
 
 export default function Sidebar() {

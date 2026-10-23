@@ -1,13 +1,19 @@
 import * as studyGroupService from "./studyGroup.service.js";
 import { AppError } from "../../middlewares/errorHandler.js";
+import * as validation from "./studyGroup.validation.js";
 
 /**
  * Create a new study group
  */
 export async function createGroup(req, res, next) {
     try {
+        const { error, value } = validation.createGroupSchema.validate(req.body);
+        if (error) {
+            throw new AppError(error.details[0].message, 400);
+        }
+
         const { id: studentId } = req.user;
-        const group = await studyGroupService.createStudyGroup(studentId, req.body);
+        const group = await studyGroupService.createStudyGroup(studentId, value);
         res.status(201).json({
             success: true,
             data: group,
@@ -56,8 +62,13 @@ export async function getGroupById(req, res, next) {
  */
 export async function joinGroup(req, res, next) {
     try {
+        const { error, value } = validation.joinGroupSchema.validate(req.body);
+        if (error) {
+            throw new AppError(error.details[0].message, 400);
+        }
+
         const { id: studentId } = req.user;
-        const { inviteCode } = req.body;
+        const { inviteCode } = value;
         const group = await studyGroupService.joinStudyGroup(studentId, inviteCode);
         res.json({
             success: true,
@@ -108,9 +119,14 @@ export async function deleteGroup(req, res, next) {
  */
 export async function updateMemberRole(req, res, next) {
     try {
+        const { error, value } = validation.updateMemberRoleSchema.validate(req.body);
+        if (error) {
+            throw new AppError(error.details[0].message, 400);
+        }
+
         const { id: studentId } = req.user;
         const { groupId, memberId } = req.params;
-        const { role } = req.body;
+        const { role } = value;
         const member = await studyGroupService.updateMemberRole(
             studentId,
             groupId,
@@ -183,9 +199,14 @@ export async function getMessages(req, res, next) {
  */
 export async function shareNote(req, res, next) {
     try {
+        const { error, value } = validation.shareNoteSchema.validate(req.body);
+        if (error) {
+            throw new AppError(error.details[0].message, 400);
+        }
+
         const { id: studentId } = req.user;
         const { groupId } = req.params;
-        const { noteId } = req.body;
+        const { noteId } = value;
         const sharedNote = await studyGroupService.shareNote(
             studentId,
             groupId,
@@ -226,12 +247,17 @@ export async function getSharedNotes(req, res, next) {
  */
 export async function updateGroup(req, res, next) {
     try {
+        const { error, value } = validation.updateGroupSchema.validate(req.body);
+        if (error) {
+            throw new AppError(error.details[0].message, 400);
+        }
+
         const { id: studentId } = req.user;
         const { groupId } = req.params;
         const group = await studyGroupService.updateStudyGroup(
             studentId,
             groupId,
-            req.body
+            value
         );
         res.json({
             success: true,

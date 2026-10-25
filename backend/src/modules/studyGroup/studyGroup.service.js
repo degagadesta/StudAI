@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { redis } from "../../lib/redis.js";
-import { AppError } from "../../middlewares/errorHandler.js";
+import { AppError } from "../../utils/AppError.js";
 import crypto from "crypto";
 
 /**

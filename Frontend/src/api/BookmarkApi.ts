@@ -1,80 +1,80 @@
 import { api } from "./client";
 
-export type BookmarkColor = "yellow" | "green" | "blue" | "red" | "purple" | "orange";
-
-export interface BookmarkTextSelection {
-  startOffset: number;
-  endOffset: number;
-  selectedText?: string;
-}
-
 export interface Bookmark {
   id: string;
-  materialId?: string;
   name: string;
   pageNumber: number;
-  textSelection: BookmarkTextSelection | null;
-  color: BookmarkColor;
-  note: string | null;
+  textSelection?: {
+    startOffset: number;
+    endOffset: number;
+    selectedText: string;
+  };
+  color: "yellow" | "green" | "blue" | "red" | "purple" | "orange";
+  note?: string;
+  material?: {
+    id: string;
+    title: string;
+  };
   createdAt: string;
   updatedAt: string;
-  material?: { id: string; title: string };
 }
 
 export interface CreateBookmarkPayload {
   name: string;
   pageNumber: number;
-  textSelection?: BookmarkTextSelection;
-  color?: BookmarkColor;
+  textSelection?: string;
+  color?: "yellow" | "green" | "blue" | "red" | "purple" | "orange";
   note?: string;
 }
 
 export interface UpdateBookmarkPayload {
   name?: string;
-  note?: string | null;
+  note?: string;
 }
 
-export interface AllBookmarksResult {
-  bookmarks: Bookmark[];
-  total: number;
-  limit: number;
-  offset: number;
+/**
+ * Create a new bookmark for a PDF material
+ */
+export async function createBookmark(
+  materialId: string,
+  data: CreateBookmarkPayload
+): Promise<Bookmark> {
+  const response = await api.post(`/student/materials/${materialId}/bookmarks`, data);
+  return response.data.data;
 }
 
-export async function getBookmarks(materialId: string): Promise<Bookmark[]> {
+/**
+ * Get all bookmarks for a specific material
+ */
+export async function getBookmarks(
+  materialId: string
+): Promise<Bookmark[]> {
   const response = await api.get(`/student/materials/${materialId}/bookmarks`);
   return response.data.data;
 }
 
-export async function getAllBookmarks(
-  limit = 100,
-  offset = 0,
-): Promise<AllBookmarksResult> {
-  const response = await api.get("/student/bookmarks", {
-    params: { limit, offset },
-  });
+/**
+ * Get all bookmarks for current student across all materials
+ */
+export async function getAllBookmarks(): Promise<Bookmark[]> {
+  const response = await api.get("/student/bookmarks");
   return response.data.data;
 }
 
-export async function createBookmark(
-  materialId: string,
-  payload: CreateBookmarkPayload,
-): Promise<Bookmark> {
-  const response = await api.post(
-    `/student/materials/${materialId}/bookmarks`,
-    payload,
-  );
-  return response.data.data;
-}
-
+/**
+ * Update an existing bookmark
+ */
 export async function updateBookmark(
   bookmarkId: string,
-  payload: UpdateBookmarkPayload,
+  data: UpdateBookmarkPayload
 ): Promise<Bookmark> {
-  const response = await api.patch(`/student/bookmarks/${bookmarkId}`, payload);
+  const response = await api.patch(`/student/bookmarks/${bookmarkId}`, data);
   return response.data.data;
 }
 
+/**
+ * Delete a bookmark
+ */
 export async function deleteBookmark(bookmarkId: string): Promise<void> {
   await api.delete(`/student/bookmarks/${bookmarkId}`);
 }

@@ -162,6 +162,9 @@ export default function WorkspaceSidebar({
   };
 
   const handleNotesTabClick = () => {
+    // Always expand sidebar if collapsed
+    if (!isExpanded) setIsExpanded(true);
+    
     if (currentTab === "notes") {
       setIsNotesOpen((prev) => !prev);
     } else {
@@ -171,6 +174,9 @@ export default function WorkspaceSidebar({
   };
 
   const handleUploadTabClick = () => {
+    // Always expand sidebar if collapsed
+    if (!isExpanded) setIsExpanded(true);
+    
     if (currentTab === "upload") {
       setIsUploadOpen((prev) => !prev);
     } else {
@@ -180,6 +186,9 @@ export default function WorkspaceSidebar({
   };
 
   const handleBookmarksTabClick = () => {
+    // Always expand sidebar if collapsed
+    if (!isExpanded) setIsExpanded(true);
+    
     if (currentTab === "bookmarks") {
       setIsBookmarksOpen((prev) => !prev);
     } else {

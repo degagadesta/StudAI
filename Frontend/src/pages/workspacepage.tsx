@@ -351,7 +351,9 @@ export default function WorkspacePage() {
                   <button
                     type="button"
                     onClick={() => {
-                      // Bookmarks are now in sidebar, just open the bookmarks dropdown
+                      // Trigger sidebar expansion for bookmarks
+                      setExpandSidebarSection("bookmarks");
+                      setTimeout(() => setExpandSidebarSection(null), 500);
                       setActiveTab("bookmarks");
                     }}
                     className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"

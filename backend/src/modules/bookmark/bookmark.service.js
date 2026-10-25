@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
-import { redis } from "../../lib/redis.js";
+import { cacheGet, cacheSet, cacheDel } from "../../lib/redis.js";
 
 const BOOKMARK_CACHE_PREFIX = "bookmarks:material:";
 const BOOKMARK_CACHE_TTL = 300; // 5 minutes

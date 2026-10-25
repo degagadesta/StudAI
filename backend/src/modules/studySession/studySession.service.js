@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
-import { redis } from "../../lib/redis.js";
+import { cacheGet, cacheSet, cacheDel } from "../../lib/redis.js";
 
 const ACTIVE_SESSION_PREFIX = "study-session:active:";
 const SESSION_CACHE_TTL = 3600; // 1 hour

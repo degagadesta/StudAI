@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { X, ZoomIn, ZoomOut, RotateCcw, GripHorizontal } from "lucide-react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { X, ZoomIn, ZoomOut, RotateCcw, GripHorizontal, BookmarkPlus } from "lucide-react";
 
 import WorkspaceTopbar from "../components/Workspace/Workspacetopbar";
 import WorkspaceSidebar, {
@@ -18,10 +18,16 @@ import QuizPanel from "../components/Workspace/QuizPanel";
 import SettingsModal, { type TabType } from "./SettingsModal";
 import { getMaterials, type Material } from "../api/Materialsapi";
 import { askQuestion } from "../api/aiApi";
+import { useBookmarks } from "../hooks/useBookmarks";
+import BookmarkPanel from "../components/Bookmarks/BookmarkPanel";
 
 export default function WorkspacePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedPage = Number(searchParams.get("page")) || undefined;
+  const [pageOverride, setPageOverride] = useState<number | undefined>();
+  const jumpToPage = pageOverride ?? requestedPage;
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("chat");
   const [material, setMaterial] = useState<Material | null>(null);
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
@@ -29,6 +35,17 @@ export default function WorkspacePage() {
   // --- Panel Visibility States (Only Notes & Chat sidebars) ---
   const [showNotes, setShowNotes] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(true);
+  const [showBookmarks, setShowBookmarks] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [bookmarkPage, setBookmarkPage] = useState(requestedPage ?? 1);
+  const {
+    bookmarks,
+    isLoading: areBookmarksLoading,
+    error: bookmarkError,
+    create: createBookmark,
+    update: updateBookmark,
+    remove: deleteBookmark,
+  } = useBookmarks(id);
 
   // --- Draggable Modal States (For Exams, Quiz, Flashcards, & Summary) ---
   const [modalPos, setModalPos] = useState({ x: 120, y: 80 });
@@ -116,7 +133,16 @@ export default function WorkspacePage() {
       setShowNotes(true);
     } else if (tab === "chat") {
       setShowChat(true);
+    } else if (tab === "bookmarks") {
+      setShowBookmarks(true);
     }
+  };
+
+  const openBookmarksAtPage = (page: number) => {
+    setBookmarkPage(page);
+    setPageOverride(page);
+    setActiveTab("bookmarks");
+    setShowBookmarks(true);
   };
 
   // Sidebar Sub-item Selection Handlers
@@ -298,6 +324,15 @@ export default function WorkspacePage() {
                   </span>
                   <button
                     type="button"
+                    onClick={() => openBookmarksAtPage(currentPage)}
+                    className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
+                    title={`Bookmark page ${currentPage}`}
+                    aria-label={`Add bookmark on page ${currentPage}`}
+                  >
+                    <BookmarkPlus size={17} />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => navigate("/workspace")}
                     className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
                     title="Close Material"
@@ -324,6 +359,8 @@ export default function WorkspacePage() {
                   onMetaLoaded={handleMetaLoaded}
                   onProgressChange={handleProgressChange}
                   onAskAI={handleAskAIFromSelection}
+                  jumpToPage={jumpToPage}
+                  onCurrentPageChange={setCurrentPage}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-secondary">
@@ -332,6 +369,24 @@ export default function WorkspacePage() {
               )}
             </div>
           </div>
+
+          {showBookmarks && (
+            <div className="flex w-[320px] shrink-0 flex-col overflow-hidden border-l border-default">
+              <BookmarkPanel
+                key={`${id ?? "material"}-${bookmarkPage}`}
+                materialName={material?.fileName ?? pdfMeta?.fileName}
+                bookmarks={bookmarks}
+                isLoading={areBookmarksLoading}
+                error={bookmarkError}
+                requestedPage={bookmarkPage}
+                onClose={() => setShowBookmarks(false)}
+                onNavigate={(page) => setPageOverride(page)}
+                onCreate={createBookmark}
+                onUpdate={updateBookmark}
+                onDelete={deleteBookmark}
+              />
+            </div>
+          )}
 
           {/* DRAGGABLE MODAL: Summary, Exams, Quiz, & Flashcards */}
           {isModalViewActive && (
@@ -483,5 +538,3 @@ export default function WorkspacePage() {
     </div>
   );
 }
-
-

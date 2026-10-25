@@ -117,9 +117,15 @@ export default function WorkspacePage() {
         color: "yellow",
       });
       
+      console.log('Bookmark created, triggering sidebar expansion');
       // Auto-expand bookmarks section in sidebar
       setExpandSidebarSection("bookmarks");
-      setTimeout(() => setExpandSidebarSection(null), 100); // Reset after triggering
+      
+      // Reset after a longer delay to ensure the effect triggers
+      setTimeout(() => {
+        console.log('Resetting expandSidebarSection');
+        setExpandSidebarSection(null);
+      }, 500);
       
       // Show success message
       console.log("Bookmark created successfully");

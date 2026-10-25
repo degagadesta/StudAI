@@ -95,11 +95,14 @@ export default function WorkspaceSidebar({
 
   // Auto-expand sidebar when bookmark or upload is created
   useEffect(() => {
+    console.log('Sidebar expandSection changed:', expandSection);
     if (expandSection === "bookmarks") {
+      console.log('Expanding sidebar for bookmarks');
       setIsExpanded(true);
       setIsBookmarksOpen(true);
       handleTabClick("bookmarks");
     } else if (expandSection === "upload") {
+      console.log('Expanding sidebar for upload');
       setIsExpanded(true);
       setIsUploadOpen(true);
       handleTabClick("upload");

@@ -14,6 +14,7 @@ import {
   ChevronRight,
   File,
   Loader2,
+  Bookmark,
 } from "lucide-react";
 import { getMaterials, type Material } from "../../api/Materialsapi";
 
@@ -24,6 +25,7 @@ export type WorkspaceTab =
   | "exams"
   | "quiz"
   | "flashcards"
+  | "bookmarks"
   | "upload";
 
 export interface NoteItem {
@@ -64,19 +66,15 @@ export default function WorkspaceSidebar({
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   // Materials state (auto-fetched if not passed via props)
-  const [materials, setMaterials] = useState<Material[]>(
-    initialMaterials || [],
-  );
+  const [fetchedMaterials, setFetchedMaterials] = useState<Material[]>([]);
+  const materials = initialMaterials ?? fetchedMaterials;
   const [isLoadingMaterials, setIsLoadingMaterials] =
     useState(!initialMaterials);
 
   const currentTab = controlledActiveTab ?? internalTab;
 
   useEffect(() => {
-    if (initialMaterials) {
-      setMaterials(initialMaterials);
-      return;
-    }
+    if (initialMaterials) return;
 
     let isMounted = true;
     async function fetchMaterials() {
@@ -84,7 +82,7 @@ export default function WorkspaceSidebar({
         setIsLoadingMaterials(true);
         const data = await getMaterials();
         if (isMounted) {
-          setMaterials(data);
+          setFetchedMaterials(data);
         }
       } catch (error) {
         console.error("Failed to load materials:", error);
@@ -309,7 +307,17 @@ export default function WorkspaceSidebar({
           onClick={() => handleTabClick("flashcards")}
         />
 
-        {/* 7. UPLOAD */}
+        {/* 7. BOOKMARKS */}
+        <NavItem
+          id="bookmarks"
+          label="Bookmarks"
+          icon={Bookmark}
+          isActive={currentTab === "bookmarks"}
+          isExpanded={isExpanded}
+          onClick={() => handleTabClick("bookmarks")}
+        />
+
+        {/* 8. UPLOAD */}
         <div>
           <NavItem
             id="upload"

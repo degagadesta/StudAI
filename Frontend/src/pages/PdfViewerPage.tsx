@@ -53,6 +53,8 @@ interface PdfViewerPageProps {
   onMetaLoaded?: (meta: { fileName: string; courseName: string }) => void;
   onProgressChange?: (percent: number) => void;
   onAskAI?: (selectedText: string) => void;
+  jumpToPage?: number;
+  onCurrentPageChange?: (pageNumber: number) => void;
 }
 
 /**
@@ -75,39 +77,38 @@ function useMaterialPdf(
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    setIsLoading(true);
-    setError(null);
+    void Promise.resolve().then(async () => {
+      if (cancelled) return;
+      setIsLoading(true);
+      setError(null);
 
-    getMaterials()
-      .then(async (materials) => {
+      try {
+        const materials = await getMaterials();
         if (cancelled) return;
         const found = materials.find((m) => m.id === id);
-        if (found) {
-          setMaterial(found);
-          onMetaLoadedRef.current?.({
-            fileName: found.fileName,
-            courseName: found.courseName,
-          });
-
-          const res = await api.get(`/student/pdfs/${found.id}/file`, {
-            responseType: "arraybuffer",
-          });
-
-          if (!cancelled) {
-            setPdfData(new Uint8Array(res.data));
-          }
-        } else {
+        if (!found) {
           setError("Material not found.");
+          return;
         }
-      })
-      .catch((err) => {
+
+        setMaterial(found);
+        onMetaLoadedRef.current?.({
+          fileName: found.fileName,
+          courseName: found.courseName,
+        });
+
+        const response = await api.get(`/student/pdfs/${found.id}/file`, {
+          responseType: "arraybuffer",
+        });
+        if (!cancelled) setPdfData(new Uint8Array(response.data));
+      } catch (err) {
         if (!cancelled) {
           setError(getApiErrorMessage(err, "Could not load this material."));
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setIsLoading(false);
-      });
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -122,6 +123,8 @@ export default function PdfViewerPage({
   onMetaLoaded,
   onProgressChange,
   onAskAI,
+  jumpToPage,
+  onCurrentPageChange,
 }: PdfViewerPageProps) {
   const { id } = useParams<{ id: string }>();
 
@@ -132,10 +135,10 @@ export default function PdfViewerPage({
 
   const [numPages, setNumPages] = useState<number | null>(null);
   const [furthestPage, setFurthestPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [containerWidth, setContainerWidth] = useState<number>(640);
 
   const [highlights, setHighlights] = useState<Highlight[]>([]);
-  const [, setRenderTick] = useState(0);
   const [pendingSelection, setPendingSelection] =
     useState<PendingSelection | null>(null);
   const [activeHighlight, setActiveHighlight] =
@@ -145,8 +148,12 @@ export default function PdfViewerPage({
   const containerRef = useRef<HTMLDivElement>(null);
   const hasRestoredStartingPage = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  const renderedPages = useRef<Set<number>>(new Set());
+  const [pageElements, setPageElements] = useState<Map<number, HTMLDivElement>>(
+    () => new Map(),
+  );
+  const [renderedPageNumbers, setRenderedPageNumbers] = useState<Set<number>>(
+    () => new Set(),
+  );
   const popoverRef = useRef<HTMLDivElement>(null);
   const preserveSelectionRef = useRef(false);
 
@@ -224,9 +231,14 @@ export default function PdfViewerPage({
       const savedProgress = Math.min(100, Math.max(0, material.progress || 0));
       const startingPage = Math.min(
         total,
-        Math.max(1, Math.round((savedProgress / 100) * total)),
+        Math.max(
+          1,
+          jumpToPage ??
+            Math.round((savedProgress / 100) * total),
+        ),
       );
       setFurthestPage(startingPage);
+      setCurrentPage(startingPage);
       hasRestoredStartingPage.current = true;
 
       setTimeout(() => {
@@ -242,17 +254,24 @@ export default function PdfViewerPage({
 
     const observer = new IntersectionObserver(
       (entries) => {
+        let mostVisiblePage: number | null = null;
+        let highestRatio = 0;
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const pageAttr = entry.target.getAttribute("data-page-number");
             if (pageAttr) {
               const visiblePage = parseInt(pageAttr, 10);
+              if (entry.intersectionRatio >= highestRatio) {
+                highestRatio = entry.intersectionRatio;
+                mostVisiblePage = visiblePage;
+              }
               setFurthestPage((prev) =>
                 Math.min(numPages, Math.max(prev, visiblePage)),
               );
             }
           }
         });
+        if (mostVisiblePage !== null) setCurrentPage(mostVisiblePage);
       },
       { root: containerRef.current, threshold: 0.15 },
     );
@@ -263,6 +282,19 @@ export default function PdfViewerPage({
 
     return () => observer.disconnect();
   }, [numPages]);
+
+  useEffect(() => {
+    onCurrentPageChange?.(currentPage);
+  }, [currentPage, onCurrentPageChange]);
+
+  useEffect(() => {
+    if (!jumpToPage || !numPages) return;
+    const page = Math.min(numPages, Math.max(1, jumpToPage));
+    document.getElementById(`pdf-page-${page}`)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [jumpToPage, numPages]);
 
   // Update progress notifications and auto-save
   useEffect(() => {
@@ -304,16 +336,25 @@ export default function PdfViewerPage({
   // Always bump renderTick so HighlightLayer re-runs its effect with fresh DOM
   // even when react-pdf rebuilds the text layer on a re-render.
   const handleTextLayerRendered = useCallback((pageNumber: number) => {
-    renderedPages.current.add(pageNumber);
-    setRenderTick((t) => t + 1);
+    setRenderedPageNumbers((current) => {
+      if (current.has(pageNumber)) return current;
+      const updated = new Set(current);
+      updated.add(pageNumber);
+      return updated;
+    });
   }, []);
 
   const registerPageRef = useCallback(
     (pageNumber: number, el: HTMLDivElement | null) => {
-      if (el && pageRefs.current.get(pageNumber) !== el) {
-        pageRefs.current.set(pageNumber, el);
-        setRenderTick((t) => t + 1);
-      }
+      setPageElements((current) => {
+        if (current.get(pageNumber) === el || (!el && !current.has(pageNumber))) {
+          return current;
+        }
+        const updated = new Map(current);
+        if (el) updated.set(pageNumber, el);
+        else updated.delete(pageNumber);
+        return updated;
+      });
     },
     [],
   );
@@ -561,8 +602,8 @@ export default function PdfViewerPage({
                     highlights={
                       highlightsByPage.get(pageNo) ?? EMPTY_HIGHLIGHTS
                     }
-                    pageEl={pageRefs.current.get(pageNo)}
-                    isTextLayerReady={renderedPages.current.has(pageNo)}
+                    pageEl={pageElements.get(pageNo)}
+                    isTextLayerReady={renderedPageNumbers.has(pageNo)}
                     onRegisterRef={registerPageRef}
                     onTextLayerRendered={handleTextLayerRendered}
                     onHighlightClick={handleHighlightClick}

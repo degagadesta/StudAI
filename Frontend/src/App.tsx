@@ -31,8 +31,10 @@ import SchedulePage from "./pages/Schedulepage";
 import StudyBuddyPage from "./pages/StudyBuddyPage";
 import ProfilePage from "./pages/Profilepage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import StudySessionsPage from "./pages/StudySessionsPage";
 import NotificationsModal from "./pages/NotificationsModal";
 import SettingsModal from "./pages/SettingsModal";
+import BookmarksPage from "./pages/BookmarksPage";
 
 // Exam routes
 import AdminExamDashboard from "./pages/AdminExamDashboard";
@@ -60,22 +62,6 @@ function SettingsModalWrapper() {
   };
 
   return <SettingsModal isOpen={true} onClose={handleClose} />;
-}
-
-// Wrapper component for NotificationsModal
-function NotificationsModalWrapper() {
-  const navigate = useNavigate();
-
-  const handleClose = () => {
-    // Return to previous route or default to analytics
-    if (window.history.length > 2) {
-      navigate(-1);
-    } else {
-      navigate("/app/analytics", { replace: true });
-    }
-  };
-
-  return <NotificationsModal isOpen={true} onClose={handleClose} />;
 }
 
 export default function App() {
@@ -150,8 +136,10 @@ export default function App() {
                     <Route index element={<Navigate to="analytics" replace />} />
                     <Route path="start-studying" element={<StartStudyingPage />} />
                     <Route path="analytics" element={<AnalyticsPage />} />
+                    <Route path="study-sessions" element={<StudySessionsPage />} />
                     <Route path="courses" element={<CoursesPage />} />
                     <Route path="schedule" element={<SchedulePage />} />
+                    <Route path="bookmarks" element={<BookmarksPage />} />
                     <Route path="study-buddy" element={<StudyBuddyPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="notifications" element={<NotificationsModal />} />

@@ -5,16 +5,20 @@ import {
   BookOpen,
   Calendar,
   UsersRound,
+  Timer,
   LogOut,
   User,
+  Bookmark,
 } from "lucide-react";
 import { logout } from "../../api/authApi";
 
 const NAV_ITEMS = [
   { to: "/app/start-studying", label: "Start Studying", icon: Rocket },
   { to: "/app/analytics", label: "Analytics", icon: LayoutDashboard },
+  { to: "/app/study-sessions", label: "Study Sessions", icon: Timer },
   { to: "/app/courses", label: "Courses", icon: BookOpen },
   { to: "/app/schedule", label: "Schedule", icon: Calendar },
+  { to: "/app/bookmarks", label: "Bookmarks", icon: Bookmark },
   { to: "/app/study-buddy", label: "Study Buddy", icon: UsersRound },
 ];
 

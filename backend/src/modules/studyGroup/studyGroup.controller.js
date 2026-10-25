@@ -1,5 +1,5 @@
 import * as studyGroupService from "./studyGroup.service.js";
-import { AppError } from "../../middlewares/errorHandler.js";
+import { AppError } from "../../utils/AppError.js";
 import * as validation from "./studyGroup.validation.js";
 
 /**

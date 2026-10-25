@@ -23,3 +23,9 @@ CREATE INDEX "CourseMaterial_curriculumCourseId_idx" ON "CourseMaterial"("curric
 
 -- AddForeignKey
 ALTER TABLE "CourseMaterial" ADD CONSTRAINT "CourseMaterial_curriculumCourseId_fkey" FOREIGN KEY ("curriculumCourseId") REFERENCES "CurriculumCourse"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- Drop the orphaned NOT NULL column no longer in the schema
+ALTER TABLE "CourseMaterial" DROP COLUMN "courseId";
+
+-- Bring curriculumCourseId in line with schema.prisma (String, required)
+ALTER TABLE "CourseMaterial" ALTER COLUMN "curriculumCourseId" SET NOT NULL;

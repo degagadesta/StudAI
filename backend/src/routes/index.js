@@ -24,6 +24,7 @@ import paymentRoutes from "../modules/payment/payment.routes.js";
 import studySessionRoutes from "../modules/studySession/studySession.routes.js";
 import bookmarkRoutes from "../modules/bookmark/bookmark.routes.js";
 import studyGroupRoutes from "../modules/studyGroup/studyGroup.routes.js";
+import adminRoutes from "./admin.routes.js";
 
 const router = Router();
 router.use("/student/onboarding", onboardingRoutes);
@@ -49,5 +50,6 @@ router.use("/payment", paymentRoutes); // Public + protected payment routes
 router.use("/student/study-sessions", studySessionRoutes);
 router.use("/student", bookmarkRoutes);
 router.use("/student/study-groups", studyGroupRoutes);
+router.use("/admin", adminRoutes); // Admin endpoints for DB management
 
 export default router;

@@ -1,5 +1,5 @@
 import { prisma } from "../../lib/prisma.js";
-import { redis } from "../../lib/redis.js";
+import { cacheGet, cacheSet, cacheDel } from "../../lib/redis.js";
 import { AppError } from "../../utils/AppError.js";
 import crypto from "crypto";
 

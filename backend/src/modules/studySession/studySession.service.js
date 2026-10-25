@@ -97,7 +97,7 @@ export async function endStudySession(studentId, sessionId, customDuration) {
 export async function getActiveSession(studentId) {
     // Try cache first
     const cacheKey = `${ACTIVE_SESSION_PREFIX}${studentId}`;
-    const cached = await redis.get(cacheKey);
+    const cached = await cacheGet(cacheKey);
 
     if (cached) {
         return JSON.parse(cached);
@@ -377,7 +377,7 @@ async function updateStudyStreakAsync(studentId, sessionDuration) {
         });
 
         // Invalidate cache
-        await redis.del(`study-streak:${studentId}`);
+        await cacheDel(`study-streak:${studentId}`);
     } catch (error) {
         console.error("[StudySession] Failed to update streak:", error.message);
     }
@@ -389,7 +389,7 @@ async function updateStudyStreakAsync(studentId, sessionDuration) {
 export async function getStudyStreak(studentId) {
     // Try cache first
     const cacheKey = `study-streak:${studentId}`;
-    const cached = await redis.get(cacheKey);
+    const cached = await cacheGet(cacheKey);
 
     if (cached) {
         return JSON.parse(cached);
@@ -412,7 +412,7 @@ export async function getStudyStreak(studentId) {
     }
 
     // Cache for 5 minutes
-    await redis.setex(cacheKey, 300, JSON.stringify(streak));
+    await cacheSet(cacheKey, JSON.stringify(streak), 300);
 
     return streak;
 }
@@ -422,10 +422,10 @@ export async function getStudyStreak(studentId) {
 // ────────────────────────────────────────────────────────────────────
 async function cacheActiveSession(studentId, session) {
     const cacheKey = `${ACTIVE_SESSION_PREFIX}${studentId}`;
-    await redis.setex(cacheKey, SESSION_CACHE_TTL, JSON.stringify(session));
+    await cacheSet(cacheKey, JSON.stringify(session), SESSION_CACHE_TTL);
 }
 
 async function clearActiveSession(studentId) {
     const cacheKey = `${ACTIVE_SESSION_PREFIX}${studentId}`;
-    await redis.del(cacheKey);
+    await cacheDel(cacheKey);
 }

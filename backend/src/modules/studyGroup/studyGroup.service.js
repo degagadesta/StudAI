@@ -71,7 +71,7 @@ export async function createStudyGroup(studentId, data) {
  */
 export async function getStudyGroupById(groupId, studentId) {
     // Check cache first
-    const cached = await redis.get(`study-group:${groupId}`);
+    const cached = await cacheGet(`study-group:${groupId}`);
     if (cached) {
         const group = JSON.parse(cached);
         // Verify membership
@@ -226,7 +226,7 @@ export async function joinStudyGroup(studentId, inviteCode) {
     });
 
     // Invalidate cache
-    await redis.del(`study-group:${group.id}`);
+    await cacheDel(`study-group:${group.id}`);
 
     return member.studyGroup;
 }
@@ -273,7 +273,7 @@ export async function leaveStudyGroup(studentId, groupId) {
     });
 
     // Invalidate cache
-    await redis.del(`study-group:${groupId}`);
+    await cacheDel(`study-group:${groupId}`);
 
     return { message: "Successfully left the group" };
 }
@@ -299,7 +299,7 @@ export async function deleteStudyGroup(studentId, groupId) {
     });
 
     // Invalidate cache
-    await redis.del(`study-group:${groupId}`);
+    await cacheDel(`study-group:${groupId}`);
 
     return { message: "Study group deleted successfully" };
 }
@@ -346,7 +346,7 @@ export async function updateMemberRole(studentId, groupId, memberId, role) {
     });
 
     // Invalidate cache
-    await redis.del(`study-group:${groupId}`);
+    await cacheDel(`study-group:${groupId}`);
 
     return member;
 }
@@ -391,7 +391,7 @@ export async function removeMember(studentId, groupId, memberId) {
     });
 
     // Invalidate cache
-    await redis.del(`study-group:${groupId}`);
+    await cacheDel(`study-group:${groupId}`);
 
     return { message: "Member removed successfully" };
 }
@@ -603,7 +603,7 @@ export async function updateStudyGroup(studentId, groupId, data) {
     });
 
     // Invalidate cache
-    await redis.del(`study-group:${groupId}`);
+    await cacheDel(`study-group:${groupId}`);
 
     return updated;
 }

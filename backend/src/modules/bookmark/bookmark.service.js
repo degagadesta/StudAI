@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../utils/AppError.js";
-import { cacheGet, cacheSet, cacheDel } from "../../lib/redis.js";
+import { cacheGet, cacheSet, cacheInvalidatePattern } from "../../lib/redis.js";
 
 const BOOKMARK_CACHE_PREFIX = "bookmarks:material:";
 const BOOKMARK_CACHE_TTL = 300; // 5 minutes
@@ -77,7 +77,7 @@ export async function createBookmark(
 export async function getBookmarksForMaterial(studentId, materialId) {
     // Try cache first
     const cacheKey = `${BOOKMARK_CACHE_PREFIX}${materialId}:${studentId}`;
-    const cached = await redis.get(cacheKey);
+    const cached = await cacheGet(cacheKey);
 
     if (cached) {
         return JSON.parse(cached);
@@ -117,7 +117,7 @@ export async function getBookmarksForMaterial(studentId, materialId) {
     });
 
     // Cache for 5 minutes
-    await redis.setex(cacheKey, BOOKMARK_CACHE_TTL, JSON.stringify(bookmarks));
+    await cacheSet(cacheKey, JSON.stringify(bookmarks), BOOKMARK_CACHE_TTL);
 
     return bookmarks;
 }
@@ -284,10 +284,7 @@ async function invalidateBookmarkCache(materialId) {
     const pattern = `${BOOKMARK_CACHE_PREFIX}${materialId}:*`;
 
     try {
-        const keys = await redis.keys(pattern);
-        if (keys.length > 0) {
-            await redis.del(...keys);
-        }
+        await cacheInvalidatePattern(pattern);
     } catch (error) {
         console.error("[Bookmark] Cache invalidation error:", error.message);
     }

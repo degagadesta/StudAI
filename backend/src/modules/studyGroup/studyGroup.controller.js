@@ -12,7 +12,7 @@ export async function createGroup(req, res, next) {
             throw new AppError(error.details[0].message, 400);
         }
 
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const group = await studyGroupService.createStudyGroup(studentId, value);
         res.status(201).json({
             success: true,
@@ -29,7 +29,7 @@ export async function createGroup(req, res, next) {
  */
 export async function getMyGroups(req, res, next) {
     try {
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const groups = await studyGroupService.getMyStudyGroups(studentId);
         res.json({
             success: true,
@@ -45,7 +45,7 @@ export async function getMyGroups(req, res, next) {
  */
 export async function getGroupById(req, res, next) {
     try {
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const { groupId } = req.params;
         const group = await studyGroupService.getStudyGroupById(groupId, studentId);
         res.json({
@@ -67,7 +67,7 @@ export async function joinGroup(req, res, next) {
             throw new AppError(error.details[0].message, 400);
         }
 
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const { inviteCode } = value;
         const group = await studyGroupService.joinStudyGroup(studentId, inviteCode);
         res.json({
@@ -85,7 +85,7 @@ export async function joinGroup(req, res, next) {
  */
 export async function leaveGroup(req, res, next) {
     try {
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const { groupId } = req.params;
         const result = await studyGroupService.leaveStudyGroup(studentId, groupId);
         res.json({
@@ -102,7 +102,7 @@ export async function leaveGroup(req, res, next) {
  */
 export async function deleteGroup(req, res, next) {
     try {
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const { groupId } = req.params;
         const result = await studyGroupService.deleteStudyGroup(studentId, groupId);
         res.json({
@@ -124,7 +124,7 @@ export async function updateMemberRole(req, res, next) {
             throw new AppError(error.details[0].message, 400);
         }
 
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const { groupId, memberId } = req.params;
         const { role } = value;
         const member = await studyGroupService.updateMemberRole(
@@ -148,7 +148,7 @@ export async function updateMemberRole(req, res, next) {
  */
 export async function removeMember(req, res, next) {
     try {
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const { groupId, memberId } = req.params;
         const result = await studyGroupService.removeMember(
             studentId,
@@ -169,7 +169,7 @@ export async function removeMember(req, res, next) {
  */
 export async function getMessages(req, res, next) {
     try {
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const { groupId } = req.params;
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 50;
@@ -204,7 +204,7 @@ export async function shareNote(req, res, next) {
             throw new AppError(error.details[0].message, 400);
         }
 
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const { groupId } = req.params;
         const { noteId } = value;
         const sharedNote = await studyGroupService.shareNote(
@@ -227,7 +227,7 @@ export async function shareNote(req, res, next) {
  */
 export async function getSharedNotes(req, res, next) {
     try {
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const { groupId } = req.params;
         const sharedNotes = await studyGroupService.getSharedNotes(
             studentId,
@@ -252,7 +252,7 @@ export async function updateGroup(req, res, next) {
             throw new AppError(error.details[0].message, 400);
         }
 
-        const { id: studentId } = req.user;
+        const studentId = req.studentId;
         const { groupId } = req.params;
         const group = await studyGroupService.updateStudyGroup(
             studentId,

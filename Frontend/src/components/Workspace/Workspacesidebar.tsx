@@ -88,6 +88,11 @@ export default function WorkspaceSidebar({
 
   const currentTab = controlledActiveTab ?? internalTab;
 
+  const handleTabClick = (tab: WorkspaceTab) => {
+    setInternalTab(tab);
+    onSelectTab?.(tab);
+  };
+
   // Auto-expand sidebar when bookmark or upload is created
   useEffect(() => {
     if (expandSection === "bookmarks") {
@@ -126,11 +131,6 @@ export default function WorkspaceSidebar({
       isMounted = false;
     };
   }, [initialMaterials]);
-
-  const handleTabClick = (tab: WorkspaceTab) => {
-    setInternalTab(tab);
-    onSelectTab?.(tab);
-  };
 
   const handleBackClick = () => {
     if (onBack) {

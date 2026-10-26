@@ -25,11 +25,15 @@ export default function WorkspacePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedPage = Number(searchParams.get("page")) || undefined;
+  const expandParam = searchParams.get("expand") as "upload" | "bookmarks" | null;
   const [pageOverride, setPageOverride] = useState<number | undefined>();
   const jumpToPage = pageOverride ?? requestedPage;
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("chat");
   const [material, setMaterial] = useState<Material | null>(null);
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
+  
+  // State to trigger sidebar expansion
+  const [expandSidebarSection, setExpandSidebarSection] = useState<"upload" | "bookmarks" | null>(expandParam);
 
   // --- Panel Visibility States (Only Notes & Chat sidebars) ---
   const [showNotes, setShowNotes] = useState<boolean>(false);
@@ -112,6 +116,10 @@ export default function WorkspacePage() {
         textSelection: selectedText || undefined, // Pass as string or undefined
         color: "yellow",
       });
+      
+      // Auto-expand bookmarks section in sidebar
+      setExpandSidebarSection("bookmarks");
+      setTimeout(() => setExpandSidebarSection(null), 100); // Reset after triggering
       
       // Show success message
       console.log("Bookmark created successfully");
@@ -269,6 +277,7 @@ export default function WorkspacePage() {
             setPageOverride(bookmark.pageNumber);
             setActiveTab("bookmarks");
           }}
+          expandSection={expandSidebarSection}
         />
 
         <div className="flex-1 flex overflow-hidden relative">

@@ -52,6 +52,7 @@ interface WorkspaceSidebarProps {
   onSelectMaterial?: (material: Material) => void;
   onSelectNote?: (note: NoteItem) => void;
   onSelectBookmark?: (bookmark: BookmarkItem) => void;
+  expandSection?: "upload" | "bookmarks" | null;
 }
 
 export default function WorkspaceSidebar({
@@ -67,6 +68,7 @@ export default function WorkspaceSidebar({
   onSelectMaterial,
   onSelectNote,
   onSelectBookmark,
+  expandSection,
 }: WorkspaceSidebarProps) {
   const navigate = useNavigate();
   const [internalTab, setInternalTab] = useState<WorkspaceTab>("chat");
@@ -85,6 +87,19 @@ export default function WorkspaceSidebar({
     useState(!initialMaterials);
 
   const currentTab = controlledActiveTab ?? internalTab;
+
+  // Auto-expand sidebar when bookmark or upload is created
+  useEffect(() => {
+    if (expandSection === "bookmarks") {
+      setIsExpanded(true);
+      setIsBookmarksOpen(true);
+      handleTabClick("bookmarks");
+    } else if (expandSection === "upload") {
+      setIsExpanded(true);
+      setIsUploadOpen(true);
+      handleTabClick("upload");
+    }
+  }, [expandSection]);
 
   useEffect(() => {
     if (initialMaterials) return;

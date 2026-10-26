@@ -479,24 +479,53 @@ export async function shareNote(studentId, groupId, noteId) {
         throw new AppError("You are not a member of this group", 403);
     }
 
-    // Verify note ownership
-    const note = await prisma.note.findUnique({
+    // Try to find as course-level Note first
+    let note = await prisma.note.findUnique({
         where: { id: noteId },
     });
 
+    // If not found, check if it's a PdfNote and convert it
     if (!note) {
-        throw new AppError("Note not found", 404);
-    }
+        const pdfNote = await prisma.pdfNote.findUnique({
+            where: { id: noteId },
+            include: {
+                material: {
+                    select: {
+                        curriculumCourseId: true,
+                        title: true,
+                    },
+                },
+            },
+        });
 
-    if (note.studentId !== studentId) {
-        throw new AppError("You can only share your own notes", 403);
+        if (!pdfNote) {
+            throw new AppError("Note not found", 404);
+        }
+
+        if (pdfNote.studentId !== studentId) {
+            throw new AppError("You can only share your own notes", 403);
+        }
+
+        // Create a course-level Note from the PdfNote so it can be shared
+        note = await prisma.note.create({
+            data: {
+                studentId: pdfNote.studentId,
+                curriculumCourseId: pdfNote.material.curriculumCourseId,
+                content: `${pdfNote.content}\n\n(Originally from: ${pdfNote.material.title})`,
+            },
+        });
+    } else {
+        // Verify ownership for regular notes
+        if (note.studentId !== studentId) {
+            throw new AppError("You can only share your own notes", 403);
+        }
     }
 
     // Check if already shared
     const existing = await prisma.groupSharedNote.findFirst({
         where: {
             studyGroupId: groupId,
-            noteId,
+            noteId: note.id,
         },
     });
 
@@ -507,11 +536,19 @@ export async function shareNote(studentId, groupId, noteId) {
     const sharedNote = await prisma.groupSharedNote.create({
         data: {
             studyGroupId: groupId,
-            noteId,
+            noteId: note.id,
             sharedById: studentId,
         },
         include: {
-            note: true,
+            note: {
+                include: {
+                    curriculumCourse: {
+                        include: {
+                            course: true,
+                        },
+                    },
+                },
+            },
             sharedBy: {
                 select: {
                     id: true,
@@ -577,33 +614,88 @@ export async function getSharedNotes(studentId, groupId) {
  * Get my notes (for sharing in study groups)
  */
 export async function getMyNotes(studentId) {
-    const notes = await prisma.note.findMany({
-        where: {
-            studentId,
-        },
-        include: {
-            curriculumCourse: {
-                include: {
-                    course: {
-                        select: {
-                            id: true,
-                            title: true,
+    // Get both course-level notes and PDF notes
+    const [courseNotes, pdfNotes] = await Promise.all([
+        // Course-level notes (Note model)
+        prisma.note.findMany({
+            where: {
+                studentId,
+            },
+            include: {
+                curriculumCourse: {
+                    include: {
+                        course: {
+                            select: {
+                                id: true,
+                                title: true,
+                            },
+                        },
+                    },
+                    select: {
+                        id: true,
+                        courseCode: true,
+                        course: true,
+                    },
+                },
+            },
+            orderBy: {
+                updatedAt: "desc",
+            },
+        }),
+        // PDF notes (PdfNote model) - convert to same format
+        prisma.pdfNote.findMany({
+            where: {
+                studentId,
+            },
+            include: {
+                material: {
+                    select: {
+                        id: true,
+                        title: true,
+                        curriculumCourseId: true,
+                        curriculumCourse: {
+                            include: {
+                                course: {
+                                    select: {
+                                        id: true,
+                                        title: true,
+                                    },
+                                },
+                            },
+                            select: {
+                                id: true,
+                                courseCode: true,
+                                course: true,
+                            },
                         },
                     },
                 },
-                select: {
-                    id: true,
-                    courseCode: true,
-                    course: true,
-                },
             },
-        },
-        orderBy: {
-            updatedAt: "desc",
-        },
-    });
+            orderBy: {
+                updatedAt: "desc",
+            },
+        }),
+    ]);
 
-    return notes;
+    // Transform PDF notes to match Note format
+    const transformedPdfNotes = pdfNotes.map(pdfNote => ({
+        id: pdfNote.id,
+        studentId: pdfNote.studentId,
+        content: pdfNote.content,
+        updatedAt: pdfNote.updatedAt,
+        curriculumCourseId: pdfNote.material.curriculumCourseId,
+        curriculumCourse: pdfNote.material.curriculumCourse,
+        // Add metadata to distinguish PDF notes
+        _isPdfNote: true,
+        _materialTitle: pdfNote.material.title,
+    }));
+
+    // Combine and sort by updatedAt
+    const allNotes = [...courseNotes, ...transformedPdfNotes].sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    );
+
+    return allNotes;
 }
 
 /**

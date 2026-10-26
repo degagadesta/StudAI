@@ -53,6 +53,7 @@ interface PdfViewerPageProps {
   onMetaLoaded?: (meta: { fileName: string; courseName: string }) => void;
   onProgressChange?: (percent: number) => void;
   onAskAI?: (selectedText: string) => void;
+  onCreateBookmark?: (name: string, selectedText: string, pageNumber: number) => void;
   jumpToPage?: number;
   onCurrentPageChange?: (pageNumber: number) => void;
 }
@@ -123,6 +124,7 @@ export default function PdfViewerPage({
   onMetaLoaded,
   onProgressChange,
   onAskAI,
+  onCreateBookmark,
   jumpToPage,
   onCurrentPageChange,
 }: PdfViewerPageProps) {
@@ -628,6 +630,7 @@ export default function PdfViewerPage({
             selectedText={pendingSelection.text}
             onPickColor={(color) => handleCreateHighlight(color)}
             onSaveNote={(note) => handleCreateHighlight("yellow", note)}
+            onSaveBookmark={(name, text) => onCreateBookmark?.(name, text, pendingSelection.pageNumber)}
             onAskAI={onAskAI}
             onClose={() => {
               preserveSelectionRef.current = false;

@@ -105,6 +105,24 @@ export default function WorkspacePage() {
     setAskAIQuestion(`Explain this: "${trimmed}"`);
   }, []);
 
+  const handleCreateBookmarkFromSelection = useCallback(async (name: string, selectedText: string) => {
+    if (!id || !currentPage) return;
+    
+    try {
+      await createBookmark({
+        name,
+        pageNumber: currentPage,
+        textSelection: selectedText,
+        color: "yellow",
+      });
+      
+      // Show success toast or notification
+      console.log("Bookmark created successfully");
+    } catch (error) {
+      console.error("Failed to create bookmark:", error);
+    }
+  }, [id, currentPage, createBookmark]);
+
   // Load material details
   useEffect(() => {
     if (!id) return;
@@ -359,6 +377,7 @@ export default function WorkspacePage() {
                   onMetaLoaded={handleMetaLoaded}
                   onProgressChange={handleProgressChange}
                   onAskAI={handleAskAIFromSelection}
+                  onCreateBookmark={handleCreateBookmarkFromSelection}
                   jumpToPage={jumpToPage}
                   onCurrentPageChange={setCurrentPage}
                 />

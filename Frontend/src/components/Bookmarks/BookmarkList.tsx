@@ -32,6 +32,16 @@ export default function BookmarkList({
   const [savingId, setSavingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Safety check: ensure bookmarks is an array
+  if (!Array.isArray(bookmarks)) {
+    console.error('BookmarkList received non-array bookmarks:', bookmarks);
+    return (
+      <p className="py-8 text-center text-sm text-error">
+        Invalid bookmark data received. Please refresh the page.
+      </p>
+    );
+  }
+
   const startEditing = (bookmark: Bookmark) => {
     setEditingId(bookmark.id);
     setName(bookmark.name);

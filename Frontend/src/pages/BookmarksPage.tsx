@@ -22,7 +22,14 @@ export default function BookmarksPage() {
       try {
         const result = await getAllBookmarks();
         if (!cancelled) {
-          setBookmarks(result);
+          // Ensure result is an array
+          if (Array.isArray(result)) {
+            setBookmarks(result);
+          } else {
+            console.error('getAllBookmarks returned non-array:', result);
+            setBookmarks([]);
+            setError("Received invalid bookmark data from server.");
+          }
         }
       } catch (err) {
         if (!cancelled) {

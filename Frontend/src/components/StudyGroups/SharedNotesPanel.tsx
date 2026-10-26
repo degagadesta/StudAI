@@ -61,12 +61,18 @@ export default function SharedNotesPanel({ groupId }: { groupId: string }) {
   }, [groupId]);
 
   const openShareDialog = async () => {
+    console.log('[SharedNotesPanel] Opening share dialog...');
     setError(null);
     setSearch("");
     setIsShareDialogOpen(true);
     try {
-      setMyNotes(await getMyStudyNotes());
+      console.log('[SharedNotesPanel] Fetching my study notes...');
+      const notes = await getMyStudyNotes();
+      console.log('[SharedNotesPanel] Received notes:', notes);
+      console.log('[SharedNotesPanel] Notes count:', notes.length);
+      setMyNotes(notes);
     } catch (loadError: unknown) {
+      console.error('[SharedNotesPanel] Error loading notes:', loadError);
       setError(getApiErrorMessage(loadError, "Could not load your notes."));
     }
   };

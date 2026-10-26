@@ -313,15 +313,27 @@ export default function StudyBuddyPage() {
     const formData = new FormData(event.currentTarget);
     const name = String(formData.get("groupName") ?? "").trim();
     const subject = String(formData.get("groupSubject") ?? "").trim();
-    const curriculumCourseId = String(formData.get("courseId") ?? "").trim();
+    const courseId = String(formData.get("courseId") ?? "").trim();
+    
+    // Only include curriculumCourseId if a valid course was selected (not empty string)
+    const curriculumCourseId = courseId && courseId !== "" ? courseId : null;
+    
     setIsSubmitting(true);
     setDialogError(null);
     try {
-      const newGroup = await createStudyGroup({
+      const payload: { name: string; subject?: string; curriculumCourseId?: string | null } = {
         name,
-        ...(subject ? { subject } : {}),
-        ...(curriculumCourseId ? { curriculumCourseId } : {}),
-      });
+      };
+      
+      if (subject) {
+        payload.subject = subject;
+      }
+      
+      if (curriculumCourseId) {
+        payload.curriculumCourseId = curriculumCourseId;
+      }
+      
+      const newGroup = await createStudyGroup(payload);
       await refreshGroups(newGroup.id);
       closeDialog();
       setIsDetailsOpen(true);

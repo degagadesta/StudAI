@@ -10,7 +10,7 @@ export const createGroupSchema = Joi.object({
         "string.max": "Group name cannot exceed 100 characters",
     }),
     subject: Joi.string().max(100).optional().allow(""),
-    curriculumCourseId: Joi.string().uuid().optional(),
+    curriculumCourseId: Joi.string().uuid().optional().allow(null, ""),
 });
 
 /**

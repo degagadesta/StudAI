@@ -27,11 +27,20 @@ async function generateInviteCode() {
 export async function createStudyGroup(studentId, data) {
     const inviteCode = await generateInviteCode();
 
+    // Sanitize empty strings to null for optional fields
+    const curriculumCourseId = data.curriculumCourseId && data.curriculumCourseId.trim() !== "" 
+        ? data.curriculumCourseId 
+        : null;
+    
+    const subject = data.subject && data.subject.trim() !== "" 
+        ? data.subject 
+        : null;
+
     const group = await prisma.studyGroup.create({
         data: {
             name: data.name,
-            subject: data.subject,
-            curriculumCourseId: data.curriculumCourseId,
+            subject: subject,
+            curriculumCourseId: curriculumCourseId,
             inviteCode,
             createdById: studentId,
             members: {
@@ -57,10 +66,10 @@ export async function createStudyGroup(studentId, data) {
     });
 
     // Cache the group
-    await redis.setex(
+    await cacheSet(
         `study-group:${group.id}`,
-        300, // 5 minutes
-        JSON.stringify(group)
+        JSON.stringify(group),
+        300 // 5 minutes
     );
 
     return group;

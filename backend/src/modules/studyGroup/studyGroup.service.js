@@ -625,16 +625,6 @@ export async function getMyNotes(studentId) {
                 include: {
                     curriculumCourse: {
                         include: {
-                            course: {
-                                select: {
-                                    id: true,
-                                    title: true,
-                                },
-                            },
-                        },
-                        select: {
-                            id: true,
-                            courseCode: true,
                             course: true,
                         },
                     },
@@ -650,22 +640,9 @@ export async function getMyNotes(studentId) {
                 },
                 include: {
                     material: {
-                        select: {
-                            id: true,
-                            title: true,
-                            curriculumCourseId: true,
+                        include: {
                             curriculumCourse: {
                                 include: {
-                                    course: {
-                                        select: {
-                                            id: true,
-                                            title: true,
-                                        },
-                                    },
-                                },
-                                select: {
-                                    id: true,
-                                    courseCode: true,
                                     course: true,
                                 },
                             },
@@ -689,7 +666,11 @@ export async function getMyNotes(studentId) {
                 content: pdfNote.content,
                 updatedAt: pdfNote.updatedAt,
                 curriculumCourseId: pdfNote.material.curriculumCourseId,
-                curriculumCourse: pdfNote.material.curriculumCourse,
+                curriculumCourse: {
+                    id: pdfNote.material.curriculumCourse.id,
+                    courseCode: pdfNote.material.curriculumCourse.courseCode,
+                    course: pdfNote.material.curriculumCourse.course,
+                },
                 // Add metadata to distinguish PDF notes
                 _isPdfNote: true,
                 _materialTitle: pdfNote.material.title,

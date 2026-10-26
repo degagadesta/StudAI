@@ -250,6 +250,22 @@ export async function getSharedNotes(req, res, next) {
 }
 
 /**
+ * Get my notes (for sharing in groups)
+ */
+export async function getMyNotes(req, res, next) {
+    try {
+        const studentId = req.studentId;
+        const notes = await studyGroupService.getMyNotes(studentId);
+        res.json({
+            success: true,
+            data: notes,
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
  * Update study group details
  */
 export async function updateGroup(req, res, next) {

@@ -574,6 +574,39 @@ export async function getSharedNotes(studentId, groupId) {
 }
 
 /**
+ * Get my notes (for sharing in study groups)
+ */
+export async function getMyNotes(studentId) {
+    const notes = await prisma.note.findMany({
+        where: {
+            studentId,
+        },
+        include: {
+            curriculumCourse: {
+                include: {
+                    course: {
+                        select: {
+                            id: true,
+                            title: true,
+                        },
+                    },
+                },
+                select: {
+                    id: true,
+                    courseCode: true,
+                    course: true,
+                },
+            },
+        },
+        orderBy: {
+            updatedAt: "desc",
+        },
+    });
+
+    return notes;
+}
+
+/**
  * Update study group details (admin only)
  */
 export async function updateStudyGroup(studentId, groupId, data) {

@@ -24,6 +24,7 @@ router.delete("/:groupId/members/:memberId", studyGroupController.removeMember);
 router.get("/:groupId/messages", studyGroupController.getMessages);
 
 // Note sharing
+router.get("/my-notes", studyGroupController.getMyNotes);
 router.post("/:groupId/notes", studyGroupController.shareNote);
 router.get("/:groupId/notes", studyGroupController.getSharedNotes);
 

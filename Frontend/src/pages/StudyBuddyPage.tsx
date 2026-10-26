@@ -315,8 +315,17 @@ export default function StudyBuddyPage() {
     const subject = String(formData.get("groupSubject") ?? "").trim();
     const courseId = String(formData.get("courseId") ?? "").trim();
     
+    console.log('=== CREATE GROUP DEBUG ===');
+    console.log('Raw courseId from form:', courseId);
+    console.log('courseId type:', typeof courseId);
+    console.log('courseId length:', courseId.length);
+    console.log('Is empty:', courseId === "");
+    
     // Only include curriculumCourseId if a valid course was selected (not empty string)
     const curriculumCourseId = courseId && courseId !== "" ? courseId : null;
+    
+    console.log('Processed curriculumCourseId:', curriculumCourseId);
+    console.log('curriculumCourseId type:', typeof curriculumCourseId);
     
     setIsSubmitting(true);
     setDialogError(null);
@@ -333,11 +342,14 @@ export default function StudyBuddyPage() {
         payload.curriculumCourseId = curriculumCourseId;
       }
       
+      console.log('Final payload:', JSON.stringify(payload, null, 2));
+      
       const newGroup = await createStudyGroup(payload);
       await refreshGroups(newGroup.id);
       closeDialog();
       setIsDetailsOpen(true);
     } catch (submitError: unknown) {
+      console.error('Create group error:', submitError);
       setDialogError(
         getApiErrorMessage(submitError, "Could not create the study group."),
       );

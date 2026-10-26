@@ -7,7 +7,14 @@ import * as validation from "./studyGroup.validation.js";
  */
 export async function createGroup(req, res, next) {
     try {
+        console.log('=== CREATE GROUP BACKEND DEBUG ===');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        
         const { error, value } = validation.createGroupSchema.validate(req.body);
+        
+        console.log('Validation error:', error);
+        console.log('Validation value:', JSON.stringify(value, null, 2));
+        
         if (error) {
             throw new AppError(error.details[0].message, 400);
         }

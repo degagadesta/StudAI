@@ -58,7 +58,9 @@ export async function getBookmarks(
  */
 export async function getAllBookmarks(): Promise<Bookmark[]> {
   const response = await api.get("/student/bookmarks");
-  return response.data.data;
+  // Backend returns { bookmarks, total, limit, offset }, extract bookmarks array
+  const data = response.data.data;
+  return Array.isArray(data) ? data : data.bookmarks || [];
 }
 
 /**

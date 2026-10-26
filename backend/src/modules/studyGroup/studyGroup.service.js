@@ -614,88 +614,101 @@ export async function getSharedNotes(studentId, groupId) {
  * Get my notes (for sharing in study groups)
  */
 export async function getMyNotes(studentId) {
-    // Get both course-level notes and PDF notes
-    const [courseNotes, pdfNotes] = await Promise.all([
-        // Course-level notes (Note model)
-        prisma.note.findMany({
-            where: {
-                studentId,
-            },
-            include: {
-                curriculumCourse: {
-                    include: {
-                        course: {
-                            select: {
-                                id: true,
-                                title: true,
-                            },
-                        },
-                    },
-                    select: {
-                        id: true,
-                        courseCode: true,
-                        course: true,
-                    },
+    try {
+        // Get both course-level notes and PDF notes
+        const [courseNotes, pdfNotes] = await Promise.all([
+            // Course-level notes (Note model)
+            prisma.note.findMany({
+                where: {
+                    studentId,
                 },
-            },
-            orderBy: {
-                updatedAt: "desc",
-            },
-        }),
-        // PDF notes (PdfNote model) - convert to same format
-        prisma.pdfNote.findMany({
-            where: {
-                studentId,
-            },
-            include: {
-                material: {
-                    select: {
-                        id: true,
-                        title: true,
-                        curriculumCourseId: true,
-                        curriculumCourse: {
-                            include: {
-                                course: {
-                                    select: {
-                                        id: true,
-                                        title: true,
-                                    },
+                include: {
+                    curriculumCourse: {
+                        include: {
+                            course: {
+                                select: {
+                                    id: true,
+                                    title: true,
                                 },
                             },
-                            select: {
-                                id: true,
-                                courseCode: true,
-                                course: true,
+                        },
+                        select: {
+                            id: true,
+                            courseCode: true,
+                            course: true,
+                        },
+                    },
+                },
+                orderBy: {
+                    updatedAt: "desc",
+                },
+            }),
+            // PDF notes (PdfNote model) - convert to same format
+            prisma.pdfNote.findMany({
+                where: {
+                    studentId,
+                },
+                include: {
+                    material: {
+                        select: {
+                            id: true,
+                            title: true,
+                            curriculumCourseId: true,
+                            curriculumCourse: {
+                                include: {
+                                    course: {
+                                        select: {
+                                            id: true,
+                                            title: true,
+                                        },
+                                    },
+                                },
+                                select: {
+                                    id: true,
+                                    courseCode: true,
+                                    course: true,
+                                },
                             },
                         },
                     },
                 },
-            },
-            orderBy: {
-                updatedAt: "desc",
-            },
-        }),
-    ]);
+                orderBy: {
+                    updatedAt: "desc",
+                },
+            }),
+        ]);
 
-    // Transform PDF notes to match Note format
-    const transformedPdfNotes = pdfNotes.map(pdfNote => ({
-        id: pdfNote.id,
-        studentId: pdfNote.studentId,
-        content: pdfNote.content,
-        updatedAt: pdfNote.updatedAt,
-        curriculumCourseId: pdfNote.material.curriculumCourseId,
-        curriculumCourse: pdfNote.material.curriculumCourse,
-        // Add metadata to distinguish PDF notes
-        _isPdfNote: true,
-        _materialTitle: pdfNote.material.title,
-    }));
+        console.log(`[getMyNotes] Found ${courseNotes.length} course notes and ${pdfNotes.length} PDF notes`);
 
-    // Combine and sort by updatedAt
-    const allNotes = [...courseNotes, ...transformedPdfNotes].sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
+        // Transform PDF notes to match Note format
+        const transformedPdfNotes = pdfNotes
+            .filter(pdfNote => pdfNote.material.curriculumCourseId && pdfNote.material.curriculumCourse)
+            .map(pdfNote => ({
+                id: pdfNote.id,
+                studentId: pdfNote.studentId,
+                content: pdfNote.content,
+                updatedAt: pdfNote.updatedAt,
+                curriculumCourseId: pdfNote.material.curriculumCourseId,
+                curriculumCourse: pdfNote.material.curriculumCourse,
+                // Add metadata to distinguish PDF notes
+                _isPdfNote: true,
+                _materialTitle: pdfNote.material.title,
+            }));
 
-    return allNotes;
+        console.log(`[getMyNotes] Transformed ${transformedPdfNotes.length} PDF notes successfully`);
+
+        // Combine and sort by updatedAt
+        const allNotes = [...courseNotes, ...transformedPdfNotes].sort(
+            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+
+        console.log(`[getMyNotes] Returning total of ${allNotes.length} notes`);
+
+        return allNotes;
+    } catch (error) {
+        console.error('[getMyNotes] Error fetching notes:', error);
+        throw error;
+    }
 }
 
 /**

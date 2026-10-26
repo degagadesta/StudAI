@@ -10,7 +10,8 @@ export const createGroupSchema = Joi.object({
         "string.max": "Group name cannot exceed 100 characters",
     }),
     subject: Joi.string().max(100).optional().allow(""),
-    curriculumCourseId: Joi.string().uuid().optional().allow(null, ""),
+    // Accept any string for curriculumCourseId (not just UUID) since seed data uses custom IDs
+    curriculumCourseId: Joi.string().optional().allow(null, ""),
 });
 
 /**
@@ -59,5 +60,6 @@ export const shareNoteSchema = Joi.object({
 export const updateGroupSchema = Joi.object({
     name: Joi.string().min(3).max(100).optional(),
     subject: Joi.string().max(100).optional().allow(""),
-    curriculumCourseId: Joi.string().uuid().optional().allow(null),
+    // Accept any string for curriculumCourseId (not just UUID) since seed data uses custom IDs
+    curriculumCourseId: Joi.string().optional().allow(null, ""),
 });

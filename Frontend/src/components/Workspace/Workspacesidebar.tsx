@@ -33,28 +33,40 @@ export interface NoteItem {
   title: string;
 }
 
+export interface BookmarkItem {
+  id: string;
+  name: string;
+  pageNumber: number;
+}
+
 interface WorkspaceSidebarProps {
   activeTab?: WorkspaceTab;
   selectedNoteId?: string | null;
   selectedMaterialId?: string | null;
+  selectedBookmarkId?: string | null;
   onSelectTab?: (tab: WorkspaceTab) => void;
   onBack?: () => void;
   materials?: Material[];
   notes?: NoteItem[];
+  bookmarks?: BookmarkItem[];
   onSelectMaterial?: (material: Material) => void;
   onSelectNote?: (note: NoteItem) => void;
+  onSelectBookmark?: (bookmark: BookmarkItem) => void;
 }
 
 export default function WorkspaceSidebar({
   activeTab: controlledActiveTab,
   selectedNoteId,
   selectedMaterialId,
+  selectedBookmarkId,
   onSelectTab,
   onBack,
   materials: initialMaterials,
   notes = [],
+  bookmarks = [],
   onSelectMaterial,
   onSelectNote,
+  onSelectBookmark,
 }: WorkspaceSidebarProps) {
   const navigate = useNavigate();
   const [internalTab, setInternalTab] = useState<WorkspaceTab>("chat");
@@ -64,6 +76,7 @@ export default function WorkspaceSidebar({
   // Sub-menu toggle state
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isBookmarksOpen, setIsBookmarksOpen] = useState(false);
 
   // Materials state (auto-fetched if not passed via props)
   const [fetchedMaterials, setFetchedMaterials] = useState<Material[]>([]);
@@ -124,6 +137,12 @@ export default function WorkspaceSidebar({
     setIsUploadOpen((prev) => !prev);
   };
 
+  const toggleBookmarksSubMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isExpanded) setIsExpanded(true);
+    setIsBookmarksOpen((prev) => !prev);
+  };
+
   const handleNotesTabClick = () => {
     if (currentTab === "notes") {
       setIsNotesOpen((prev) => !prev);
@@ -139,6 +158,15 @@ export default function WorkspaceSidebar({
     } else {
       handleTabClick("upload");
       setIsUploadOpen(true);
+    }
+  };
+
+  const handleBookmarksTabClick = () => {
+    if (currentTab === "bookmarks") {
+      setIsBookmarksOpen((prev) => !prev);
+    } else {
+      handleTabClick("bookmarks");
+      setIsBookmarksOpen(true);
     }
   };
 
@@ -308,14 +336,51 @@ export default function WorkspaceSidebar({
         />
 
         {/* 7. BOOKMARKS */}
-        <NavItem
-          id="bookmarks"
-          label="Bookmarks"
-          icon={Bookmark}
-          isActive={currentTab === "bookmarks"}
-          isExpanded={isExpanded}
-          onClick={() => handleTabClick("bookmarks")}
-        />
+        <div>
+          <NavItem
+            id="bookmarks"
+            label="Bookmarks"
+            icon={Bookmark}
+            isActive={currentTab === "bookmarks"}
+            isExpanded={isExpanded}
+            onClick={handleBookmarksTabClick}
+            hasDropdown
+            isOpen={isBookmarksOpen}
+            onToggleDropdown={toggleBookmarksSubMenu}
+          />
+          {isExpanded && isBookmarksOpen && (
+            <div className="ml-7 mt-1 space-y-1 border-l-2 border-default pl-2 py-1">
+              {bookmarks.length === 0 ? (
+                <p className="px-2 py-1 text-[11px] text-muted italic">
+                  No bookmarks yet
+                </p>
+              ) : (
+                bookmarks.map((bookmark) => {
+                  const isBookmarkActive = selectedBookmarkId === bookmark.id;
+                  return (
+                    <button
+                      key={bookmark.id}
+                      type="button"
+                      onClick={() => onSelectBookmark?.(bookmark)}
+                      title={`${bookmark.name} (Page ${bookmark.pageNumber})`}
+                      className={`w-full text-left px-2 py-1.5 text-xs rounded-lg transition-all truncate flex items-center gap-2 cursor-pointer ${
+                        isBookmarkActive
+                          ? "bg-accent text-inverse font-medium"
+                          : "text-secondary hover:bg-surface-hover hover:text-primary"
+                      }`}
+                    >
+                      <Bookmark size={13} className="shrink-0" />
+                      <span className="truncate flex-1">{bookmark.name}</span>
+                      <span className="text-[10px] opacity-70 shrink-0">
+                        p.{bookmark.pageNumber}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
 
         {/* 8. UPLOAD */}
         <div>

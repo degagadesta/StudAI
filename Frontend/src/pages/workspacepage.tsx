@@ -112,11 +112,11 @@ export default function WorkspacePage() {
       await createBookmark({
         name,
         pageNumber: currentPage,
-        textSelection: selectedText,
+        textSelection: selectedText || undefined, // Pass as string or undefined
         color: "yellow",
       });
       
-      // Show success toast or notification
+      // Show success message
       console.log("Bookmark created successfully");
     } catch (error) {
       console.error("Failed to create bookmark:", error);
@@ -273,9 +273,14 @@ export default function WorkspacePage() {
           activeTab={activeTab}
           selectedNoteId={selectedNote?.id}
           selectedMaterialId={material?.id}
+          bookmarks={bookmarks.map(b => ({ id: b.id, name: b.name, pageNumber: b.pageNumber }))}
           onSelectTab={handleTabSelect}
           onSelectNote={handleNoteSelect}
           onSelectMaterial={handleMaterialSelect}
+          onSelectBookmark={(bookmark) => {
+            setPageOverride(bookmark.pageNumber);
+            setActiveTab("bookmarks");
+          }}
         />
 
         <div className="flex-1 flex overflow-hidden relative">

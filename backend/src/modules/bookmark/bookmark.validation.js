@@ -19,9 +19,12 @@ export function validateCreateBookmark({ name, pageNumber, textSelection, color,
 
     // Text selection validation (optional)
     if (textSelection !== undefined && textSelection !== null) {
-        if (typeof textSelection !== "object") {
-            errors.push("Text selection must be an object");
-        } else {
+        // Allow string format (simple selected text) or object format (with offsets)
+        if (typeof textSelection === "string") {
+            if (textSelection.length > 500) {
+                errors.push("Selected text is too long (max 500 characters)");
+            }
+        } else if (typeof textSelection === "object") {
             if (
                 typeof textSelection.startOffset !== "number" ||
                 typeof textSelection.endOffset !== "number"
@@ -37,6 +40,8 @@ export function validateCreateBookmark({ name, pageNumber, textSelection, color,
             if (textSelection.selectedText && textSelection.selectedText.length > 500) {
                 errors.push("Selected text is too long (max 500 characters)");
             }
+        } else {
+            errors.push("Text selection must be a string or object");
         }
     }
 

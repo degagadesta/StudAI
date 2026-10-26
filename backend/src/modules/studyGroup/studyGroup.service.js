@@ -142,7 +142,11 @@ export async function getStudyGroupById(groupId, studentId) {
     }
 
     // Cache for 5 minutes
-    await redis.setex(`study-group:${groupId}`, 300, JSON.stringify(group));
+    await cacheSet(
+        `study-group:${groupId}`,
+        JSON.stringify(group),
+        300 // 5 minutes
+    );
 
     return group;
 }

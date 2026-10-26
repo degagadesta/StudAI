@@ -19,7 +19,6 @@ import SettingsModal, { type TabType } from "./SettingsModal";
 import { getMaterials, type Material } from "../api/Materialsapi";
 import { askQuestion } from "../api/aiApi";
 import { useBookmarks } from "../hooks/useBookmarks";
-import BookmarkPanel from "../components/Bookmarks/BookmarkPanel";
 
 export default function WorkspacePage() {
   const { id } = useParams<{ id: string }>();
@@ -35,9 +34,7 @@ export default function WorkspacePage() {
   // --- Panel Visibility States (Only Notes & Chat sidebars) ---
   const [showNotes, setShowNotes] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(true);
-  const [showBookmarks, setShowBookmarks] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [bookmarkPage, setBookmarkPage] = useState(requestedPage ?? 1);
   const {
     bookmarks,
     isLoading: areBookmarksLoading,
@@ -151,16 +148,7 @@ export default function WorkspacePage() {
       setShowNotes(true);
     } else if (tab === "chat") {
       setShowChat(true);
-    } else if (tab === "bookmarks") {
-      setShowBookmarks(true);
     }
-  };
-
-  const openBookmarksAtPage = (page: number) => {
-    setBookmarkPage(page);
-    setPageOverride(page);
-    setActiveTab("bookmarks");
-    setShowBookmarks(true);
   };
 
   // Sidebar Sub-item Selection Handlers
@@ -347,7 +335,10 @@ export default function WorkspacePage() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => openBookmarksAtPage(currentPage)}
+                    onClick={() => {
+                      // Bookmarks are now in sidebar, just open the bookmarks dropdown
+                      setActiveTab("bookmarks");
+                    }}
                     className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
                     title={`Bookmark page ${currentPage}`}
                     aria-label={`Add bookmark on page ${currentPage}`}
@@ -393,24 +384,6 @@ export default function WorkspacePage() {
               )}
             </div>
           </div>
-
-          {showBookmarks && (
-            <div className="flex w-[320px] shrink-0 flex-col overflow-hidden border-l border-default">
-              <BookmarkPanel
-                key={`${id ?? "material"}-${bookmarkPage}`}
-                materialName={material?.fileName ?? pdfMeta?.fileName}
-                bookmarks={bookmarks}
-                isLoading={areBookmarksLoading}
-                error={bookmarkError}
-                requestedPage={bookmarkPage}
-                onClose={() => setShowBookmarks(false)}
-                onNavigate={(page) => setPageOverride(page)}
-                onCreate={createBookmark}
-                onUpdate={updateBookmark}
-                onDelete={deleteBookmark}
-              />
-            </div>
-          )}
 
           {/* DRAGGABLE MODAL: Summary, Exams, Quiz, & Flashcards */}
           {isModalViewActive && (

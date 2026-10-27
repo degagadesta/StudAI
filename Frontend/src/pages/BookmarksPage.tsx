@@ -8,16 +8,29 @@ import {
   type Bookmark,
 } from "../api/BookmarkApi";
 import { getApiErrorMessage } from "../api/authApi";
+import { useCache } from "../contexts/CacheContext";
 import BookmarkList from "../components/Bookmarks/BookmarkList";
+
+const BOOKMARKS_CACHE_KEY = "bookmarks";
 
 export default function BookmarksPage() {
   const navigate = useNavigate();
+  const cache = useCache();
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+
+    // Try to get cached data first
+    const cachedData = cache.get<Bookmark[]>(BOOKMARKS_CACHE_KEY);
+    if (cachedData && Array.isArray(cachedData)) {
+      setBookmarks(cachedData);
+      setIsLoading(false);
+      return;
+    }
+
     void Promise.resolve().then(async () => {
       try {
         const result = await getAllBookmarks();
@@ -25,6 +38,7 @@ export default function BookmarksPage() {
           // Ensure result is an array
           if (Array.isArray(result)) {
             setBookmarks(result);
+            cache.set(BOOKMARKS_CACHE_KEY, result);
           } else {
             console.error('getAllBookmarks returned non-array:', result);
             setBookmarks([]);
@@ -42,32 +56,33 @@ export default function BookmarksPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [cache]);
 
   const handleUpdate = async (
     id: string,
     payload: { name: string; note: string },
   ) => {
     try {
-      const updated = await updateBookmark(id, payload);
-      setBookmarks((current) =>
-        current.map((bookmark) =>
-          bookmark.id === id ? { ...bookmark, ...updated } : bookmark,
-        ),
+      await updateBookmark(id, payload);
+      const updatedBookmarks = bookmarks.map((bm) =>
+        bm.id === id ? { ...bm, ...payload } : bm,
       );
+      setBookmarks(updatedBookmarks);
+      cache.set(BOOKMARKS_CACHE_KEY, updatedBookmarks);
     } catch (err) {
       setError(getApiErrorMessage(err, "Could not update bookmark."));
-      throw err;
     }
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm("Remove this bookmark?")) return;
     try {
       await deleteBookmark(id);
-      setBookmarks((current) => current.filter((bookmark) => bookmark.id !== id));
+      const updatedBookmarks = bookmarks.filter((bm) => bm.id !== id);
+      setBookmarks(updatedBookmarks);
+      cache.set(BOOKMARKS_CACHE_KEY, updatedBookmarks);
     } catch (err) {
       setError(getApiErrorMessage(err, "Could not delete bookmark."));
-      throw err;
     }
   };
 

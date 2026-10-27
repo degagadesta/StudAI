@@ -14,6 +14,7 @@ export default function SharedNotesPanel({ groupId }: { groupId: string }) {
   const [myNotes, setMyNotes] = useState<MyStudyNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<SharedStudyNote | null>(null);
   const [search, setSearch] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,43 +140,115 @@ export default function SharedNotesPanel({ groupId }: { groupId: string }) {
           </div>
         ) : (
           sharedNotes.map((shared) => {
-            const title =
+            const courseTitle =
               shared.note.curriculumCourse?.course?.title ?? "Study note";
+            const courseCode = shared.note.curriculumCourse?.courseCode ?? "";
             const author =
               `${shared.sharedBy.firstName} ${shared.sharedBy.lastName}`.trim();
+            const previewText = shared.note.content?.slice(0, 80) || "No content";
+            
             return (
-              <article
+              <button
                 key={shared.id}
-                className="rounded-2xl border border-default bg-page p-4"
+                type="button"
+                onClick={() => setSelectedNote(shared)}
+                className="w-full rounded-2xl border border-default bg-page p-4 text-left transition-all hover:border-accent hover:shadow-sm"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-elevated text-accent">
-                      <FileText size={17} />
-                    </span>
-                    <div className="min-w-0">
-                      <h4 className="truncate font-medium text-primary">
-                        {title}
-                      </h4>
-                      <p className="mt-0.5 text-xs text-secondary">
-                        Shared by {author || "a group member"} ·{" "}
-                        {new Date(shared.sharedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 rounded-lg bg-elevated px-2 py-1 text-xs text-secondary">
-                    {shared.note.curriculumCourse?.course?.title ?? "Note"}
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <FileText size={18} />
                   </span>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="truncate font-medium text-primary">
+                      {courseTitle}
+                    </h4>
+                    <p className="mt-0.5 text-xs text-secondary">
+                      {courseCode && `${courseCode} • `}
+                      Shared by {author}
+                    </p>
+                    <p className="mt-2 truncate text-sm text-muted">
+                      {previewText}
+                      {shared.note.content && shared.note.content.length > 80 ? "..." : ""}
+                    </p>
+                  </div>
                 </div>
-                <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-secondary">
-                  {shared.note.content?.slice(0, 500) || "This note is empty."}
-                  {(shared.note.content?.length ?? 0) > 500 ? "…" : ""}
-                </p>
-              </article>
+              </button>
             );
           })
         )}
       </div>
+
+      {/* Note Detail Modal */}
+      {selectedNote && (
+        <div
+          className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/50 p-4 pt-8 pb-8"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelectedNote(null);
+            }
+          }}
+        >
+          <div className="my-auto w-full max-w-2xl rounded-3xl border border-default bg-surface shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 border-b border-default px-6 py-5">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <FileText size={20} />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="truncate font-serif text-xl font-semibold text-primary">
+                      {selectedNote.note.curriculumCourse?.course?.title ?? "Study Note"}
+                    </h3>
+                    <p className="mt-1 text-sm text-secondary">
+                      {selectedNote.note.curriculumCourse?.courseCode}
+                      {selectedNote.note.curriculumCourse?.courseCode && " • "}
+                      Shared by{" "}
+                      {`${selectedNote.sharedBy.firstName} ${selectedNote.sharedBy.lastName}`.trim()}
+                      {" on "}
+                      {new Date(selectedNote.sharedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedNote(null)}
+                aria-label="Close note"
+                className="shrink-0 rounded-lg p-2 text-muted transition-colors hover:bg-elevated hover:text-primary"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="px-6 py-5">
+              <div className="prose prose-sm max-w-none text-primary [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:first:mt-0 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mb-3 [&_h2]:mt-5 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-2 [&_h3]:mt-4 [&_p]:mb-3 [&_p]:leading-7 [&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-3 [&_li]:mb-1 [&_strong]:font-semibold [&_em]:italic [&_code]:bg-elevated [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_blockquote]:border-l-4 [&_blockquote]:border-accent [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-4">
+                <div
+                  className="break-words"
+                  dangerouslySetInnerHTML={{
+                    __html: selectedNote.note.content || "<p>This note has no content.</p>",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-default px-6 py-4">
+              <div className="flex items-center justify-between gap-3 text-xs text-muted">
+                <span className="flex-1">Last updated: {new Date(selectedNote.note.updatedAt).toLocaleString()}</span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedNote(null)}
+                  className="shrink-0 rounded-lg border border-default px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-elevated"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isShareDialogOpen && (
         <div

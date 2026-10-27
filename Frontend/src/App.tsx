@@ -9,6 +9,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProfileProvider } from "./contexts/ProfileContext";
 import { SocketProvider } from "./contexts/SocketContext";
+import { CacheProvider } from "./contexts/CacheContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { OnboardingRoute } from "./components/OnboardingRoute";
@@ -71,8 +72,9 @@ export default function App() {
         <BrowserRouter>
           <ProfileProvider>
             <AuthProvider>
-              <SocketProvider>
-                <Routes>
+              <CacheProvider>
+                <SocketProvider>
+                  <Routes>
                   {/* Landing Page Route */}
                   <Route path="/" element={<LandingPage />} />
 
@@ -154,8 +156,9 @@ export default function App() {
                 {/* Global notification toasts for Socket.IO events */}
                 <NotificationToast />
               </SocketProvider>
-            </AuthProvider>
-          </ProfileProvider>
+            </CacheProvider>
+          </AuthProvider>
+        </ProfileProvider>
         </BrowserRouter>
       </ThemeProvider>
     </GoogleOAuthProvider>

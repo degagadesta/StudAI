@@ -26,6 +26,7 @@ import { getCourses, type Course } from "../api/Coursesapi";
 import { getApiErrorMessage } from "../api/authApi";
 import { useAuthContext } from "../contexts/AuthContext";
 import { useSocketContext } from "../contexts/SocketContext";
+import { useCache } from "../contexts/CacheContext";
 import { socketService } from "../services/socketService";
 import GroupSettingsModal from "../components/StudyGroups/GroupSettingsModal";
 import SharedNotesPanel from "../components/StudyGroups/SharedNotesPanel";
@@ -45,6 +46,8 @@ import {
 
 type DialogMode = "create" | "join" | null;
 type GroupTab = "chat" | "notes";
+
+const STUDY_GROUPS_CACHE_KEY = "studyGroups";
 
 interface TypingEvent {
   groupId: string;
@@ -76,6 +79,7 @@ function formatMessageTime(value: string): string {
 export default function StudyBuddyPage() {
   const { user } = useAuthContext();
   const { isConnected } = useSocketContext();
+  const cache = useCache();
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
   const [groups, setGroups] = useState<StudyGroup[]>([]);
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -108,6 +112,7 @@ export default function StudyBuddyPage() {
     try {
       const nextGroups = await getMyStudyGroups();
       setGroups(nextGroups);
+      cache.set(STUDY_GROUPS_CACHE_KEY, nextGroups);
       setActiveGroupId((currentGroupId) => {
         return (
           selectGroupId ??
@@ -136,8 +141,18 @@ export default function StudyBuddyPage() {
   };
 
   useEffect(() => {
+    // Try to get cached data first
+    const cachedGroups = cache.get<StudyGroup[]>(STUDY_GROUPS_CACHE_KEY);
+    if (cachedGroups && Array.isArray(cachedGroups) && cachedGroups.length > 0) {
+      setGroups(cachedGroups);
+      setIsLoadingGroups(false);
+      // Still fetch fresh data in the background
+      void Promise.resolve().then(() => refreshGroups());
+      return;
+    }
+
     void Promise.resolve().then(() => refreshGroups());
-  }, [refreshGroups]);
+  }, [refreshGroups, cache]);
 
   useEffect(() => {
     if (dialogMode !== "create") return;
@@ -506,7 +521,7 @@ export default function StudyBuddyPage() {
 
   return (
     <section className="mx-auto max-w-6xl">
-      <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
+      <header className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <p className="text-sm font-medium text-accent">Study together</p>
           <h1 className="mt-1 font-serif text-3xl text-primary">Study Buddy</h1>
@@ -576,7 +591,7 @@ export default function StudyBuddyPage() {
           </p>
         </div>
       ) : (
-        <div className="grid min-h-[560px] gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="rounded-2xl border border-default bg-surface p-3">
             <h2 className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted">
               Your groups ({groups.length})
@@ -611,7 +626,7 @@ export default function StudyBuddyPage() {
             </div>
           </aside>
 
-          <main className="flex min-h-[560px] min-w-0 flex-col overflow-hidden rounded-2xl border border-default bg-surface">
+          <main className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-default bg-surface">
             {activeGroup && activeGroup.id === activeGroupId ? (
               <>
                 <header className="flex items-center justify-between gap-3 border-b border-default px-4 py-3 sm:px-5">

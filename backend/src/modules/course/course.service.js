@@ -4,6 +4,8 @@ import { deletePDF } from "../pdf/pdf.service.js";
 import { emitToStudent } from "../../lib/socket.js";
 import { invalidateCourses, invalidateMaterials } from "../../utils/cacheInvalidation.js";
 import { deletePDFFromStorage } from "../../lib/supabase.js";
+import { PLAN_LIMITS } from "../../config/planLimits.js";
+import { getEffectivePlan } from "../usage/usage.service.js";
 
 export const getStudentCoursesByYear = async (studentId, searchQuery = null) => {
   // Check if student exists
@@ -257,6 +259,31 @@ export async function addCourseSelection(studentId, curriculumCourseId) {
 
   if (!profile) {
     throw new AppError("Please complete your onboarding first", 404);
+  }
+
+  // Check course limit before adding
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: {
+      subscriptionPlan: true,
+      subscriptionExpiresAt: true,
+    },
+  });
+
+  const effectivePlan = getEffectivePlan(student);
+  const limits = PLAN_LIMITS[effectivePlan];
+  
+  // Count current courses
+  const currentCourseCount = await prisma.studentCourseSelection.count({
+    where: { studentProfileId: profile.id },
+  });
+
+  // Check if limit is reached (null = unlimited)
+  if (limits.MAX_COURSES !== null && currentCourseCount >= limits.MAX_COURSES) {
+    throw new AppError(
+      `Course limit reached. Your ${effectivePlan} plan allows ${limits.MAX_COURSES} active courses.`,
+      403
+    );
   }
 
   const curriculumCourse = await prisma.curriculumCourse.findUnique({

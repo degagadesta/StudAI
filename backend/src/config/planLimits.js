@@ -15,7 +15,7 @@ export const PLAN_LIMITS = {
     EXPLAIN_TOPIC: 15,
     
     // Course limits
-    MAX_COURSES: 2,
+    MAX_COURSES: 6,
     
     // Previous exam access
     EXAM_YEARS_ACCESS: 2, // Last 2 years only
@@ -38,7 +38,7 @@ export const PLAN_LIMITS = {
     EXPLAIN_TOPIC: null, // unlimited
     
     // Course limits
-    MAX_COURSES: 6,
+    MAX_COURSES: 10,
     
     // Previous exam access
     EXAM_YEARS_ACCESS: null, // All years
@@ -82,7 +82,7 @@ export const PLAN_LIMITS = {
     QUIZ_GENERATION: null,
     NOTES_GENERATION: null,
     EXPLAIN_TOPIC: null,
-    MAX_COURSES: 6,
+    MAX_COURSES: 10,
     EXAM_YEARS_ACCESS: null,
     CHAT_CONTEXT_TOKENS: 6000,
     CHAT_HISTORY_TOKENS: 1500,

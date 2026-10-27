@@ -543,7 +543,7 @@ ${question}`;
     data: { sessionId: session.id, role: "ASSISTANT", content: answer },
   });
 
-  await recordUsage(studentId, "CHAT_MESSAGE", {
+  await recordUsage(studentId, "CHAT_MESSAGES", {
     materialId,
     model: MODELS.CHAT,
     inputTokens: usageMetadata?.promptTokenCount ?? null,

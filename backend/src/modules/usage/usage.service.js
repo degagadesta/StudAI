@@ -23,7 +23,7 @@ function isSubscriptionExpired(student) {
 /**
  * Get effective plan considering expiration
  */
-function getEffectivePlan(student) {
+export function getEffectivePlan(student) {
   // If subscription expired, downgrade to FREE
   if (isSubscriptionExpired(student)) {
     return 'FREE';

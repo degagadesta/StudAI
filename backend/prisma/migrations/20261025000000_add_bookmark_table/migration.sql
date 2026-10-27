@@ -20,8 +20,26 @@ CREATE INDEX IF NOT EXISTS "Bookmark_studentId_materialId_idx" ON "Bookmark"("st
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "Bookmark_materialId_idx" ON "Bookmark"("materialId");
 
--- AddForeignKey
-ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_materialId_fkey" FOREIGN KEY ("materialId") REFERENCES "CourseMaterial"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey (only if not exists)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Bookmark_materialId_fkey'
+    ) THEN
+        ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_materialId_fkey" 
+        FOREIGN KEY ("materialId") REFERENCES "CourseMaterial"("id") 
+        ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey (only if not exists)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Bookmark_studentId_fkey'
+    ) THEN
+        ALTER TABLE "Bookmark" ADD CONSTRAINT "Bookmark_studentId_fkey" 
+        FOREIGN KEY ("studentId") REFERENCES "Student"("id") 
+        ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;

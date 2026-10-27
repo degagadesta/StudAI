@@ -1,9 +1,13 @@
 import { Router } from "express";
-import { getUsage } from "./usage.controller.js";
+import { getUsageSummary, checkFeatureAccess } from "./usage.controller.js";
 import { authenticate } from "../../middlewares/authenticate.js";
 
 const router = Router();
 
-router.get("/", authenticate, getUsage);
+// Get current usage summary
+router.get("/summary", authenticate, getUsageSummary);
+
+// Check if can use specific feature
+router.get("/check/:feature", authenticate, checkFeatureAccess);
 
 export default router;

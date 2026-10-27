@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { X, ZoomIn, ZoomOut, RotateCcw, GripHorizontal } from "lucide-react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { X, ZoomIn, ZoomOut, RotateCcw, GripHorizontal, BookmarkPlus } from "lucide-react";
 
 import WorkspaceTopbar from "../components/Workspace/Workspacetopbar";
 import WorkspaceSidebar, {
@@ -18,17 +18,35 @@ import QuizPanel from "../components/Workspace/QuizPanel";
 import SettingsModal, { type TabType } from "./SettingsModal";
 import { getMaterials, type Material } from "../api/Materialsapi";
 import { askQuestion } from "../api/aiApi";
+import { useBookmarks } from "../hooks/useBookmarks";
 
 export default function WorkspacePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedPage = Number(searchParams.get("page")) || undefined;
+  const expandParam = searchParams.get("expand") as "upload" | "bookmarks" | null;
+  const [pageOverride, setPageOverride] = useState<number | undefined>();
+  const jumpToPage = pageOverride ?? requestedPage;
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("chat");
   const [material, setMaterial] = useState<Material | null>(null);
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
+  
+  // State to trigger sidebar expansion
+  const [expandSidebarSection, setExpandSidebarSection] = useState<"upload" | "bookmarks" | null>(expandParam);
 
   // --- Panel Visibility States (Only Notes & Chat sidebars) ---
   const [showNotes, setShowNotes] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const {
+    bookmarks,
+    isLoading: areBookmarksLoading,
+    error: bookmarkError,
+    create: createBookmark,
+    update: updateBookmark,
+    remove: deleteBookmark,
+  } = useBookmarks(id);
 
   // --- Draggable Modal States (For Exams, Quiz, Flashcards, & Summary) ---
   const [modalPos, setModalPos] = useState({ x: 120, y: 80 });
@@ -87,6 +105,34 @@ export default function WorkspacePage() {
     const trimmed = selectedText.trim().slice(0, 2000);
     setAskAIQuestion(`Explain this: "${trimmed}"`);
   }, []);
+
+  const handleCreateBookmarkFromSelection = useCallback(async (name: string, selectedText: string) => {
+    if (!id || !currentPage) return;
+    
+    try {
+      await createBookmark({
+        name,
+        pageNumber: currentPage,
+        textSelection: selectedText || undefined, // Pass as string or undefined
+        color: "yellow",
+      });
+      
+      console.log('Bookmark created, triggering sidebar expansion');
+      // Auto-expand bookmarks section in sidebar
+      setExpandSidebarSection("bookmarks");
+      
+      // Reset after a longer delay to ensure the effect triggers
+      setTimeout(() => {
+        console.log('Resetting expandSidebarSection');
+        setExpandSidebarSection(null);
+      }, 500);
+      
+      // Show success message
+      console.log("Bookmark created successfully");
+    } catch (error) {
+      console.error("Failed to create bookmark:", error);
+    }
+  }, [id, currentPage, createBookmark]);
 
   // Load material details
   useEffect(() => {
@@ -229,9 +275,15 @@ export default function WorkspacePage() {
           activeTab={activeTab}
           selectedNoteId={selectedNote?.id}
           selectedMaterialId={material?.id}
+          bookmarks={bookmarks.map(b => ({ id: b.id, name: b.name, pageNumber: b.pageNumber }))}
           onSelectTab={handleTabSelect}
           onSelectNote={handleNoteSelect}
           onSelectMaterial={handleMaterialSelect}
+          onSelectBookmark={(bookmark) => {
+            setPageOverride(bookmark.pageNumber);
+            setActiveTab("bookmarks");
+          }}
+          expandSection={expandSidebarSection}
         />
 
         <div className="flex-1 flex overflow-hidden relative">
@@ -298,6 +350,20 @@ export default function WorkspacePage() {
                   </span>
                   <button
                     type="button"
+                    onClick={() => {
+                      // Trigger sidebar expansion for bookmarks
+                      setExpandSidebarSection("bookmarks");
+                      setTimeout(() => setExpandSidebarSection(null), 500);
+                      setActiveTab("bookmarks");
+                    }}
+                    className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
+                    title={`Bookmark page ${currentPage}`}
+                    aria-label={`Add bookmark on page ${currentPage}`}
+                  >
+                    <BookmarkPlus size={17} />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => navigate("/workspace")}
                     className="p-1.5 text-secondary hover:text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
                     title="Close Material"
@@ -324,6 +390,9 @@ export default function WorkspacePage() {
                   onMetaLoaded={handleMetaLoaded}
                   onProgressChange={handleProgressChange}
                   onAskAI={handleAskAIFromSelection}
+                  onCreateBookmark={handleCreateBookmarkFromSelection}
+                  jumpToPage={jumpToPage}
+                  onCurrentPageChange={setCurrentPage}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-secondary">
@@ -483,5 +552,3 @@ export default function WorkspacePage() {
     </div>
   );
 }
-
-

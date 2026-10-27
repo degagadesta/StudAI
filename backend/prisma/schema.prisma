@@ -99,6 +99,7 @@ model Student {
   refreshTokenExpiresAt      DateTime?
   refreshToken               String?
   subscriptionPlan           subscriptionPlan  @default(FREE)
+  subscriptionExpiresAt      DateTime?
   activityLogs               ActivityLog[]
   activitySessions           ActivitySession[]
   chatSessions               ChatSession[]
@@ -113,6 +114,15 @@ model Student {
   UsageLog                   UsageLog[]
   weakTopics                 WeakTopic[]
   courseMaterials            CourseMaterial[]
+  payments                   Payment[]
+  subscriptionHistory        SubscriptionHistory[]
+  studySessions              StudySession[]
+  studyStreak                StudyStreak?
+  bookmarks                  Bookmark[]
+  createdGroups              StudyGroup[]       @relation("CreatedGroups")
+  studyGroupMemberships      StudyGroupMember[]
+  sentMessages               GroupMessage[]
+  sharedNotes                GroupSharedNote[]
 }
 
 model StudentProfile {
@@ -148,6 +158,7 @@ model CourseMaterial {
   highlights         PdfHighlight[]
   notes              PdfNote[]
   quizzes            Quiz[]
+  bookmarks          Bookmark[]
 
   @@index([curriculumCourseId])
   @@index([uploadedBy])
@@ -169,13 +180,14 @@ model MaterialChunk {
 }
 
 model Note {
-  id                 String           @id @default(uuid())
+  id                 String            @id @default(uuid())
   studentId          String
   content            String
-  updatedAt          DateTime         @updatedAt
+  updatedAt          DateTime          @updatedAt
   curriculumCourseId String
-  curriculumCourse   CurriculumCourse @relation(fields: [curriculumCourseId], references: [id])
-  student            Student          @relation(fields: [studentId], references: [id])
+  curriculumCourse   CurriculumCourse  @relation(fields: [curriculumCourseId], references: [id])
+  student            Student           @relation(fields: [studentId], references: [id])
+  sharedInGroups     GroupSharedNote[]
 
   @@index([studentId, curriculumCourseId])
 }
@@ -450,8 +462,123 @@ model StudentCourseSelection {
   @@index([studentProfileId])
 }
 
+// ========= NEW FEATURES: Study Sessions, Bookmarks, Study Groups =========
+
+model StudySession {
+  id             String         @id @default(uuid())
+  studentId      String
+  courseId       String?
+  materialId     String?
+  startTime      DateTime       @default(now())
+  endTime        DateTime?
+  duration       Int            @default(0) // in minutes
+  type           SessionType    @default(REGULAR)
+  pomodoroCount  Int            @default(0)
+  status         SessionStatus  @default(ACTIVE)
+  createdAt      DateTime       @default(now())
+  student        Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, status])
+  @@index([studentId, startTime])
+  @@index([startTime])
+}
+
+model StudyStreak {
+  id            String    @id @default(uuid())
+  studentId     String    @unique
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+  lastStudyDate DateTime?
+  totalMinutes  Int       @default(0)
+  totalSessions Int       @default(0)
+  updatedAt     DateTime  @updatedAt
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+model Bookmark {
+  id            String         @id @default(uuid())
+  studentId     String
+  materialId    String
+  name          String
+  pageNumber    Int
+  textSelection Json? // { startOffset, endOffset, selectedText }
+  color         String?        @default("yellow")
+  note          String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  material      CourseMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  student       Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, materialId])
+  @@index([materialId])
+}
+
+model StudyGroup {
+  id                String              @id @default(uuid())
+  name              String
+  subject           String?
+  curriculumCourseId String?
+  inviteCode        String              @unique
+  createdById       String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  createdBy         Student             @relation("CreatedGroups", fields: [createdById], references: [id], onDelete: Cascade)
+  members           StudyGroupMember[]
+  messages          GroupMessage[]
+  sharedNotes       GroupSharedNote[]
+
+  @@index([inviteCode])
+  @@index([createdById])
+}
+
+model StudyGroupMember {
+  id           String          @id @default(uuid())
+  studyGroupId String
+  studentId    String
+  role         GroupMemberRole @default(MEMBER)
+  joinedAt     DateTime        @default(now())
+  studyGroup   StudyGroup      @relation(fields: [studyGroupId], references: [id], onDelete: Cascade)
+  student      Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studyGroupId, studentId])
+  @@index([studentId])
+  @@index([studyGroupId])
+}
+
+model GroupMessage {
+  id               String      @id @default(uuid())
+  studyGroupId     String
+  senderId         String
+  content          String
+  type             MessageType @default(TEXT)
+  sharedResourceId String?
+  createdAt        DateTime    @default(now())
+  studyGroup       StudyGroup  @relation(fields: [studyGroupId], references: [id], onDelete: Cascade)
+  sender           Student     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([studyGroupId, createdAt])
+  @@index([senderId])
+}
+
+model GroupSharedNote {
+  id           String     @id @default(uuid())
+  studyGroupId String
+  noteId       String
+  sharedById   String
+  sharedAt     DateTime   @default(now())
+  studyGroup   StudyGroup @relation(fields: [studyGroupId], references: [id], onDelete: Cascade)
+  note         Note       @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  sharedBy     Student    @relation(fields: [sharedById], references: [id], onDelete: Cascade)
+
+  @@index([studyGroupId])
+  @@index([noteId])
+}
+
 enum subscriptionPlan {
   FREE
+  STUDENT
   PRO
   STANDARD
 }
@@ -459,8 +586,28 @@ enum subscriptionPlan {
 enum UsageFeature {
   SUMMARY
   FLASHCARDS
-  CHAT_MESSAGE
+  CHAT_MESSAGES
   NOTES_GENERATION
+  QUIZ_GENERATION
+  PDF_UPLOADS
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  CHAPA
+  MANUAL
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
 }
 
 enum MaterialStatus {
@@ -514,4 +661,67 @@ enum ChunkStatus {
 enum ChatRole {
   USER
   ASSISTANT
+}
+
+enum SessionType {
+  REGULAR
+  POMODORO
+}
+
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum GroupMemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum MessageType {
+  TEXT
+  NOTE_SHARE
+  FLASHCARD_SHARE
+}
+
+model Payment {
+  id              String          @id @default(uuid())
+  studentId       String
+  amount          Float
+  currency        String          @default("ETB")
+  status          PaymentStatus   @default(PENDING)
+  provider        PaymentProvider @default(CHAPA)
+  transactionRef  String          @unique
+  chapaReference  String?
+  planUpgraded    subscriptionPlan
+  billingCycle    BillingCycle
+  metadata        Json?
+  providerResponse Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  completedAt     DateTime?
+  student         Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([status])
+  @@index([transactionRef])
+  @@index([createdAt])
+}
+
+model SubscriptionHistory {
+  id              String           @id @default(uuid())
+  studentId       String
+  previousPlan    subscriptionPlan
+  newPlan         subscriptionPlan
+  changedAt       DateTime         @default(now())
+  expiresAt       DateTime?
+  reason          String?
+  paymentId       String?
+  isActive        Boolean          @default(true)
+  student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([isActive])
+  @@index([changedAt])
 }

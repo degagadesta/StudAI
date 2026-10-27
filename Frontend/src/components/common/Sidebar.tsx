@@ -4,16 +4,22 @@ import {
   LayoutDashboard,
   BookOpen,
   Calendar,
+  UsersRound,
+  Timer,
   LogOut,
   User,
+  Bookmark,
 } from "lucide-react";
 import { logout } from "../../api/authApi";
 
 const NAV_ITEMS = [
   { to: "/app/start-studying", label: "Start Studying", icon: Rocket },
   { to: "/app/analytics", label: "Analytics", icon: LayoutDashboard },
+  { to: "/app/study-sessions", label: "Study Sessions", icon: Timer },
   { to: "/app/courses", label: "Courses", icon: BookOpen },
   { to: "/app/schedule", label: "Schedule", icon: Calendar },
+  { to: "/app/bookmarks", label: "Bookmarks", icon: Bookmark },
+  { to: "/app/study-buddy", label: "Study Buddy", icon: UsersRound },
 ];
 
 export default function Sidebar() {
@@ -26,7 +32,7 @@ export default function Sidebar() {
 
   return (
     <aside className="w-20 shrink-0 flex flex-col items-center justify-between py-6 h-screen sticky top-0">
-      <div className="flex flex-col items-center gap-6">
+      <div className="flex flex-col items-center">
         <Link to="/app/analytics" className="flex items-center gap-2.5 ">
           {/* <div className="w-8 h-8 bg-[#253D31] text-[#FFFDF7] rounded-lg flex items-center justify-center font-bold shadow-sm">
             <BookOpen size={18} className="text-[#C7D3B9]" />
@@ -35,7 +41,8 @@ export default function Sidebar() {
             StudAI
           </span>
         </Link>
-
+      </div>
+      <div className="flex flex-col items-center gap-6">
         <nav className="flex flex-col gap-2 bg-surface border border-default rounded-3xl p-2">
           {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
             <NavLink

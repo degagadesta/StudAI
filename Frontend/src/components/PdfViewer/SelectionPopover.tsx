@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, Check, Sparkles } from "lucide-react";
+import { Trash2, Check, Sparkles, Bookmark } from "lucide-react";
 import type { HighlightColor } from "../../api/HighlightApi";
 
 const COLORS: HighlightColor[] = ["yellow", "green", "blue", "pink", "orange"];
@@ -19,6 +19,7 @@ interface Props {
   initialNote?: string;
   onPickColor: (color: HighlightColor) => void;
   onSaveNote?: (note: string) => void;
+  onSaveBookmark?: (name: string, selectedText: string) => void;
   onDelete?: () => void;
   onAskAI?: (text: string) => void;
   onClose: () => void;
@@ -32,12 +33,15 @@ export default function SelectionPopover({
   initialNote = "",
   onPickColor,
   onSaveNote,
+  onSaveBookmark,
   onDelete,
   onAskAI,
   onClose,
 }: Props) {
   const [note, setNote] = useState(initialNote);
   const [showNoteInput, setShowNoteInput] = useState(false);
+  const [showBookmarkInput, setShowBookmarkInput] = useState(false);
+  const [bookmarkName, setBookmarkName] = useState("");
 
   return (
     <div
@@ -67,6 +71,20 @@ export default function SelectionPopover({
         >
           Note
         </button>
+
+        {mode === "create" && onSaveBookmark && selectedText && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowBookmarkInput((s) => !s);
+              setShowNoteInput(false);
+            }}
+            className="flex items-center gap-1 text-xs text-secondary hover:text-primary px-1 font-medium transition-colors"
+          >
+            <Bookmark size={12} />
+            Bookmark
+          </button>
+        )}
 
         {mode === "create" && onAskAI && selectedText && (
           <button
@@ -113,6 +131,42 @@ export default function SelectionPopover({
               onClose();
             }}
             className="text-accent hover:opacity-80 transition-opacity"
+          >
+            <Check size={16} />
+          </button>
+        </div>
+      )}
+
+      {showBookmarkInput && (
+        <div className="flex items-center gap-1.5 w-56">
+          <input
+            autoFocus
+            value={bookmarkName}
+            onChange={(e) => setBookmarkName(e.target.value)}
+            placeholder="Name this bookmark..."
+            className="flex-1 text-xs bg-elevated text-primary border border-default rounded-md px-2 py-1 outline-none placeholder:text-muted focus:border-accent"
+            maxLength={100}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && bookmarkName.trim() && selectedText) {
+                onSaveBookmark?.(bookmarkName.trim(), selectedText);
+                setShowBookmarkInput(false);
+                setBookmarkName("");
+                onClose();
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (bookmarkName.trim() && selectedText) {
+                onSaveBookmark?.(bookmarkName.trim(), selectedText);
+                setShowBookmarkInput(false);
+                setBookmarkName("");
+                onClose();
+              }
+            }}
+            className="text-accent hover:opacity-80 transition-opacity disabled:opacity-40"
+            disabled={!bookmarkName.trim()}
           >
             <Check size={16} />
           </button>

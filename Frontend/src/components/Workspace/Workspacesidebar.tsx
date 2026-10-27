@@ -14,6 +14,7 @@ import {
   ChevronRight,
   File,
   Loader2,
+  Bookmark,
 } from "lucide-react";
 import { getMaterials, type Material } from "../../api/Materialsapi";
 
@@ -24,6 +25,7 @@ export type WorkspaceTab =
   | "exams"
   | "quiz"
   | "flashcards"
+  | "bookmarks"
   | "upload";
 
 export interface NoteItem {
@@ -31,28 +33,42 @@ export interface NoteItem {
   title: string;
 }
 
+export interface BookmarkItem {
+  id: string;
+  name: string;
+  pageNumber: number;
+}
+
 interface WorkspaceSidebarProps {
   activeTab?: WorkspaceTab;
   selectedNoteId?: string | null;
   selectedMaterialId?: string | null;
+  selectedBookmarkId?: string | null;
   onSelectTab?: (tab: WorkspaceTab) => void;
   onBack?: () => void;
   materials?: Material[];
   notes?: NoteItem[];
+  bookmarks?: BookmarkItem[];
   onSelectMaterial?: (material: Material) => void;
   onSelectNote?: (note: NoteItem) => void;
+  onSelectBookmark?: (bookmark: BookmarkItem) => void;
+  expandSection?: "upload" | "bookmarks" | null;
 }
 
 export default function WorkspaceSidebar({
   activeTab: controlledActiveTab,
   selectedNoteId,
   selectedMaterialId,
+  selectedBookmarkId,
   onSelectTab,
   onBack,
   materials: initialMaterials,
   notes = [],
+  bookmarks = [],
   onSelectMaterial,
   onSelectNote,
+  onSelectBookmark,
+  expandSection,
 }: WorkspaceSidebarProps) {
   const navigate = useNavigate();
   const [internalTab, setInternalTab] = useState<WorkspaceTab>("chat");
@@ -62,21 +78,39 @@ export default function WorkspaceSidebar({
   // Sub-menu toggle state
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isBookmarksOpen, setIsBookmarksOpen] = useState(false);
 
   // Materials state (auto-fetched if not passed via props)
-  const [materials, setMaterials] = useState<Material[]>(
-    initialMaterials || [],
-  );
+  const [fetchedMaterials, setFetchedMaterials] = useState<Material[]>([]);
+  const materials = initialMaterials ?? fetchedMaterials;
   const [isLoadingMaterials, setIsLoadingMaterials] =
     useState(!initialMaterials);
 
   const currentTab = controlledActiveTab ?? internalTab;
 
+  const handleTabClick = (tab: WorkspaceTab) => {
+    setInternalTab(tab);
+    onSelectTab?.(tab);
+  };
+
+  // Auto-expand sidebar when bookmark or upload is created
   useEffect(() => {
-    if (initialMaterials) {
-      setMaterials(initialMaterials);
-      return;
+    console.log('Sidebar expandSection changed:', expandSection);
+    if (expandSection === "bookmarks") {
+      console.log('Expanding sidebar for bookmarks');
+      setIsExpanded(true);
+      setIsBookmarksOpen(true);
+      handleTabClick("bookmarks");
+    } else if (expandSection === "upload") {
+      console.log('Expanding sidebar for upload');
+      setIsExpanded(true);
+      setIsUploadOpen(true);
+      handleTabClick("upload");
     }
+  }, [expandSection]);
+
+  useEffect(() => {
+    if (initialMaterials) return;
 
     let isMounted = true;
     async function fetchMaterials() {
@@ -84,7 +118,7 @@ export default function WorkspaceSidebar({
         setIsLoadingMaterials(true);
         const data = await getMaterials();
         if (isMounted) {
-          setMaterials(data);
+          setFetchedMaterials(data);
         }
       } catch (error) {
         console.error("Failed to load materials:", error);
@@ -100,11 +134,6 @@ export default function WorkspaceSidebar({
       isMounted = false;
     };
   }, [initialMaterials]);
-
-  const handleTabClick = (tab: WorkspaceTab) => {
-    setInternalTab(tab);
-    onSelectTab?.(tab);
-  };
 
   const handleBackClick = () => {
     if (onBack) {
@@ -126,7 +155,16 @@ export default function WorkspaceSidebar({
     setIsUploadOpen((prev) => !prev);
   };
 
+  const toggleBookmarksSubMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isExpanded) setIsExpanded(true);
+    setIsBookmarksOpen((prev) => !prev);
+  };
+
   const handleNotesTabClick = () => {
+    // Always expand sidebar if collapsed
+    if (!isExpanded) setIsExpanded(true);
+    
     if (currentTab === "notes") {
       setIsNotesOpen((prev) => !prev);
     } else {
@@ -136,11 +174,26 @@ export default function WorkspaceSidebar({
   };
 
   const handleUploadTabClick = () => {
+    // Always expand sidebar if collapsed
+    if (!isExpanded) setIsExpanded(true);
+    
     if (currentTab === "upload") {
       setIsUploadOpen((prev) => !prev);
     } else {
       handleTabClick("upload");
       setIsUploadOpen(true);
+    }
+  };
+
+  const handleBookmarksTabClick = () => {
+    // Always expand sidebar if collapsed
+    if (!isExpanded) setIsExpanded(true);
+    
+    if (currentTab === "bookmarks") {
+      setIsBookmarksOpen((prev) => !prev);
+    } else {
+      handleTabClick("bookmarks");
+      setIsBookmarksOpen(true);
     }
   };
 
@@ -309,7 +362,54 @@ export default function WorkspaceSidebar({
           onClick={() => handleTabClick("flashcards")}
         />
 
-        {/* 7. UPLOAD */}
+        {/* 7. BOOKMARKS */}
+        <div>
+          <NavItem
+            id="bookmarks"
+            label="Bookmarks"
+            icon={Bookmark}
+            isActive={currentTab === "bookmarks"}
+            isExpanded={isExpanded}
+            onClick={handleBookmarksTabClick}
+            hasDropdown
+            isOpen={isBookmarksOpen}
+            onToggleDropdown={toggleBookmarksSubMenu}
+          />
+          {isExpanded && isBookmarksOpen && (
+            <div className="ml-7 mt-1 space-y-1 border-l-2 border-default pl-2 py-1">
+              {bookmarks.length === 0 ? (
+                <p className="px-2 py-1 text-[11px] text-muted italic">
+                  No bookmarks yet
+                </p>
+              ) : (
+                bookmarks.map((bookmark) => {
+                  const isBookmarkActive = selectedBookmarkId === bookmark.id;
+                  return (
+                    <button
+                      key={bookmark.id}
+                      type="button"
+                      onClick={() => onSelectBookmark?.(bookmark)}
+                      title={`${bookmark.name} (Page ${bookmark.pageNumber})`}
+                      className={`w-full text-left px-2 py-1.5 text-xs rounded-lg transition-all truncate flex items-center gap-2 cursor-pointer ${
+                        isBookmarkActive
+                          ? "bg-accent text-inverse font-medium"
+                          : "text-secondary hover:bg-surface-hover hover:text-primary"
+                      }`}
+                    >
+                      <Bookmark size={13} className="shrink-0" />
+                      <span className="truncate flex-1">{bookmark.name}</span>
+                      <span className="text-[10px] opacity-70 shrink-0">
+                        p.{bookmark.pageNumber}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* 8. UPLOAD */}
         <div>
           <NavItem
             id="upload"

@@ -460,7 +460,7 @@ export async function askAboutMaterial(studentId, curriculumCourseId, materialId
   const plan = student.subscriptionPlan;
   const limits = PLAN_LIMITS[plan];
 
-  await assertWithinLimit(studentId, plan, "CHAT_MESSAGE");
+  await assertWithinLimit(studentId, plan, "CHAT_MESSAGES");
 
   const material = await getMaterialWithAccess(materialId, studentId);
 
@@ -507,7 +507,7 @@ export async function askAboutMaterial(studentId, curriculumCourseId, materialId
       data: { sessionId: session.id, role: "ASSISTANT", content: fallback },
     });
 
-    await recordUsage(studentId, "CHAT_MESSAGE", { materialId });
+    await recordUsage(studentId, "CHAT_MESSAGES", { materialId });
 
     return { sessionId: session.id, answer: fallback };
   }
@@ -543,7 +543,7 @@ ${question}`;
     data: { sessionId: session.id, role: "ASSISTANT", content: answer },
   });
 
-  await recordUsage(studentId, "CHAT_MESSAGE", {
+  await recordUsage(studentId, "CHAT_MESSAGES", {
     materialId,
     model: MODELS.CHAT,
     inputTokens: usageMetadata?.promptTokenCount ?? null,

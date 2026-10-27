@@ -3,8 +3,18 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "../components/common/Sidebar";
 import Topbar from "../components/common/Topbar";
 import SearchResultsModal from "../components/common/SearchResultsModal";
+import StudySessionWidget from "../components/StudySessionWidget";
+import { StudySessionProvider } from "../hooks/StudySessionProvider";
 
 export default function DashboardLayout() {
+  return (
+    <StudySessionProvider>
+      <DashboardContent />
+    </StudySessionProvider>
+  );
+}
+
+function DashboardContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
 
@@ -32,6 +42,7 @@ export default function DashboardLayout() {
       {showSearchResults && (
         <SearchResultsModal query={searchQuery} onClose={handleCloseSearch} />
       )}
+      <StudySessionWidget />
     </div>
   );
 }

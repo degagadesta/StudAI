@@ -22,20 +22,20 @@ StudAI is an open-source educational platform designed to bridge the gap between
 ---
 
 ## 2. ✨ Key Features
-* **🤖 AI-Powered Summarization:** Condense lengthy notes and textbook chapters into clear bullet points.
-* **🧠 Dynamic Quiz & Flashcard Generation:** Automatically create practice questions from your study materials.
-* **📊 Progress Tracking:** Monitor study streaks, quiz scores, and topic mastery over time.
-* **💬 Interactive Study Assistant:** Ask clarifying questions on any document for immediate, contextual explanations.
-
+*  AI-Powered Summarization: Condense lengthy notes and textbook chapters into clear bullet points.
+*  Dynamic Quiz & Flashcard Generation: Automatically create practice questions from your study materials.
+*  Progress Tracking: Monitor study streaks, quiz scores, and topic mastery over time.
+*  Interactive Study Assistant: Ask clarifying questions on any document for immediate, contextual explanations.
+*  Interactive Concept Mapping: Visualize connections between complex topics, definitions, and key terms through auto-generated knowledge graphs.
 ---
 
 ## 3. 📁 Project Structure
 
-```text
+ 
 StudAI/
-├── backend/                  # Backend server and API logic
-├── Frontend/                 # Client-side user interface
-├── .vscode/                  # VS Code workspace settings
-├── docker-compose.yml        # Docker multi-container orchestration
+├── backend/                        # Backend server and API logic
+├── Frontend/                       # Client-side user interface
+├── .vscode/                        # VS Code workspace settings
+├── docker-compose.yml              # Docker multi-container orchestration
 ├── FRONTEND_IMPLEMENTATION_PLAN.md # Detailed frontend roadmap & guidelines
-└── README.md                 # Project documentation
+└── README.md                        # Project documentation

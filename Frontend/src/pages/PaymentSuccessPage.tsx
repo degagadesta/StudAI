@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle, Loader2, Sparkles, ArrowRight, Download, Rocket } from "lucide-react";
 import { verifyPayment, type PaymentVerifyResponse } from "../api/paymentApi";
+import { useAuthContext } from "../contexts/AuthContext";
 
 export default function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { checkAuth } = useAuthContext();
   const txRef = searchParams.get("tx_ref");
 
   const [isVerifying, setIsVerifying] = useState(true);
@@ -37,9 +39,14 @@ export default function PaymentSuccessPage() {
       setPaymentData(result);
       setError(null);
 
-      // If payment was successful, show celebration (NO auto-redirect)
+      // If payment was successful, refresh auth and show celebration
       if (result.success || result.payment.status === "SUCCESS") {
-        console.log("[PaymentSuccess] Payment successful! Showing celebration");
+        console.log("[PaymentSuccess] Payment successful! Refreshing user data...");
+        
+        // Refresh user authentication to get updated subscription plan
+        await checkAuth(true);
+        
+        console.log("[PaymentSuccess] User data refreshed. Showing celebration");
         setShowCelebration(true);
         // User must click "Go to Dashboard" button to navigate
       } else {

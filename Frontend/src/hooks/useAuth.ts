@@ -57,7 +57,11 @@ export function useAuth() {
       if (token) {
         console.log('[useAuth] Found access token, checking profile...');
         try {
-          const response = await api.get<{ hasProfile: boolean; student: User }>("/auth/check-profile");
+          const response = await api.get<{ 
+            hasProfile: boolean; 
+            student: User & { subscriptionPlan?: string; subscriptionExpiresAt?: string }; 
+            profile?: StudentProfile 
+          }>("/auth/check-profile");
           console.log('[useAuth] Profile check response:', response.data);
 
           // Only update state if not superseded by explicit auth
@@ -69,6 +73,14 @@ export function useAuth() {
               hasProfile: response.data.hasProfile,
             });
             console.log('[useAuth] Auth state updated, hasProfile:', response.data.hasProfile);
+
+            // Update profile in ProfileContext if available
+            if (profileSetterRef.current && response.data.profile) {
+              console.log('[useAuth] Updating profile in ProfileContext:', response.data.profile);
+              profileSetterRef.current(response.data.profile);
+            } else if (profileSetterRef.current && !response.data.profile) {
+              profileSetterRef.current(null);
+            }
 
             // Start activity tracking for authenticated user
             activityTracker.start();

@@ -22,6 +22,7 @@ function convertAuthProfileToAcademicProfile(authProfile: StudentProfile): Acade
         semester: authProfile.currentSemester,
         currentYear: authProfile.currentYear,
         currentSemester: authProfile.currentSemester,
+        subscriptionPlan: (authProfile as any).subscriptionPlan, // Subscription from student table
     };
 }
 

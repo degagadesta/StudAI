@@ -433,8 +433,33 @@ export async function logout(studentId) {
 export async function checkProfile(studentId) {
   const student = await prisma.student.findUnique({
     where: { id: studentId },
-    include: {
-      profile: true,
+    select: {
+      id: true,
+      firstName: true,
+      email: true,
+      subscriptionPlan: true,
+      subscriptionExpiresAt: true,
+      profile: {
+        select: {
+          id: true,
+          currentYear: true,
+          currentSemester: true,
+          curriculum: {
+            select: {
+              department: {
+                select: {
+                  name: true,
+                  university: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -448,7 +473,10 @@ export async function checkProfile(studentId) {
       id: student.id,
       firstName: student.firstName,
       email: student.email,
+      subscriptionPlan: student.subscriptionPlan,
+      subscriptionExpiresAt: student.subscriptionExpiresAt,
     },
+    profile: student.profile,
   };
 }
 
